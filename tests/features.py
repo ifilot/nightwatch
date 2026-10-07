@@ -9,7 +9,7 @@ from dosbuild import compile_dos
 root = Path(__file__).resolve().parents[1]
 base = root / 'build/video'
 env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
-toolchain = Path(os.environ.get('DOS_TOOLCHAIN', str(root / 'toolchain')))
+toolchain = Path(os.environ.get('DOS_TOOLCHAIN', str(root / 'buildenv')))
 def dos(work, command, machine, before=(), xt=False):
     # Every launch must produce its own evidence, including saved-mode reloads.
     for pattern in ('F*.BIN','F*.POS'):

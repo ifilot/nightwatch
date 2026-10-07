@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-only
 set -euo pipefail
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-# Mount the external compiler and assembler read-only.
-toolchain=${DOS_TOOLCHAIN:-$repo/toolchain}
+# Mount the repository's compiler and assembler read-only.
+toolchain=${DOS_TOOLCHAIN:-$repo/buildenv}
 if [[ ! -f "$toolchain/TC/TCC.EXE" || ! -f "$toolchain/TASM/TASM.EXE" ]]; then
     echo "Set DOS_TOOLCHAIN to a directory containing TC/TCC.EXE, TC/INCLUDE, TC/LIB and TASM/TASM.EXE." >&2
     exit 1

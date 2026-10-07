@@ -4,7 +4,7 @@
 .DEFAULT_GOAL := all
 MODE ?= text
 DOSBOX ?= dosbox
-DOS_TOOLCHAIN ?= $(CURDIR)/toolchain
+DOS_TOOLCHAIN ?= $(CURDIR)/buildenv
 export DOS_TOOLCHAIN
 .PHONY: all build run test test-dos test-video assets benchmark benchmark-speed package clean
 all: build

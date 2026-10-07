@@ -15,7 +15,7 @@ root = Path(__file__).resolve().parents[1]
 base = root / 'build/video'
 base.mkdir(exist_ok=True)
 (base / 'FAST.CONF').write_text('[cpu]\ncycles=100000\n')
-toolchain = Path(os.environ.get('DOS_TOOLCHAIN', str(root / 'toolchain')))
+toolchain = Path(os.environ.get('DOS_TOOLCHAIN', str(root / 'buildenv')))
 env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
 
 def dos(directory, commands, machine='svga_s3'):

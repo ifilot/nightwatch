@@ -11,7 +11,7 @@ import re
 import sys
 from dosbuild import compile_dos
 root = Path(__file__).resolve().parents[1]
-toolchain = Path(os.environ.get('DOS_TOOLCHAIN',str(root / 'toolchain')))
+toolchain = Path(os.environ.get('DOS_TOOLCHAIN',str(root / 'buildenv')))
 env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
 bench = r'''
 static int speed_key_read(void);

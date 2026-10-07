@@ -25,42 +25,27 @@ jobs:
 
   dos-build:
     name: DOS build and integration tests
-    # Fork PRs receive host tests; trusted pushes always compile/test DOS.
+    # Pull requests receive host tests; pushes and manual runs test DOS.
     if: github.event_name != 'pull_request'
-    runs-on: [self-hosted, linux, x64, nightwatch-dos]
-    timeout-minutes: 30
-    env:
-      DOS_TOOLCHAIN: ${{ vars.DOS_TOOLCHAIN || '/opt/dos-toolchain' }}
-      SDL_VIDEODRIVER: dummy
-      SDL_AUDIODRIVER: dummy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - name: Check runner dependencies
-        shell: bash
-        run: |
-          for command in bash make cc python3 dosbox dosbox-x mformat mcopy rg; do
-            command -v "$command" >/dev/null || { echo "Missing runner dependency: $command" >&2; exit 1; }
-          done
-          python3 -c 'from PIL import Image'
-          for file in TC/TCC.EXE TC/MAKE.EXE TASM/TASM.EXE; do
-            test -f "$DOS_TOOLCHAIN/$file" || { echo "Missing toolchain file: $DOS_TOOLCHAIN/$file" >&2; exit 1; }
-          done
-          test -d "$DOS_TOOLCHAIN/TC/INCLUDE"
-          test -d "$DOS_TOOLCHAIN/TC/LIB"
+      - name: Build the repository's DOS environment
+        run: docker build --tag nightwatch-build buildenv
       - name: Clean and compile the 8088 executable
         run: |
-          make clean
-          make build
+          docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build bash -c 'make clean && make build'
       - name: Test real DOS filesystem calls
-        run: make test-dos
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make test-dos
       - name: Test all displays and production BIOS input
-        run: make test-video
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make test-video
       - name: Check rendering work on the 8086 core
-        run: make benchmark
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make benchmark
       - name: Package executable, version and licenses
-        run: make package
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make package
       - name: Upload tested DOS package
         uses: actions/upload-artifact@v4
         with:

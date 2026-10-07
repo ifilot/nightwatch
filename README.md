@@ -66,17 +66,20 @@ archive support is outside the current scope.
 
 ## Build and test
 
-On Linux, install GNU Make, Bash, a C compiler, Python 3 with Pillow, DOSBox,
-DOSBox-X and mtools. Supply Turbo C 2.0 and Turbo Assembler 2.0 in this layout:
-
-```text
-toolchain/
-├── TC/       # TCC.EXE, MAKE.EXE, INCLUDE/, LIB/
-└── TASM/     # TASM.EXE
-```
+The complete DOS toolchain and a Docker build recipe live in
+[`buildenv/`](buildenv/README.md). Build from this checkout with Docker:
 
 ```sh
-export DOS_TOOLCHAIN=/path/to/toolchain   # defaults to ./toolchain
+docker build -t nightwatch-build buildenv
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD:/workspace" nightwatch-build make build
+```
+
+For native Linux builds, install GNU Make, Bash, a C compiler, Python 3 with
+Pillow, DOSBox, DOSBox-X and mtools. The default compiler directory is `buildenv/`;
+no sibling repository is needed.
+
+```sh
 make                                    # build/NIGHT.EXE
 make run MODE=vga                        # open a DOSBox window
 make test                               # host regression tests + sanitizers
@@ -85,7 +88,9 @@ make test-video                         # all display modes + BIOS/8086 checks
 make package                            # build/dist/ release files
 ```
 
-The licensed compiler binaries are external and excluded from Git.
+The included Borland tools retain their original proprietary notices; see
+[build environment provenance](buildenv/BORLAND-NOTICE.md). Bundled DOSBox-X
+sources retain their GPLv2 and component notices.
 Nightwatch code and original icons are **GPLv3** ([license](LICENSE)). Fonts use
 [Spleen](https://github.com/fcambus/spleen) under its BSD license. See the
 [manual](docs/manual.md), [rendering notes](docs/rendering.md) and
@@ -94,14 +99,15 @@ The [source comment style](docs/commenting.md) describes the C89/TASM convention
 
 ## Continuous integration and releases
 
-Every branch and tag push builds and tests the program. Tag pushes publish the
-validated `NIGHT.EXE`, GPL/font licenses, version information, DOS ZIP package and
-checksums as a GitHub release. The executable includes all four display modes.
+Every branch/tag push and pull request runs host regression tests. Branch/tag
+pushes also build and test the DOS program in the repository's Docker environment.
+Tag pushes publish the validated `NIGHT.EXE`, GPL/font licenses, version
+information, DOS ZIP package and checksums as a GitHub release. The executable
+includes all four display modes.
 
-DOS builds use a self-hosted Linux runner with the **`nightwatch-dos`** label and
-the tools listed above. Set the repository Actions variable **`DOS_TOOLCHAIN`**
-to its compiler directory (default `/opt/dos-toolchain`). Host tests and release
-publishing use GitHub-hosted runners. See [CI setup](docs/ci.md).
+All jobs use GitHub-hosted Ubuntu runners. DOS CI builds its environment from
+`buildenv/`; it requires no self-hosted runner, compiler secret, Actions variable
+or separate source repository. See [CI setup](docs/ci.md).
 
 To bump the version, run `python3 tools/version.py --set v1.0.1`, commit the
 updated version/header/badge, then push the matching tag.
