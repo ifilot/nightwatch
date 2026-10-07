@@ -1,68 +1,62 @@
 # CI and releases
 
 [build.yml](../.github/workflows/build.yml) runs on every branch/tag push and can
-be started manually. Host regression tests also run for pull requests. DOS
-compilation and integration tests run on trusted pushes, using an installed
-Turbo C 2.0/TASM 2.0 toolchain.
+be started manually. All jobs use GitHub-hosted Ubuntu 24.04 machines.
+Pull requests run host regression tests. Pushes and manual runs also compile and
+test DOS in the standalone [build environment](../buildenv/README.md).
 
-## Runner setup
+## Build environment
 
-1. Register a Linux x64 [self-hosted GitHub Actions runner](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/use-in-a-workflow)
-   for the repository and give it the custom label `nightwatch-dos`. Use a current
-   runner release (the checkout action uses Node 24).
-2. Install Bash, GNU Make, a C compiler, Python 3, Pillow, DOSBox, DOSBox-X,
-   mtools and ripgrep. For example, the usual Linux package names are
-   `build-essential python3 python3-pil dosbox mtools ripgrep`; install DOSBox-X
-   separately if the distribution does not supply it. Tests run headlessly.
-3. Install your licensed DOS tools outside the checkout:
+`buildenv/TC/` and `buildenv/TASM/` contain the supplied Turbo C 2.0 and Turbo
+Assembler 2.0.1 tools, headers and libraries. `buildenv/vendor/` contains the
+checked DOSBox-X 2024.03.01 Linux sources. The Dockerfile installs standard Ubuntu
+packages, builds DOSBox-X from those sources, and installs the DOS toolchain.
+No compiler files or emulator sources are fetched from another repository.
+No self-hosted runner, compiler secret or Actions variable is required.
 
-   ```text
-   /opt/dos-toolchain/
-   ├── TC/TCC.EXE
-   ├── TC/MAKE.EXE
-   ├── TC/INCLUDE/
-   ├── TC/LIB/
-   └── TASM/TASM.EXE
-   ```
+To reproduce the CI environment locally:
 
-   The runner account needs read access. If installed elsewhere, set the
-   repository **Settings → Secrets and variables → Actions → Variables →
-   DOS_TOOLCHAIN** to that absolute path. No compiler binaries are uploaded.
+```sh
+docker build -t nightwatch-build buildenv
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD:/workspace" nightwatch-build \
+  bash -c 'make clean && make build && make test-dos && make test-video && make benchmark && make package'
+```
 
-The workflow removes old build output, compiles `NIGHT.EXE`, checks the small-model
-memory limit, then runs DOS/FAT12 filesystem tests, all display/keyboard workflows,
+The image build needs Ubuntu's base image and package mirrors. Compiler and
+emulator inputs come from this checkout. Original Borland notices and DOSBox-X
+source/component licenses are preserved in `buildenv/`.
+
+The workflow removes old output, compiles `NIGHT.EXE`, checks the small-model
+memory limit, then runs DOS/FAT12 filesystem tests, display/keyboard workflows,
 production BIOS input/cancellation on an emulated 8086, and the rendering
-benchmark. Host tests run with C89 warnings and address/undefined sanitizers.
-Failures stop packaging and publishing; compile/runtime logs are retained.
+benchmark. Host tests enforce C89 warnings and address/undefined sanitizers.
+Failures stop packaging and publishing; DOS diagnostic logs are retained.
 `make benchmark-speed` needs a local before-source snapshot and is not a CI check.
 
 ## Tag releases
 
-The project version lives in `VERSION`. Use `python3 tools/version.py --set v1.0.1`
+The project version lives in `VERSION`. Run `python3 tools/version.py --set v1.0.1`
 to update it, the committed DOS header and README badge together. Commit those
 changes, then push the matching tag. A tag must match the packaged version;
-otherwise publishing fails before any release is created. For the first release:
+otherwise publishing fails before a release is created.
 
 ```sh
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The release waits for **both** test jobs and downloads the exact DOS artifact
-from that workflow run. It checks SHA-256 hashes before publishing:
+The release waits for both test jobs and downloads that run's DOS artifact.
+It verifies SHA-256 hashes before publishing:
 
 - `NIGHT.EXE`: one 8088 executable containing every display mode.
 - `LICENSE.TXT`: GNU GPL version 3 for Nightwatch.
 - `VERSION.TXT`: the built version, such as `v1.0.0`.
 - `FONTLIC.TXT`: the embedded font license.
-- `NIGHTWATCH-DOS.zip`: executable, both licenses, version and a short DOS `README.TXT`.
+- `NIGHTWATCH-DOS.zip`: executable, both licenses, version and a DOS README.
 - `SHA256SUMS.txt`: hashes for the executable, licenses, version and ZIP.
 
-Release publishing alone receives `contents: write`; build jobs receive read
+Only release publishing receives `contents: write`; build jobs receive read
 access. Rerunning a successful tag workflow replaces its release assets.
-Branch builds expose the same package through the workflow's artifacts.
-
-GitHub's [workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)
-and [release CLI](https://cli.github.com/manual/gh_release_create) document the
-push/tag triggers and publishing commands used here. Until the labelled runner
-is registered and online, DOS jobs remain queued.
+Branch builds expose the same package through workflow artifacts. Compiler files
+and the build environment are not included in the downloadable DOS package.

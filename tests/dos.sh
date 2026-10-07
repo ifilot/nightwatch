@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 repo=$PWD
 dosbox_test=${DOSBOX_TEST:-dosbox-x}
-toolchain=${DOS_TOOLCHAIN:-$repo/toolchain}
+toolchain=${DOS_TOOLCHAIN:-$repo/buildenv}
 mkdir -p build/dostest
 printf '[cpu]\ncputype=8086\ncore=normal\ncycles=3000\n' > build/dostest/CPU.CONF
 scratch=$(mktemp -d /tmp/nightwatch-dos-XXXXXX)

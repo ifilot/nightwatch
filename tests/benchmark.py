@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 }
 '''
 (work/'BENCH.C').write_bytes(source.replace('\n','\r\n').encode('ascii'))
-tc=os.environ.get('DOS_TOOLCHAIN',str(root / 'toolchain'))
+tc=os.environ.get('DOS_TOOLCHAIN',str(root / 'buildenv'))
 env=dict(os.environ,SDL_VIDEODRIVER='dummy',SDL_AUDIODRIVER='dummy')
 def execute(exe, commands, extra=()):
     args=[exe,'-conf',str(root/'tools/dosbox.conf')]+list(extra)
