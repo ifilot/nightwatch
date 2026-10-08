@@ -1,0 +1,77 @@
+Nightwatch is a two-pane file navigator for MS-DOS.
+Use the keyboard to browse, view and manage your files.
+
+#NAVIGATION
+Tab                 Switch between the two panels.
+Up / Down           Select the previous / next entry.
+Home / End          Select the first / last entry.
+PgUp / PgDn         Move through the directory a page at a time.
+Enter               Open a directory or file; run a typed command.
+Backspace           Go to parent if the command line is empty.
+Ctrl-R              Refresh the current directory.
+F9                  Change the panel path or drive.
+
+#SELECTING FILES
+Insert / Space      Mark or unmark the selected entry.
++ / -               Mark all entries / clear all marks.
+Ctrl-F              Find a filename using a pattern.
+Ctrl-P / Ctrl-N     Mark / unmark entries matching a pattern.
+Patterns use * for any sequence and ? for one character.
+Use marked entries, or the current entry if none are marked.
+
+#FILE OPERATIONS
+F5                  Copy files and directories.
+F6                  Move or rename files and directories.
+F7                  Create a directory.
+F8                  Delete recursively, after confirmation.
+Copy and move destinations must be absolute DOS paths.
+For several marked entries, choose an existing directory.
+Existing directories merge; existing files ask what to do.
+O overwrites, S skips, and Esc cancels the operation.
+
+#COPY PROGRESS AND CANCELLATION
+Before copying, Nightwatch counts every file and its size,
+including files in subfolders. Esc can cancel this scan.
+The dialog shows completed / total files and skipped files,
+current-file bytes, file progress and overall progress.
+Skipped files also advance overall progress.
+KiB/s shows the recent speed; time left is for the current file.
+Speed and time show -- until a sample is available.
+Esc cancels between transfer blocks or directory entries.
+The unfinished copy is removed; completed files remain.
+Timestamps and file attributes are preserved.
+
+#VIEWING AND EDITING
+F3                  Open the text viewer.
+Shift-F3            Open the hex viewer.
+F4                  Open the external editor.
+In a viewer: arrows and PgUp/PgDn scroll; Home/End jump.
+Viewer F4           Switch between text and hex views.
+Viewer F7           Search for text or binary bytes.
+Viewer F8           Find the next occurrence.
+Viewer Ctrl-G       Go to a byte offset (decimal or 0x hex).
+Search text directly, or use hex:DE AD 00 BE EF for bytes.
+Esc closes the viewer and returns to the panels.
+
+#TOOLS AND SETTINGS
+F2                  Choose text, CGA, EGA or VGA display mode.
+Ctrl-S              Choose the panel's sorting order.
+Ctrl-O              Open a DOS shell; EXIT returns to Nightwatch.
+Ctrl-W              Save mode, paths and sorting to NIGHT.CFG.
+F1 / Alt-F1         Open Help / About.
+F10                 Quit Nightwatch.
+Type a command and press Enter to run it in DOS.
+
+#DOS LIMITS
+Names use DOS 8.3 format. Hidden and system files are shown.
+Dates are displayed as MM-DD-YY.
+Panels hold 512 entries; [LIMIT] reports omitted entries.
+Recursive operations include entries beyond this panel limit.
+Operations support up to 32 nested levels and 127-byte paths.
+A copy selection can contain up to 4,294,967,295 bytes.
+Read-only files are preserved and cannot be deleted directly.
+
+#ABOUT AND LICENSES
+A in Help opens About with version and license information.
+Nightwatch is licensed under GPLv3; see LICENSE.TXT.
+The embedded Spleen fonts use BSD-2-Clause; see FONTLIC.TXT.

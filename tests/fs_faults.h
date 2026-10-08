@@ -8,4 +8,6 @@
 void fs_test_reset(void);
 void fs_test_fail(const char *operation, const char *suffix, unsigned call);
 extern int fs_test_cross_drive;
+extern int fs_test_copy_alloc_fail, fs_test_copy_allocations;
+extern unsigned fs_test_copy_size;
 #endif

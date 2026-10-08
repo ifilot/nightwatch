@@ -48,6 +48,7 @@ static void no_artifacts(const char *root)
     DIR *dir = opendir(root);
     struct dirent *e;
     assert(dir);
+    assert(!fs_test_copy_allocations);
     while ((e = readdir(dir)) != NULL)
         assert(!strstr(e->d_name,".TMP") && !strstr(e->d_name,".NEW") && !strstr(e->d_name,".BAK"));
     closedir(dir);
@@ -68,7 +69,7 @@ int main(void)
     const char *boundaries[] = {"create", "read", "write", "close", "stamp", "attr", "rename_to", "rename_from"};
     const char *suffixes[] = {"", "", "", "", "", ".TMP", ".BAK", ".NEW"};
     Entry old;
-    unsigned i;
+    unsigned i, allocation;
     unsigned long files, bytes;
     assert(mkdtemp(root));
     assert(path_join(src,root,"SOURCE.BIN")); assert(path_join(dst,root,"TARGET.BIN"));
@@ -78,11 +79,15 @@ int main(void)
     put(src,replacement,sizeof(replacement)); put(dst,original,sizeof(original));
     assert(fs_attr(dst,NW_READONLY)); assert(fs_info(dst,&old));
     operation_conflict = overwrite;
-    for (i = 0; i < sizeof(boundaries)/sizeof(boundaries[0]); ++i) {
-        fs_test_fail(boundaries[i],suffixes[i],1);
-        assert(!tree_copy(src,dst,1)); fs_test_reset();
-        original_metadata(dst,&old); exact(src,replacement,sizeof(replacement)); no_artifacts(root);
+    for (allocation = 0; allocation < 2; ++allocation) {
+        fs_test_copy_alloc_fail = allocation;
+        for (i = 0; i < sizeof(boundaries)/sizeof(boundaries[0]); ++i) {
+            fs_test_fail(boundaries[i],suffixes[i],1);
+            assert(!tree_copy(src,dst,1)); fs_test_reset();
+            original_metadata(dst,&old); exact(src,replacement,sizeof(replacement)); no_artifacts(root);
+        }
     }
+    fs_test_copy_alloc_fail = 0;
     operation_progress = cancel;
     assert(!tree_copy(src,dst,1)); operation_progress = NULL;
     original_metadata(dst,&old); exact(src,replacement,sizeof(replacement)); no_artifacts(root);

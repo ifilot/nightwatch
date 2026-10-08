@@ -139,7 +139,7 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
                         'github.com/ifilot/nightwatch', commit):
             assert caption in help_text, ('help metadata', caption)
     else:
-        # Native help contains shaded cards and a title distinct from the desktop.
+        # Native Help contains a document viewport and fixed modal chrome.
         assert images[1].tobytes() != images[0].tobytes()
     # Full/partial binary rows and empty files, using actual text VRAM.
     page_bytes = (27 if mode == 'vga' else 22) * 16

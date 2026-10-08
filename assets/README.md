@@ -16,6 +16,12 @@ are explicitly represented by a question mark, rather than masking bit 7.
 Run `make assets` after editing a bitmap or upgrading a vendored font.
 No download or external font file is needed to build or run NIGHT.EXE.
 
+`help.txt` contains the embedded Help document. Lines are limited to 66
+characters so they fit every graphical viewport; `#` marks a regular-weight
+section heading. `make assets` generates `src/HELP.H` and appends the document
+and its line-offset table to the immutable font segment in `src/FONT.ASM`.
+This keeps the documentation outside the small-model data segment.
+
 Nightwatch code and the original icons are GPL-3.0-only (see ../LICENSE).
 The vendored Spleen fonts and derived glyph data retain BSD-2-Clause licensing.
 

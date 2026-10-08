@@ -154,6 +154,22 @@ int fs_read_open(const char *path);
 int fs_create(const char *path);
 int fs_read(int fd, void *data, unsigned count);
 int fs_write(int fd, const void *data, unsigned count);
+/* Copy-only storage can live outside the small-model data segment. Keep the
+ * original allocation for freeing and a normalized pointer for DOS I/O. */
+#ifdef __TURBOC__
+#define NW_FAR far
+#else
+#define NW_FAR
+#endif
+typedef struct {
+    void NW_FAR *allocation;
+    char NW_FAR *data;
+    unsigned size;
+} FsCopyBuffer;
+void fs_copy_buffer_init(FsCopyBuffer *buffer, void *fallback, unsigned size);
+void fs_copy_buffer_free(FsCopyBuffer *buffer);
+int fs_copy_read(int fd, FsCopyBuffer *buffer);
+int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count);
 int fs_close(int fd);
 /* Set the open output file timestamp from packed DOS words; fs_attr sets final
  * path attributes after closing. Both return nonzero on success.

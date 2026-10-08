@@ -584,6 +584,420 @@ font_8_16 label byte
     db 000h,038h,04ch,00ch,038h,060h,07ch,000h,000h,000h,000h,000h,000h,000h,000h,000h
     db 000h,000h,000h,000h,07ch,07ch,07ch,07ch,07ch,07ch,07ch,000h,000h,000h,000h,000h
     db 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+help_offsets label word
+    dw offset help_0
+    dw offset help_1
+    dw offset help_2
+    dw offset help_3
+    dw offset help_4
+    dw offset help_5
+    dw offset help_6
+    dw offset help_7
+    dw offset help_8
+    dw offset help_9
+    dw offset help_10
+    dw offset help_11
+    dw offset help_12
+    dw offset help_13
+    dw offset help_14
+    dw offset help_15
+    dw offset help_16
+    dw offset help_17
+    dw offset help_18
+    dw offset help_19
+    dw offset help_20
+    dw offset help_21
+    dw offset help_22
+    dw offset help_23
+    dw offset help_24
+    dw offset help_25
+    dw offset help_26
+    dw offset help_27
+    dw offset help_28
+    dw offset help_29
+    dw offset help_30
+    dw offset help_31
+    dw offset help_32
+    dw offset help_33
+    dw offset help_34
+    dw offset help_35
+    dw offset help_36
+    dw offset help_37
+    dw offset help_38
+    dw offset help_39
+    dw offset help_40
+    dw offset help_41
+    dw offset help_42
+    dw offset help_43
+    dw offset help_44
+    dw offset help_45
+    dw offset help_46
+    dw offset help_47
+    dw offset help_48
+    dw offset help_49
+    dw offset help_50
+    dw offset help_51
+    dw offset help_52
+    dw offset help_53
+    dw offset help_54
+    dw offset help_55
+    dw offset help_56
+    dw offset help_57
+    dw offset help_58
+    dw offset help_59
+    dw offset help_60
+    dw offset help_61
+    dw offset help_62
+    dw offset help_63
+    dw offset help_64
+    dw offset help_65
+    dw offset help_66
+    dw offset help_67
+    dw offset help_68
+    dw offset help_69
+    dw offset help_70
+    dw offset help_71
+    dw offset help_72
+    dw offset help_73
+    dw offset help_74
+    dw offset help_75
+    dw offset help_76
+help_0 label byte
+    db 04eh,069h,067h,068h,074h,077h,061h,074h,063h,068h,020h,069h,073h,020h,061h,020h
+    db 074h,077h,06fh,02dh,070h,061h,06eh,065h,020h,066h,069h,06ch,065h,020h,06eh,061h
+    db 076h,069h,067h,061h,074h,06fh,072h,020h,066h,06fh,072h,020h,04dh,053h,02dh,044h
+    db 04fh,053h,02eh,000h
+help_1 label byte
+    db 055h,073h,065h,020h,074h,068h,065h,020h,06bh,065h,079h,062h,06fh,061h,072h,064h
+    db 020h,074h,06fh,020h,062h,072h,06fh,077h,073h,065h,02ch,020h,076h,069h,065h,077h
+    db 020h,061h,06eh,064h,020h,06dh,061h,06eh,061h,067h,065h,020h,079h,06fh,075h,072h
+    db 020h,066h,069h,06ch,065h,073h,02eh,000h
+help_2 label byte
+    db 000h
+help_3 label byte
+    db 023h,04eh,041h,056h,049h,047h,041h,054h,049h,04fh,04eh,000h
+help_4 label byte
+    db 054h,061h,062h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,053h,077h,069h,074h,063h,068h,020h,062h,065h,074h,077h,065h
+    db 065h,06eh,020h,074h,068h,065h,020h,074h,077h,06fh,020h,070h,061h,06eh,065h,06ch
+    db 073h,02eh,000h
+help_5 label byte
+    db 055h,070h,020h,02fh,020h,044h,06fh,077h,06eh,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,053h,065h,06ch,065h,063h,074h,020h,074h,068h,065h,020h,070h
+    db 072h,065h,076h,069h,06fh,075h,073h,020h,02fh,020h,06eh,065h,078h,074h,020h,065h
+    db 06eh,074h,072h,079h,02eh,000h
+help_6 label byte
+    db 048h,06fh,06dh,065h,020h,02fh,020h,045h,06eh,064h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,053h,065h,06ch,065h,063h,074h,020h,074h,068h,065h,020h,066h
+    db 069h,072h,073h,074h,020h,02fh,020h,06ch,061h,073h,074h,020h,065h,06eh,074h,072h
+    db 079h,02eh,000h
+help_7 label byte
+    db 050h,067h,055h,070h,020h,02fh,020h,050h,067h,044h,06eh,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04dh,06fh,076h,065h,020h,074h,068h,072h,06fh,075h,067h,068h
+    db 020h,074h,068h,065h,020h,064h,069h,072h,065h,063h,074h,06fh,072h,079h,020h,061h
+    db 020h,070h,061h,067h,065h,020h,061h,074h,020h,061h,020h,074h,069h,06dh,065h,02eh
+    db 000h
+help_8 label byte
+    db 045h,06eh,074h,065h,072h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,061h,020h,064h,069h,072h,065h,063h
+    db 074h,06fh,072h,079h,020h,06fh,072h,020h,066h,069h,06ch,065h,03bh,020h,072h,075h
+    db 06eh,020h,061h,020h,074h,079h,070h,065h,064h,020h,063h,06fh,06dh,06dh,061h,06eh
+    db 064h,02eh,000h
+help_9 label byte
+    db 042h,061h,063h,06bh,073h,070h,061h,063h,065h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,047h,06fh,020h,074h,06fh,020h,070h,061h,072h,065h,06eh,074h
+    db 020h,069h,066h,020h,074h,068h,065h,020h,063h,06fh,06dh,06dh,061h,06eh,064h,020h
+    db 06ch,069h,06eh,065h,020h,069h,073h,020h,065h,06dh,070h,074h,079h,02eh,000h
+help_10 label byte
+    db 043h,074h,072h,06ch,02dh,052h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,052h,065h,066h,072h,065h,073h,068h,020h,074h,068h,065h,020h
+    db 063h,075h,072h,072h,065h,06eh,074h,020h,064h,069h,072h,065h,063h,074h,06fh,072h
+    db 079h,02eh,000h
+help_11 label byte
+    db 046h,039h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,043h,068h,061h,06eh,067h,065h,020h,074h,068h,065h,020h,070h
+    db 061h,06eh,065h,06ch,020h,070h,061h,074h,068h,020h,06fh,072h,020h,064h,072h,069h
+    db 076h,065h,02eh,000h
+help_12 label byte
+    db 000h
+help_13 label byte
+    db 023h,053h,045h,04ch,045h,043h,054h,049h,04eh,047h,020h,046h,049h,04ch,045h,053h
+    db 000h
+help_14 label byte
+    db 049h,06eh,073h,065h,072h,074h,020h,02fh,020h,053h,070h,061h,063h,065h,020h,020h
+    db 020h,020h,020h,020h,04dh,061h,072h,06bh,020h,06fh,072h,020h,075h,06eh,06dh,061h
+    db 072h,06bh,020h,074h,068h,065h,020h,073h,065h,06ch,065h,063h,074h,065h,064h,020h
+    db 065h,06eh,074h,072h,079h,02eh,000h
+help_15 label byte
+    db 02bh,020h,02fh,020h,02dh,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04dh,061h,072h,06bh,020h,061h,06ch,06ch,020h,065h,06eh,074h
+    db 072h,069h,065h,073h,020h,02fh,020h,063h,06ch,065h,061h,072h,020h,061h,06ch,06ch
+    db 020h,06dh,061h,072h,06bh,073h,02eh,000h
+help_16 label byte
+    db 043h,074h,072h,06ch,02dh,046h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,046h,069h,06eh,064h,020h,061h,020h,066h,069h,06ch,065h,06eh
+    db 061h,06dh,065h,020h,075h,073h,069h,06eh,067h,020h,061h,020h,070h,061h,074h,074h
+    db 065h,072h,06eh,02eh,000h
+help_17 label byte
+    db 043h,074h,072h,06ch,02dh,050h,020h,02fh,020h,043h,074h,072h,06ch,02dh,04eh,020h
+    db 020h,020h,020h,020h,04dh,061h,072h,06bh,020h,02fh,020h,075h,06eh,06dh,061h,072h
+    db 06bh,020h,065h,06eh,074h,072h,069h,065h,073h,020h,06dh,061h,074h,063h,068h,069h
+    db 06eh,067h,020h,061h,020h,070h,061h,074h,074h,065h,072h,06eh,02eh,000h
+help_18 label byte
+    db 050h,061h,074h,074h,065h,072h,06eh,073h,020h,075h,073h,065h,020h,02ah,020h,066h
+    db 06fh,072h,020h,061h,06eh,079h,020h,073h,065h,071h,075h,065h,06eh,063h,065h,020h
+    db 061h,06eh,064h,020h,03fh,020h,066h,06fh,072h,020h,06fh,06eh,065h,020h,063h,068h
+    db 061h,072h,061h,063h,074h,065h,072h,02eh,000h
+help_19 label byte
+    db 055h,073h,065h,020h,06dh,061h,072h,06bh,065h,064h,020h,065h,06eh,074h,072h,069h
+    db 065h,073h,02ch,020h,06fh,072h,020h,074h,068h,065h,020h,063h,075h,072h,072h,065h
+    db 06eh,074h,020h,065h,06eh,074h,072h,079h,020h,069h,066h,020h,06eh,06fh,06eh,065h
+    db 020h,061h,072h,065h,020h,06dh,061h,072h,06bh,065h,064h,02eh,000h
+help_20 label byte
+    db 000h
+help_21 label byte
+    db 023h,046h,049h,04ch,045h,020h,04fh,050h,045h,052h,041h,054h,049h,04fh,04eh,053h
+    db 000h
+help_22 label byte
+    db 046h,035h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,043h,06fh,070h,079h,020h,066h,069h,06ch,065h,073h,020h,061h
+    db 06eh,064h,020h,064h,069h,072h,065h,063h,074h,06fh,072h,069h,065h,073h,02eh,000h
+help_23 label byte
+    db 046h,036h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04dh,06fh,076h,065h,020h,06fh,072h,020h,072h,065h,06eh,061h
+    db 06dh,065h,020h,066h,069h,06ch,065h,073h,020h,061h,06eh,064h,020h,064h,069h,072h
+    db 065h,063h,074h,06fh,072h,069h,065h,073h,02eh,000h
+help_24 label byte
+    db 046h,037h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,043h,072h,065h,061h,074h,065h,020h,061h,020h,064h,069h,072h
+    db 065h,063h,074h,06fh,072h,079h,02eh,000h
+help_25 label byte
+    db 046h,038h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,044h,065h,06ch,065h,074h,065h,020h,072h,065h,063h,075h,072h
+    db 073h,069h,076h,065h,06ch,079h,02ch,020h,061h,066h,074h,065h,072h,020h,063h,06fh
+    db 06eh,066h,069h,072h,06dh,061h,074h,069h,06fh,06eh,02eh,000h
+help_26 label byte
+    db 043h,06fh,070h,079h,020h,061h,06eh,064h,020h,06dh,06fh,076h,065h,020h,064h,065h
+    db 073h,074h,069h,06eh,061h,074h,069h,06fh,06eh,073h,020h,06dh,075h,073h,074h,020h
+    db 062h,065h,020h,061h,062h,073h,06fh,06ch,075h,074h,065h,020h,044h,04fh,053h,020h
+    db 070h,061h,074h,068h,073h,02eh,000h
+help_27 label byte
+    db 046h,06fh,072h,020h,073h,065h,076h,065h,072h,061h,06ch,020h,06dh,061h,072h,06bh
+    db 065h,064h,020h,065h,06eh,074h,072h,069h,065h,073h,02ch,020h,063h,068h,06fh,06fh
+    db 073h,065h,020h,061h,06eh,020h,065h,078h,069h,073h,074h,069h,06eh,067h,020h,064h
+    db 069h,072h,065h,063h,074h,06fh,072h,079h,02eh,000h
+help_28 label byte
+    db 045h,078h,069h,073h,074h,069h,06eh,067h,020h,064h,069h,072h,065h,063h,074h,06fh
+    db 072h,069h,065h,073h,020h,06dh,065h,072h,067h,065h,03bh,020h,065h,078h,069h,073h
+    db 074h,069h,06eh,067h,020h,066h,069h,06ch,065h,073h,020h,061h,073h,06bh,020h,077h
+    db 068h,061h,074h,020h,074h,06fh,020h,064h,06fh,02eh,000h
+help_29 label byte
+    db 04fh,020h,06fh,076h,065h,072h,077h,072h,069h,074h,065h,073h,02ch,020h,053h,020h
+    db 073h,06bh,069h,070h,073h,02ch,020h,061h,06eh,064h,020h,045h,073h,063h,020h,063h
+    db 061h,06eh,063h,065h,06ch,073h,020h,074h,068h,065h,020h,06fh,070h,065h,072h,061h
+    db 074h,069h,06fh,06eh,02eh,000h
+help_30 label byte
+    db 000h
+help_31 label byte
+    db 023h,043h,04fh,050h,059h,020h,050h,052h,04fh,047h,052h,045h,053h,053h,020h,041h
+    db 04eh,044h,020h,043h,041h,04eh,043h,045h,04ch,04ch,041h,054h,049h,04fh,04eh,000h
+help_32 label byte
+    db 042h,065h,066h,06fh,072h,065h,020h,063h,06fh,070h,079h,069h,06eh,067h,02ch,020h
+    db 04eh,069h,067h,068h,074h,077h,061h,074h,063h,068h,020h,063h,06fh,075h,06eh,074h
+    db 073h,020h,065h,076h,065h,072h,079h,020h,066h,069h,06ch,065h,020h,061h,06eh,064h
+    db 020h,069h,074h,073h,020h,073h,069h,07ah,065h,02ch,000h
+help_33 label byte
+    db 069h,06eh,063h,06ch,075h,064h,069h,06eh,067h,020h,066h,069h,06ch,065h,073h,020h
+    db 069h,06eh,020h,073h,075h,062h,066h,06fh,06ch,064h,065h,072h,073h,02eh,020h,045h
+    db 073h,063h,020h,063h,061h,06eh,020h,063h,061h,06eh,063h,065h,06ch,020h,074h,068h
+    db 069h,073h,020h,073h,063h,061h,06eh,02eh,000h
+help_34 label byte
+    db 054h,068h,065h,020h,064h,069h,061h,06ch,06fh,067h,020h,073h,068h,06fh,077h,073h
+    db 020h,063h,06fh,06dh,070h,06ch,065h,074h,065h,064h,020h,02fh,020h,074h,06fh,074h
+    db 061h,06ch,020h,066h,069h,06ch,065h,073h,020h,061h,06eh,064h,020h,073h,06bh,069h
+    db 070h,070h,065h,064h,020h,066h,069h,06ch,065h,073h,02ch,000h
+help_35 label byte
+    db 063h,075h,072h,072h,065h,06eh,074h,02dh,066h,069h,06ch,065h,020h,062h,079h,074h
+    db 065h,073h,02ch,020h,066h,069h,06ch,065h,020h,070h,072h,06fh,067h,072h,065h,073h
+    db 073h,020h,061h,06eh,064h,020h,06fh,076h,065h,072h,061h,06ch,06ch,020h,070h,072h
+    db 06fh,067h,072h,065h,073h,073h,02eh,000h
+help_36 label byte
+    db 053h,06bh,069h,070h,070h,065h,064h,020h,066h,069h,06ch,065h,073h,020h,061h,06ch
+    db 073h,06fh,020h,061h,064h,076h,061h,06eh,063h,065h,020h,06fh,076h,065h,072h,061h
+    db 06ch,06ch,020h,070h,072h,06fh,067h,072h,065h,073h,073h,02eh,000h
+help_37 label byte
+    db 04bh,069h,042h,02fh,073h,020h,073h,068h,06fh,077h,073h,020h,074h,068h,065h,020h
+    db 072h,065h,063h,065h,06eh,074h,020h,073h,070h,065h,065h,064h,03bh,020h,074h,069h
+    db 06dh,065h,020h,06ch,065h,066h,074h,020h,069h,073h,020h,066h,06fh,072h,020h,074h
+    db 068h,065h,020h,063h,075h,072h,072h,065h,06eh,074h,020h,066h,069h,06ch,065h,02eh
+    db 000h
+help_38 label byte
+    db 053h,070h,065h,065h,064h,020h,061h,06eh,064h,020h,074h,069h,06dh,065h,020h,073h
+    db 068h,06fh,077h,020h,02dh,02dh,020h,075h,06eh,074h,069h,06ch,020h,061h,020h,073h
+    db 061h,06dh,070h,06ch,065h,020h,069h,073h,020h,061h,076h,061h,069h,06ch,061h,062h
+    db 06ch,065h,02eh,000h
+help_39 label byte
+    db 045h,073h,063h,020h,063h,061h,06eh,063h,065h,06ch,073h,020h,062h,065h,074h,077h
+    db 065h,065h,06eh,020h,074h,072h,061h,06eh,073h,066h,065h,072h,020h,062h,06ch,06fh
+    db 063h,06bh,073h,020h,06fh,072h,020h,064h,069h,072h,065h,063h,074h,06fh,072h,079h
+    db 020h,065h,06eh,074h,072h,069h,065h,073h,02eh,000h
+help_40 label byte
+    db 054h,068h,065h,020h,075h,06eh,066h,069h,06eh,069h,073h,068h,065h,064h,020h,063h
+    db 06fh,070h,079h,020h,069h,073h,020h,072h,065h,06dh,06fh,076h,065h,064h,03bh,020h
+    db 063h,06fh,06dh,070h,06ch,065h,074h,065h,064h,020h,066h,069h,06ch,065h,073h,020h
+    db 072h,065h,06dh,061h,069h,06eh,02eh,000h
+help_41 label byte
+    db 054h,069h,06dh,065h,073h,074h,061h,06dh,070h,073h,020h,061h,06eh,064h,020h,066h
+    db 069h,06ch,065h,020h,061h,074h,074h,072h,069h,062h,075h,074h,065h,073h,020h,061h
+    db 072h,065h,020h,070h,072h,065h,073h,065h,072h,076h,065h,064h,02eh,000h
+help_42 label byte
+    db 000h
+help_43 label byte
+    db 023h,056h,049h,045h,057h,049h,04eh,047h,020h,041h,04eh,044h,020h,045h,044h,049h
+    db 054h,049h,04eh,047h,000h
+help_44 label byte
+    db 046h,033h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,074h,068h,065h,020h,074h,065h,078h
+    db 074h,020h,076h,069h,065h,077h,065h,072h,02eh,000h
+help_45 label byte
+    db 053h,068h,069h,066h,074h,02dh,046h,033h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,074h,068h,065h,020h,068h,065h,078h
+    db 020h,076h,069h,065h,077h,065h,072h,02eh,000h
+help_46 label byte
+    db 046h,034h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,074h,068h,065h,020h,065h,078h,074h
+    db 065h,072h,06eh,061h,06ch,020h,065h,064h,069h,074h,06fh,072h,02eh,000h
+help_47 label byte
+    db 049h,06eh,020h,061h,020h,076h,069h,065h,077h,065h,072h,03ah,020h,061h,072h,072h
+    db 06fh,077h,073h,020h,061h,06eh,064h,020h,050h,067h,055h,070h,02fh,050h,067h,044h
+    db 06eh,020h,073h,063h,072h,06fh,06ch,06ch,03bh,020h,048h,06fh,06dh,065h,02fh,045h
+    db 06eh,064h,020h,06ah,075h,06dh,070h,02eh,000h
+help_48 label byte
+    db 056h,069h,065h,077h,065h,072h,020h,046h,034h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,053h,077h,069h,074h,063h,068h,020h,062h,065h,074h,077h,065h
+    db 065h,06eh,020h,074h,065h,078h,074h,020h,061h,06eh,064h,020h,068h,065h,078h,020h
+    db 076h,069h,065h,077h,073h,02eh,000h
+help_49 label byte
+    db 056h,069h,065h,077h,065h,072h,020h,046h,037h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,053h,065h,061h,072h,063h,068h,020h,066h,06fh,072h,020h,074h
+    db 065h,078h,074h,020h,06fh,072h,020h,062h,069h,06eh,061h,072h,079h,020h,062h,079h
+    db 074h,065h,073h,02eh,000h
+help_50 label byte
+    db 056h,069h,065h,077h,065h,072h,020h,046h,038h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,046h,069h,06eh,064h,020h,074h,068h,065h,020h,06eh,065h,078h
+    db 074h,020h,06fh,063h,063h,075h,072h,072h,065h,06eh,063h,065h,02eh,000h
+help_51 label byte
+    db 056h,069h,065h,077h,065h,072h,020h,043h,074h,072h,06ch,02dh,047h,020h,020h,020h
+    db 020h,020h,020h,020h,047h,06fh,020h,074h,06fh,020h,061h,020h,062h,079h,074h,065h
+    db 020h,06fh,066h,066h,073h,065h,074h,020h,028h,064h,065h,063h,069h,06dh,061h,06ch
+    db 020h,06fh,072h,020h,030h,078h,020h,068h,065h,078h,029h,02eh,000h
+help_52 label byte
+    db 053h,065h,061h,072h,063h,068h,020h,074h,065h,078h,074h,020h,064h,069h,072h,065h
+    db 063h,074h,06ch,079h,02ch,020h,06fh,072h,020h,075h,073h,065h,020h,068h,065h,078h
+    db 03ah,044h,045h,020h,041h,044h,020h,030h,030h,020h,042h,045h,020h,045h,046h,020h
+    db 066h,06fh,072h,020h,062h,079h,074h,065h,073h,02eh,000h
+help_53 label byte
+    db 045h,073h,063h,020h,063h,06ch,06fh,073h,065h,073h,020h,074h,068h,065h,020h,076h
+    db 069h,065h,077h,065h,072h,020h,061h,06eh,064h,020h,072h,065h,074h,075h,072h,06eh
+    db 073h,020h,074h,06fh,020h,074h,068h,065h,020h,070h,061h,06eh,065h,06ch,073h,02eh
+    db 000h
+help_54 label byte
+    db 000h
+help_55 label byte
+    db 023h,054h,04fh,04fh,04ch,053h,020h,041h,04eh,044h,020h,053h,045h,054h,054h,049h
+    db 04eh,047h,053h,000h
+help_56 label byte
+    db 046h,032h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,043h,068h,06fh,06fh,073h,065h,020h,074h,065h,078h,074h,02ch
+    db 020h,043h,047h,041h,02ch,020h,045h,047h,041h,020h,06fh,072h,020h,056h,047h,041h
+    db 020h,064h,069h,073h,070h,06ch,061h,079h,020h,06dh,06fh,064h,065h,02eh,000h
+help_57 label byte
+    db 043h,074h,072h,06ch,02dh,053h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,043h,068h,06fh,06fh,073h,065h,020h,074h,068h,065h,020h,070h
+    db 061h,06eh,065h,06ch,027h,073h,020h,073h,06fh,072h,074h,069h,06eh,067h,020h,06fh
+    db 072h,064h,065h,072h,02eh,000h
+help_58 label byte
+    db 043h,074h,072h,06ch,02dh,04fh,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,061h,020h,044h,04fh,053h,020h,073h
+    db 068h,065h,06ch,06ch,03bh,020h,045h,058h,049h,054h,020h,072h,065h,074h,075h,072h
+    db 06eh,073h,020h,074h,06fh,020h,04eh,069h,067h,068h,074h,077h,061h,074h,063h,068h
+    db 02eh,000h
+help_59 label byte
+    db 043h,074h,072h,06ch,02dh,057h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,053h,061h,076h,065h,020h,06dh,06fh,064h,065h,02ch,020h,070h
+    db 061h,074h,068h,073h,020h,061h,06eh,064h,020h,073h,06fh,072h,074h,069h,06eh,067h
+    db 020h,074h,06fh,020h,04eh,049h,047h,048h,054h,02eh,043h,046h,047h,02eh,000h
+help_60 label byte
+    db 046h,031h,020h,02fh,020h,041h,06ch,074h,02dh,046h,031h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,048h,065h,06ch,070h,020h,02fh,020h
+    db 041h,062h,06fh,075h,074h,02eh,000h
+help_61 label byte
+    db 046h,031h,030h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
+    db 020h,020h,020h,020h,051h,075h,069h,074h,020h,04eh,069h,067h,068h,074h,077h,061h
+    db 074h,063h,068h,02eh,000h
+help_62 label byte
+    db 054h,079h,070h,065h,020h,061h,020h,063h,06fh,06dh,06dh,061h,06eh,064h,020h,061h
+    db 06eh,064h,020h,070h,072h,065h,073h,073h,020h,045h,06eh,074h,065h,072h,020h,074h
+    db 06fh,020h,072h,075h,06eh,020h,069h,074h,020h,069h,06eh,020h,044h,04fh,053h,02eh
+    db 000h
+help_63 label byte
+    db 000h
+help_64 label byte
+    db 023h,044h,04fh,053h,020h,04ch,049h,04dh,049h,054h,053h,000h
+help_65 label byte
+    db 04eh,061h,06dh,065h,073h,020h,075h,073h,065h,020h,044h,04fh,053h,020h,038h,02eh
+    db 033h,020h,066h,06fh,072h,06dh,061h,074h,02eh,020h,048h,069h,064h,064h,065h,06eh
+    db 020h,061h,06eh,064h,020h,073h,079h,073h,074h,065h,06dh,020h,066h,069h,06ch,065h
+    db 073h,020h,061h,072h,065h,020h,073h,068h,06fh,077h,06eh,02eh,000h
+help_66 label byte
+    db 044h,061h,074h,065h,073h,020h,061h,072h,065h,020h,064h,069h,073h,070h,06ch,061h
+    db 079h,065h,064h,020h,061h,073h,020h,04dh,04dh,02dh,044h,044h,02dh,059h,059h,02eh
+    db 000h
+help_67 label byte
+    db 050h,061h,06eh,065h,06ch,073h,020h,068h,06fh,06ch,064h,020h,035h,031h,032h,020h
+    db 065h,06eh,074h,072h,069h,065h,073h,03bh,020h,05bh,04ch,049h,04dh,049h,054h,05dh
+    db 020h,072h,065h,070h,06fh,072h,074h,073h,020h,06fh,06dh,069h,074h,074h,065h,064h
+    db 020h,065h,06eh,074h,072h,069h,065h,073h,02eh,000h
+help_68 label byte
+    db 052h,065h,063h,075h,072h,073h,069h,076h,065h,020h,06fh,070h,065h,072h,061h,074h
+    db 069h,06fh,06eh,073h,020h,069h,06eh,063h,06ch,075h,064h,065h,020h,065h,06eh,074h
+    db 072h,069h,065h,073h,020h,062h,065h,079h,06fh,06eh,064h,020h,074h,068h,069h,073h
+    db 020h,070h,061h,06eh,065h,06ch,020h,06ch,069h,06dh,069h,074h,02eh,000h
+help_69 label byte
+    db 04fh,070h,065h,072h,061h,074h,069h,06fh,06eh,073h,020h,073h,075h,070h,070h,06fh
+    db 072h,074h,020h,075h,070h,020h,074h,06fh,020h,033h,032h,020h,06eh,065h,073h,074h
+    db 065h,064h,020h,06ch,065h,076h,065h,06ch,073h,020h,061h,06eh,064h,020h,031h,032h
+    db 037h,02dh,062h,079h,074h,065h,020h,070h,061h,074h,068h,073h,02eh,000h
+help_70 label byte
+    db 041h,020h,063h,06fh,070h,079h,020h,073h,065h,06ch,065h,063h,074h,069h,06fh,06eh
+    db 020h,063h,061h,06eh,020h,063h,06fh,06eh,074h,061h,069h,06eh,020h,075h,070h,020h
+    db 074h,06fh,020h,034h,02ch,032h,039h,034h,02ch,039h,036h,037h,02ch,032h,039h,035h
+    db 020h,062h,079h,074h,065h,073h,02eh,000h
+help_71 label byte
+    db 052h,065h,061h,064h,02dh,06fh,06eh,06ch,079h,020h,066h,069h,06ch,065h,073h,020h
+    db 061h,072h,065h,020h,070h,072h,065h,073h,065h,072h,076h,065h,064h,020h,061h,06eh
+    db 064h,020h,063h,061h,06eh,06eh,06fh,074h,020h,062h,065h,020h,064h,065h,06ch,065h
+    db 074h,065h,064h,020h,064h,069h,072h,065h,063h,074h,06ch,079h,02eh,000h
+help_72 label byte
+    db 000h
+help_73 label byte
+    db 023h,041h,042h,04fh,055h,054h,020h,041h,04eh,044h,020h,04ch,049h,043h,045h,04eh
+    db 053h,045h,053h,000h
+help_74 label byte
+    db 041h,020h,069h,06eh,020h,048h,065h,06ch,070h,020h,06fh,070h,065h,06eh,073h,020h
+    db 041h,062h,06fh,075h,074h,020h,077h,069h,074h,068h,020h,076h,065h,072h,073h,069h
+    db 06fh,06eh,020h,061h,06eh,064h,020h,06ch,069h,063h,065h,06eh,073h,065h,020h,069h
+    db 06eh,066h,06fh,072h,06dh,061h,074h,069h,06fh,06eh,02eh,000h
+help_75 label byte
+    db 04eh,069h,067h,068h,074h,077h,061h,074h,063h,068h,020h,069h,073h,020h,06ch,069h
+    db 063h,065h,06eh,073h,065h,064h,020h,075h,06eh,064h,065h,072h,020h,047h,050h,04ch
+    db 076h,033h,03bh,020h,073h,065h,065h,020h,04ch,049h,043h,045h,04eh,053h,045h,02eh
+    db 054h,058h,054h,02eh,000h
+help_76 label byte
+    db 054h,068h,065h,020h,065h,06dh,062h,065h,064h,064h,065h,064h,020h,053h,070h,06ch
+    db 065h,065h,06eh,020h,066h,06fh,06eh,074h,073h,020h,075h,073h,065h,020h,042h,053h
+    db 044h,02dh,032h,02dh,043h,06ch,061h,075h,073h,065h,03bh,020h,073h,065h,065h,020h
+    db 046h,04fh,04eh,054h,04ch,049h,043h,02eh,054h,058h,054h,02eh,000h
 FONTDATA ends
 _TEXT segment byte public 'CODE'
 assume cs:_TEXT
@@ -605,5 +1019,24 @@ font_done:
 pop bp
 ret
 _asset_font endp
+; Help index at BP+4; preserve DS/BX and return FONTDATA pointer in DX:AX.
+assume ds:FONTDATA
+public _asset_help
+_asset_help proc near
+push bp
+mov bp,sp
+push bx
+push ds
+mov ax,seg help_offsets
+mov ds,ax
+mov bx,[bp+4]
+shl bx,1
+mov ax,help_offsets[bx]
+mov dx,ds
+pop ds
+pop bx
+pop bp
+ret
+_asset_help endp
 _TEXT ends
 end

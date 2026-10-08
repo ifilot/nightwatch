@@ -11,7 +11,16 @@
 #include <unistd.h>
 #include <dirent.h>
 #include "NW.H"
+#include "fs_faults.h"
 extern int test_short_write, test_write_fail, test_read_fail, test_stamp_fail, test_list_calls, test_commit_fail;
+static unsigned long last_copy_done, largest_copy_chunk;
+static int observe_copy(const char *path, unsigned long done, unsigned long total)
+{
+    unsigned long chunk = done - last_copy_done;
+    (void)path; (void)total;
+    if (chunk > largest_copy_chunk) largest_copy_chunk = chunk;
+    last_copy_done = done; return 1;
+}
 static void assert_no_temps(const char *path)
 {
     DIR *d = opendir(path);
@@ -51,6 +60,26 @@ int main(void)
     fd = fs_create(a); assert(fd >= 0);
     assert(fs_write(fd, data, sizeof(data)) == sizeof(data)); assert(fs_close(fd) == 0);
     assert(fs_info(a, &source));
+    /* Exercise multi-block/tail copies and short writes with both allocation
+     * outcomes. Allocation failure must be a transparent, byte-exact fallback. */
+    for (i = 0; i < 2; ++i) {
+        fs_test_copy_alloc_fail = i;
+        last_copy_done = largest_copy_chunk = 0;
+        operation_progress = observe_copy; test_short_write = 1;
+        assert(file_copy(a, b));
+        operation_progress = NULL; test_short_write = 0;
+        assert(fs_test_copy_size == (i ? 2048 : 16384));
+        assert(largest_copy_chunk == fs_test_copy_size);
+        assert(last_copy_done == sizeof(data) && !fs_test_copy_allocations);
+        fd = fs_read_open(b); assert(fd >= 0);
+        assert(fs_read(fd, got, sizeof(got)) == sizeof(got)); assert(!fs_close(fd));
+        assert(!memcmp(data, got, sizeof(data))); assert(fs_delete(b, 0));
+        operation_progress = cancel_copy;
+        assert(!file_copy(a, b)); operation_progress = NULL;
+        assert(!fs_info(b, &copy) && !fs_test_copy_allocations);
+        assert_no_temps(root);
+    }
+    fs_test_copy_alloc_fail = 0;
     test_short_write = 1;
     assert(file_copy(a, b));
     test_short_write = 0;

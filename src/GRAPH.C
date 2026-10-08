@@ -4,6 +4,7 @@
 #include <string.h>
 #include "VIDEO.H"
 #include "GRAPH.H"
+#include "HELP.H"
 /* Every supported graph_rows() result must fit this painted-row capacity.
  * Current CGA/EGA/VGA layouts expose 18/21/24 rows respectively. */
 #define MAX_VISIBLE 24
@@ -31,66 +32,92 @@ static void outline(int x, int y, int width, int height, unsigned color)
 }
 /* Solid pixel tracks replace character bars only in graphics modes. Cell
  * overlay rows use BIOS spacing, independently of the desktop font metrics. */
-void graph_progress(int row, unsigned percent)
+void graph_progress(int row, unsigned percent, unsigned previous, int reset)
 {
     int h = video_height / video_rows - 2, x = 120;
-    int y = row * (video_height / video_rows) + 1, fill;
+    int y = row * (video_height / video_rows) + 1, fill, old;
     int black_white = video_mode == VIDEO_CGA;
     if (percent > 100) percent = 100;
+    if (previous > 100) previous = 100;
     fill = (318 * percent) / 100;
-    video_rect(x, y, 320, h, black_white ? 0 : 8);
-    video_rect(x + 1, y + 1, 318, h - 2, black_white ? 15 : 7);
-    if (!black_white) {
-        line(x, y + h - 1, 320, 15);
-        video_rect(x + 319, y, 1, h, 15);
+    old = reset ? 0 : (318 * previous) / 100;
+    if (reset) {
+        video_rect(x, y, 320, h, black_white ? 0 : 8);
+        video_rect(x + 1, y + 1, 318, h - 2, black_white ? 15 : 7);
+        if (!black_white) {
+            line(x, y + h - 1, 320, 15);
+            video_rect(x + 319, y, 1, h, 15);
+        }
     }
-    if (fill) {
-        video_rect(x + 1, y + 1, fill, h - 2, black_white ? 0 : 1);
-        if (!black_white) line(x + 1, y + 1, fill, 9);
+    if (fill > old) {
+        video_rect(x + 1 + old, y + 1, fill - old, h - 2, black_white ? 0 : 1);
+        if (!black_white) line(x + 1 + old, y + 1, fill - old, 9);
+    } else if (fill < old) {
+        /* A new current file can shrink the fill; its surviving portion and
+         * the frame remain untouched. Overall progress normally only grows. */
+        video_rect(x + 1 + fill, y + 1, old - fill, h - 2, black_white ? 15 : 7);
     }
 }
-/* Four compact reference cards fit the 200-line CGA display as well as the
- * taller adapters. One shared string table keeps the small-model data bounded. */
-static void help_card(int x, int y, const char *title,
-                      const char * const *lines, int count)
+/* The document lives with the immutable fonts, outside DGROUP. Copy only
+ * the visible line into near memory for the existing text primitives. */
+void help_line(unsigned index, char *out)
 {
-    int i, f = video_font_height, width = 280;
-    unsigned edge = video_mode == VIDEO_CGA ? 0 : 8;
-    video_rect(x, y, width, f + 2 + count * (f + 1) + 4, 15);
-    outline(x, y, width, f + 2 + count * (f + 1) + 4, edge);
-    video_rect(x + 1, y + 1, width - 2, f + 2, video_mode == VIDEO_CGA ? 15 : 7);
-    video_label(x + 6, y + 2, title, video_mode == VIDEO_CGA ? 0 : 1,
-                video_mode == VIDEO_CGA ? 15 : 7, 1);
-    for (i = 0; i < count; ++i)
-        video_label(x + 6, y + f + 5 + i * (f + 1), lines[i], 0, 15, 0);
+    const char NW_FAR *source = asset_help(index);
+    unsigned i = 0;
+    while (i < HELP_WIDTH && source[i]) { out[i] = source[i]; ++i; }
+    out[i] = 0;
+}
+int graph_help_rows(void)
+{
+    int f = video_font_height;
+    return (14 * f - 4) / (f + 2);
 }
 void graph_help(const char *version, const char *commit, const char *repository,
-                const char * const *lines)
+                unsigned first, int full)
 {
     int f = video_font_height, height = f * 17 + 52;
-    int x = 18, y = (video_height - height) / 2, body, second;
+    int x = 18, y = (video_height - height) / 2, body = y + f * 2 + 24;
+    int rows = graph_help_rows(), i, heading, length, columns = 548 / video_font_width;
+    int track_x = x + 574, track_y = body + 4, track_h = rows * (f + 2);
+    int thumb_h = track_h * rows / HELP_LINES, thumb_y;
     unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
     unsigned title = video_mode == VIDEO_CGA ? 0 : 1;
-    char text[80];
+    char text[96];
     video_overlay_begin(0);
-    video_rect(x + 3, y + 3, 604, height, 0);
-    video_rect(x, y, 604, height, bg); outline(x, y, 604, height, 0);
-    line(x + 1, y + 1, 602, 15);
-    video_rect(x + 2, y + 2, 600, f + 6, title);
-    video_icon(x + 10, y + 3, ICON_DRIVE, video_mode == VIDEO_CGA ? 0 : 7, 15, 15);
-    sprintf(text, "Nightwatch %s", version);
-    video_label(x + 32, y + 4, text, 15, title, 1);
-    video_label(x + 550, y + 4, "HELP", 15, title, 1);
-    video_label(x + 14, y + f + 14, repository, 0, bg, 0);
-    sprintf(text, "Commit: %s", commit);
-    video_label(x + 330, y + f + 14, text, 0, bg, 0);
-    body = y + f * 2 + 24; second = body + (f + 1) * 7;
-    help_card(x + 14, body, "NAVIGATION", lines, 5);
-    help_card(x + 310, body, "FILES", lines + 5, 5);
-    help_card(x + 14, second, "VIEWER", lines + 10, 4);
-    help_card(x + 310, second, "TOOLS", lines + 14, 4);
-    line(x + 14, y + height - f - 15, 576, video_mode == VIDEO_CGA ? 0 : 8);
-    video_label(x + 14, y + height - f - 8, "A About | Any other key returns", 0, bg, 0);
+    if (full) {
+        video_rect(x + 3, y + 3, 604, height, 0);
+        video_rect(x, y, 604, height, bg); outline(x, y, 604, height, 0);
+        line(x + 1, y + 1, 602, 15);
+        video_rect(x + 2, y + 2, 600, f + 6, title);
+        video_icon(x + 10, y + 3, ICON_DRIVE, video_mode == VIDEO_CGA ? 0 : 7, 15, 15);
+        sprintf(text, "Nightwatch %s", version);
+        video_label(x + 32, y + 4, text, 15, title, 0);
+        video_label(x + 550, y + 4, "HELP", 15, title, 0);
+        video_label(x + 14, y + f + 14, repository, 0, bg, 0);
+        sprintf(text, "Commit: %s", commit);
+        video_label(x + 330, y + f + 14, text, 0, bg, 0);
+        video_rect(x + 14, body, 576, rows * (f + 2) + 8, 15);
+        outline(x + 14, body, 576, rows * (f + 2) + 8, video_mode == VIDEO_CGA ? 0 : 8);
+        line(x + 14, y + height - f - 15, 576, video_mode == VIDEO_CGA ? 0 : 8);
+        video_label(x + 14, y + height - f - 8,
+                    "Up/Down PgUp/PgDn Home/End | Esc closes | A About", 0, bg, 0);
+    }
+    for (i = 0; i < rows; ++i) {
+        if (first + i < HELP_LINES) help_line(first + i, text);
+        else text[0] = 0;
+        heading = text[0] == '#';
+        if (heading) memmove(text, text + 1, strlen(text));
+        length = strlen(text);
+        while (length < columns) text[length++] = ' ';
+        text[length] = 0;
+        video_label(x + 22, body + 4 + i * (f + 2), text,
+                    heading ? title : 0, heading ? bg : 15, 0);
+    }
+    if (thumb_h < 6) thumb_h = 6;
+    thumb_y = track_y + (track_h - thumb_h) * first / (HELP_LINES - rows);
+    video_rect(track_x, track_y, 10, track_h, bg);
+    outline(track_x, track_y, 10, track_h, video_mode == VIDEO_CGA ? 0 : 8);
+    video_rect(track_x + 2, thumb_y + 1, 6, thumb_h - 2, title);
 }
 /* Compact per-adapter fonts and margins preserve listing density. These
  * metrics also determine graph_rows(), so navigation and painting agree on

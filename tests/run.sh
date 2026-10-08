@@ -7,6 +7,14 @@ python3 tools/version.py --check
 # Host builds enforce the DOS language subset and exercise memory/error paths
 # under sanitizers. Hardware-specific VIDEO.C/MAIN.C compile in the DOS suite.
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -Isrc -fsyntax-only src/GRAPH.C
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -Isrc \
+    -ffunction-sections -fdata-sections -Wl,--gc-sections \
+    src/GRAPH.C tests/test_progress.c -o build/test_progress
+build/test_progress
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -Isrc \
+    -ffunction-sections -fdata-sections -Wl,--gc-sections \
+    src/GRAPH.C tests/test_help.c -o build/test_help
+build/test_help
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc \
     -fsanitize=address,undefined -fno-omit-frame-pointer -g \
     src/CORE.C tests/fs_host.c tests/test_core.c -o build/test_core

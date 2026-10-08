@@ -8,6 +8,12 @@ changes without a release tag are marked unreleased.
 
 ### Added
 
+- Scrollable embedded Help documentation with regular-weight headings, a
+  graphical scrollbar, and fixed version/repository/commit details.
+- Incremental graphical progress-bar updates that retain the existing fill and
+  frame, avoiding the clear-and-repaint flash during copying.
+- A 16 KiB conventional far-memory copy buffer, with automatic 2 KiB fallback
+  when memory is scarce, retaining cancellation and safe replacement behavior.
 - Solid graphical copy-progress bars with shaded tracks, grouped graphical Help
   with repository/version/build-commit details, and an original perspective
   hard-drive icon for panel paths.

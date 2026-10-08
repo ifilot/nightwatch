@@ -122,6 +122,28 @@ int fs_write(int fd, const void *p, unsigned n)
     if (test_short_write && n > 7) n = 7;
     return write(fd, p, n);
 }
+int fs_test_copy_alloc_fail, fs_test_copy_allocations;
+unsigned fs_test_copy_size;
+void fs_copy_buffer_init(FsCopyBuffer *buffer, void *fallback, unsigned size)
+{
+    buffer->allocation = fs_test_copy_alloc_fail ? NULL : malloc(16384);
+    buffer->data = buffer->allocation ? buffer->allocation : fallback;
+    buffer->size = buffer->allocation ? 16384 : size;
+    fs_test_copy_size = buffer->size;
+    if (buffer->allocation) ++fs_test_copy_allocations;
+}
+void fs_copy_buffer_free(FsCopyBuffer *buffer)
+{
+    int saved = errno;
+    if (buffer->allocation) --fs_test_copy_allocations;
+    free(buffer->allocation); buffer->allocation = NULL;
+    errno = saved;
+}
+int fs_copy_read(int fd, FsCopyBuffer *buffer) { return fs_read(fd, buffer->data, buffer->size); }
+int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count)
+{
+    return fs_write(fd, buffer->data + offset, count);
+}
 /* Close the real descriptor even when returning an injected failure, so fault
  * tests do not leak handles while checking the caller commit decision.
  */

@@ -9,10 +9,20 @@
 #undef assert
 #define assert(x) do { if (!(x)) { printf("FAIL line %d: %s: %s\n", __LINE__, #x, nw_error); exit(1); } } while (0)
 #include <dir.h>
+#include <alloc.h>
 #include "NW.H"
 #include "VIEW.H"
 unsigned _stklen = 8192;
 static unsigned char data[17003], result[1024];
+static void far *reservations[64];
+static unsigned long last_copy_done, largest_copy_chunk;
+static int observe_copy(const char *path, unsigned long done, unsigned long total)
+{
+    unsigned long chunk = done - last_copy_done;
+    (void)path; (void)total;
+    if (chunk > largest_copy_chunk) largest_copy_chunk = chunk;
+    last_copy_done = done; return 1;
+}
 static int overwrite(const char *src, const char *dst)
 {
     (void)src; (void)dst; return 1;
@@ -36,7 +46,9 @@ int main(void)
     for (i = 0; i < sizeof(data); ++i) data[i] = i;
     fd = fs_create(a); assert(fd >= 0);
     assert(fs_write(fd, data, sizeof(data)) == sizeof(data)); assert(!fs_close(fd));
-    assert(fs_info(a, &e)); assert(file_copy(a, b));
+    assert(fs_info(a, &e)); operation_progress = observe_copy;
+    assert(file_copy(a, b)); operation_progress = NULL;
+    assert(largest_copy_chunk == 16384UL && last_copy_done == sizeof(data));
     assert(fs_info(b, &f) && e.date == f.date && e.time == f.time);
     fd = fs_read_open(b); assert(fd >= 0);
     at = 0;
@@ -44,6 +56,24 @@ int main(void)
         assert(!memcmp(data + at, result, n)); at += n;
     }
     assert(n == 0 && at == sizeof(data)); fs_close(fd);
+    assert(fs_delete(b, 0));
+    /* Exhaust actual conventional far memory, rather than compiling away the
+     * allocation path. The next copy must fall back to its near-data buffer. */
+    for (i = 0; i < 64; ++i) {
+        reservations[i] = farmalloc(16384UL);
+        if (!reservations[i]) break;
+    }
+    assert(i < 64);
+    last_copy_done = largest_copy_chunk = 0; operation_progress = observe_copy;
+    assert(file_copy(a, b)); operation_progress = NULL;
+    assert(largest_copy_chunk == 2048UL && last_copy_done == sizeof(data));
+    while (i) farfree(reservations[--i]);
+    fd = fs_read_open(b); assert(fd >= 0); at = 0;
+    while ((n = fs_read(fd, result, sizeof(result))) > 0) {
+        assert(!memcmp(data + at, result, n)); at += n;
+    }
+    assert(n == 0 && at == sizeof(data)); assert(!fs_close(fd));
+    puts("PASS: far-buffer copy and low-memory fallback are byte-exact on DOS");
     /* Case-insensitive final names must not collide with internal temporaries. */
     assert(path_join(sub,root,"nw0000.tmp")); assert(file_copy(a,sub));
     assert(path_join(b,root,"NW0001.TMP")); assert(file_copy(a,b));

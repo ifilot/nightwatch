@@ -80,7 +80,7 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     keys += [8,0x3f00,13,0x3f00,13,ord('o'),9,6] + text('TREE') + [0x4200,ord('y'),23,0x4400]
     script(work, keys)
     # Slow this copy fixture enough for BIOS-timed intermediate bar samples.
-    dos(work, r'UITEST /'+mode+r' D:\LEFT D:\RIGHT', machine, cycles=3000 if mode == 'vga' else 20000)
+    dos(work, r'UITEST /'+mode+r' D:\LEFT D:\RIGHT', machine, cycles=3000)
     assert (work/'RIGHT/BETA.BIN').read_bytes() == content
     assert (work/'RIGHT/ALPHA.TXT').read_bytes() == b'alpha\r\n'
     assert not (work/'RIGHT/TREE').exists()

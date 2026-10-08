@@ -5,6 +5,7 @@
  * handle I/O avoids text-mode CR/LF conversion and Ctrl-Z end-of-file rules.
  */
 #include <dos.h>
+#include <alloc.h>
 #include <dir.h>
 #include <io.h>
 #include <fcntl.h>
@@ -124,6 +125,55 @@ int fs_read(int fd, void *data, unsigned count) { return read(fd, data, count); 
 /* Return bytes written, which may be fewer than count; callers complete
  * short writes and treat zero as failure when data remains. */
 int fs_write(int fd, const void *data, unsigned count) { return write(fd, data, count); }
+/* Turbo C owns the remaining conventional memory through its far heap.
+ * Normalize DS:DX so a complete 16 KiB transfer cannot wrap a segment. */
+void fs_copy_buffer_init(FsCopyBuffer *buffer, void *fallback, unsigned size)
+{
+    unsigned offset;
+    buffer->allocation = farmalloc(16384UL);
+    buffer->data = fallback; buffer->size = size;
+    if (buffer->allocation) {
+        offset = FP_OFF(buffer->allocation);
+        buffer->data = MK_FP(FP_SEG(buffer->allocation) + (offset >> 4), offset & 15);
+        buffer->size = 16384;
+    }
+}
+void fs_copy_buffer_free(FsCopyBuffer *buffer)
+{
+    int saved = errno;
+    if (buffer->allocation) farfree(buffer->allocation);
+    buffer->allocation = NULL;
+    errno = saved;
+}
+/* The ordinary C read/write functions accept near pointers in this model.
+ * Copy buffers instead use DOS handle I/O with an explicit far DS:DX. DOS
+ * file errors here map to the same C errno values used by the other wrappers. */
+static int copy_io(int fd, void far *data, unsigned count, unsigned function)
+{
+    union REGS r;
+    struct SREGS s;
+    segread(&s); s.ds = FP_SEG(data);
+    r.x.ax = function; r.x.bx = fd; r.x.cx = count; r.x.dx = FP_OFF(data);
+    intdosx(&r, &r, &s);
+    if (!r.x.cflag) return r.x.ax;
+    _doserrno = r.x.ax;
+    switch (r.x.ax) {
+        case 5: errno = EACCES; break;
+        case 6: errno = EBADF; break;
+        case 8: errno = ENOMEM; break;
+        case 19: errno = EROFS; break;
+        default: errno = EIO; break;
+    }
+    return -1;
+}
+int fs_copy_read(int fd, FsCopyBuffer *buffer)
+{
+    return copy_io(fd, buffer->data, buffer->size, 0x3f00);
+}
+int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count)
+{
+    return copy_io(fd, buffer->data + offset, count, 0x4000);
+}
 /* Close a DOS handle; preserve the C-library zero-success convention. */
 int fs_close(int fd) { return close(fd); }
 /* Set the open file timestamp with INT 21h/AH=57h, AL=01h.  CX holds

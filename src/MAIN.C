@@ -17,6 +17,7 @@
 #include "NW.H"
 #include "VIDEO.H"
 #include "GRAPH.H"
+#include "HELP.H"
 #include "BUILD.H"
 #include "HEX.H"
 #include "VIEW.H"
@@ -43,6 +44,8 @@ static char startup[NW_PATH];
 static unsigned pending_keys[16];
 static unsigned pending_head, pending_count;
 static int copy_progress, counting, force_progress;
+static int copy_dialog;
+static unsigned copy_generation, file_percent, overall_percent;
 static unsigned long total_files, total_bytes;
 static unsigned long sample_tick, paint_tick, sample_bytes, transfer_rate;
 static unsigned long shown_files, shown_skipped, last_total;
@@ -274,12 +277,20 @@ static void progress_bar(int row, const char *label, unsigned long done,
             fraction(done, total, 100));
     video_text(5, row, line, COLOR_DIALOG);
 }
+/* Pad changing fields in the cell buffer before its differential flush, so
+ * shorter paths/rates do not leave old characters behind. Avoid the bar rows. */
+static void progress_text(int row, const char *text)
+{
+    video_fill(5, row, 70, ' ', COLOR_DIALOG);
+    video_text(5, row, text, COLOR_DIALOG);
+}
 /* Poll every transfer block, retaining unrelated keys. Painting and rate samples
  * use BIOS time so slow disks update without repeatedly repainting on an 8088. */
 static int operation_ui(const char *path, unsigned long done, unsigned long total)
 {
     unsigned long now = (unsigned long)biostime(0, 0L), elapsed, bytes, seconds, rate_base;
-    int changed = strcmp(progress_path, path) != 0, y, i;
+    int changed = strcmp(progress_path, path) != 0, y, i, reset = 0;
+    unsigned current, overall;
     char line[100], eta[32];
     while (bioskey(1)) {
         unsigned key = bioskey(0);
@@ -309,32 +320,38 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
     if (force_progress || (changed && !counting) || shown_files != operation_files ||
         shown_skipped != operation_skipped || tick_elapsed(now, paint_tick) >= 4) {
         if (counting) {
+            copy_dialog = 0;
             sprintf(line, "%.70s", path);
             dialog("Counting files - Esc cancels", line);
             sprintf(line, "%lu files; %lu bytes found", total_files, total_bytes);
             video_text(5, video_rows / 2 + 1, line, COLOR_DIALOG);
         } else if (!copy_progress) {
+            copy_dialog = 0;
             dialog("File operation - Esc cancels", path);
             sprintf(line, "%lu / %lu bytes; %lu completed, %lu skipped", done, total,
                     operation_files, operation_skipped);
             video_text(5, video_rows / 2 + 1, line, COLOR_DIALOG);
         } else {
             y = video_rows / 2 - 5;
+            reset = !copy_dialog || copy_generation != video_generation();
             video_overlay_begin(0);
-            for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
-            frame(3, y, 74, 11, COLOR_DIALOG);
-            video_text(5, y + 1, "Copying - Esc cancels", COLOR_DIALOG);
+            if (reset) {
+                for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
+                frame(3, y, 74, 11, COLOR_DIALOG);
+                video_text(5, y + 1, "Copying - Esc cancels", COLOR_DIALOG);
+            }
+            copy_dialog = 1; copy_generation = video_generation();
             /* Keep long DOS paths inside the dialog border. */
-            sprintf(line, "%.70s", path); video_text(5, y + 2, line, COLOR_DIALOG);
+            sprintf(line, "%.70s", path); progress_text(y + 2, line);
             sprintf(line, "Files: %lu / %lu completed; %lu skipped",
                     operation_files, total_files, operation_skipped);
-            video_text(5, y + 3, line, COLOR_DIALOG);
+            progress_text(y + 3, line);
             progress_bar(y + 4, "File", done, total);
             if (total_bytes)
                 progress_bar(y + 5, "Overall", operation_bytes + operation_current_bytes, total_bytes);
             else progress_bar(y + 5, "Overall", operation_files + operation_skipped, total_files);
             sprintf(line, "%lu / %lu bytes", done, total);
-            video_text(5, y + 6, line, COLOR_DIALOG);
+            progress_text(y + 6, line);
             strcpy(eta, "--");
             if (transfer_rate) {
                 bytes = done < total ? total - done : 0;
@@ -343,16 +360,19 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
                 sprintf(line, "%lu.%lu KiB/s   Time left: %s", transfer_rate / 1024,
                         (transfer_rate % 1024) * 10 / 1024, eta);
             } else strcpy(line, "-- KiB/s   Time left: --");
-            video_text(5, y + 7, line, COLOR_DIALOG);
+            progress_text(y + 7, line);
             sprintf(line, "Overall: %lu / %lu bytes processed", operation_bytes + operation_current_bytes, total_bytes);
-            video_text(5, y + 8, line, COLOR_DIALOG);
+            progress_text(y + 8, line);
         }
         video_flush();
         if (copy_progress && !counting && video_mode != VIDEO_TEXT) {
-            graph_progress(y + 4, fraction(done, total, 100));
-            graph_progress(y + 5, total_bytes ?
+            current = fraction(done, total, 100);
+            overall = total_bytes ?
                 fraction(operation_bytes + operation_current_bytes, total_bytes, 100) :
-                fraction(operation_files + operation_skipped, total_files, 100));
+                fraction(operation_files + operation_skipped, total_files, 100);
+            graph_progress(y + 4, current, file_percent, reset);
+            graph_progress(y + 5, overall, overall_percent, reset);
+            file_percent = current; overall_percent = overall;
         }
         paint_tick = now;
         shown_files = operation_files; shown_skipped = operation_skipped;
@@ -368,6 +388,7 @@ static int conflict_ui(const char *src, const char *dst)
 {
     int k;
     (void)src;
+    copy_dialog = 0;
     dialog("Destination exists", dst);
     video_text(5, video_rows / 2 + 1, "O overwrite | S skip | Esc cancel", COLOR_DIALOG);
     video_flush(); k = key_read();
@@ -385,6 +406,7 @@ static void begin_operation(void)
     operation_files = operation_skipped = 0;
     operation_bytes = operation_current_bytes = operation_transferred = 0;
     copy_progress = counting = 0; total_files = total_bytes = 0;
+    copy_dialog = 0;
     progress_path[0] = 0; force_progress = 1;
     sample_tick = paint_tick = (unsigned long)biostime(0, 0L);
     sample_bytes = transfer_rate = shown_files = shown_skipped = 0;
@@ -498,46 +520,53 @@ static void about(void)
     video_text(15, y + 9, "Press any key to return", COLOR_DIALOG);
     video_flush(); key_read();
 }
-/* Show full-screen keyboard help; A opens About over a restored desktop.
- */
+/* Scroll the same documentation in a native modal or text screen. The title,
+ * repository, revision and controls remain fixed while the body moves. */
 static void help(void)
 {
-    static const char *lines[] = {
-        "Tab  Switch panes",
-        "Arrows/Home/End/PgUp/PgDn",
-        "Enter  Open / run command",
-        "Backspace  Parent directory",
-        "Ins/Space Mark; + all, - clear",
-        "F5 Copy  F6 Move  F7 Mkdir",
-        "F8 Delete  F9 Path  F10 Quit",
-        "Ctrl-F Find  Ctrl-P/N Mark/unmark",
-        "Filename patterns: * and ?",
-        "O Overwrite  S Skip  Esc Cancel",
-        "F3 Text  Shift-F3 Hex  F4 Edit",
-        "Viewer F4 Text/hex  F7 Search",
-        "F8 Next  Ctrl-G Byte offset",
-        "ASCII or hex:DE AD 00 BE EF",
-        "F2 Display mode  Ctrl-S Sort",
-        "Ctrl-R Refresh  Ctrl-O Shell",
-        "Ctrl-W Save NIGHT.CFG",
-        "Esc cancels; completed work remains"
-    };
-    unsigned i;
-    int key;
-    if (video_mode != VIDEO_TEXT)
-        graph_help(NW_VERSION_TAG, NW_BUILD_COMMIT, NW_REPOSITORY, lines);
-    else {
-        video_overlay_begin(1); video_clear(COLOR_NORMAL);
-        video_text(2, 1, "Nightwatch " NW_VERSION_TAG " - Keyboard help", COLOR_TITLE);
-        video_text(2, 2, NW_REPOSITORY, COLOR_ACTIVE);
-        video_text(2, 3, "Commit: " NW_BUILD_COMMIT, COLOR_ACTIVE);
-        for (i = 0; i < sizeof(lines)/sizeof(lines[0]); ++i)
-            video_text(2, i + 5, lines[i], COLOR_ACTIVE);
-        video_text(2, 24, "A About; any other key returns", COLOR_TITLE);
-        video_flush();
+    char text[HELP_WIDTH + 1], line[80];
+    int first = 0, next, rows = video_mode == VIDEO_TEXT ? 18 : graph_help_rows();
+    int key, i, full = 1, heading;
+    for (;;) {
+        if (video_mode != VIDEO_TEXT)
+            graph_help(NW_VERSION_TAG, NW_BUILD_COMMIT, NW_REPOSITORY, first, full);
+        else {
+            if (full) {
+                video_overlay_begin(1); video_clear(COLOR_NORMAL);
+                video_text(2, 1, "Nightwatch " NW_VERSION_TAG " - Help", COLOR_TITLE);
+                video_text(2, 2, NW_REPOSITORY, COLOR_ACTIVE);
+                video_text(2, 3, "Commit: " NW_BUILD_COMMIT, COLOR_ACTIVE);
+                video_text(2, 24, "Up/Down PgUp/PgDn Home/End | Esc closes | A About", COLOR_TITLE);
+            }
+            for (i = 0; i < rows; ++i) {
+                if (first + i < HELP_LINES) help_line(first + i, text);
+                else text[0] = 0;
+                heading = text[0] == '#';
+                video_fill(2, i + 5, 76, ' ', COLOR_NORMAL);
+                video_text(2, i + 5, text + heading, heading ? COLOR_MARKED : COLOR_ACTIVE);
+            }
+            sprintf(line, "Lines %u-%u of %u", first + 1, first + rows, HELP_LINES);
+            video_fill(2, 23, 76, ' ', COLOR_NORMAL);
+            video_text(2, 23, line, COLOR_TITLE); video_flush();
+        }
+        full = 0;
+        do {
+            key = key_read(); next = first;
+            if (key == 27 || key == KEY_F1 || key == 'q' || key == 'Q') return;
+            if (key == 'a' || key == 'A') { draw(); about(); return; }
+            switch (key) {
+                case 0x4800: --next; break;
+                case 0x5000: ++next; break;
+                case 0x4900: next -= rows - 1; break;
+                case 0x5100: next += rows - 1; break;
+                case 0x4700: next = 0; break;
+                case 0x4f00: next = HELP_LINES - rows; break;
+            }
+            if (next < 0) next = 0;
+            if (next > HELP_LINES - rows) next = HELP_LINES - rows;
+        } while (next == first);
+        first = next;
     }
-    key = key_read();
-    if (key == 'a' || key == 'A') { draw(); about(); }
 }
 /* Return the selected entry, or NULL for an empty pane. Drawing clamps the cursor.
  */

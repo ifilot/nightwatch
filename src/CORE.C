@@ -272,6 +272,7 @@ int file_copy(const char *src, const char *dst)
     char tmp[NW_PATH], dir[NW_PATH], name[13];
     char *cut;
     int in, out = -1, n, i, ok = 1;
+    FsCopyBuffer buffer;
     unsigned long copied = 0;
     if (!fs_info(src, &source)) { fs_error("Read source"); return 0; }
     if (source.attr & NW_DIR) { strcpy(nw_error, "Directory copy is not supported; enter the directory first"); return 0; }
@@ -295,11 +296,12 @@ int file_copy(const char *src, const char *dst)
         if (!fs_info(tmp, &exists)) break;
     }
     if (out < 0) { fs_close(in); fs_error("Create temporary file"); return 0; }
+    fs_copy_buffer_init(&buffer, copy_buffer, sizeof(copy_buffer));
     /* A short write is legal: finish this block before reading another. */
-    while ((n = fs_read(in, copy_buffer, sizeof(copy_buffer))) > 0) {
+    while ((n = fs_copy_read(in, &buffer)) > 0) {
         int at = 0, written;
         while (at < n) {
-            written = fs_write(out, copy_buffer + at, n - at);
+            written = fs_copy_write(out, &buffer, at, n - at);
             if (written <= 0) { ok = 0; break; }
             at += written;
         }
@@ -311,6 +313,7 @@ int file_copy(const char *src, const char *dst)
     }
     /* ok is 1 for success, 0 for I/O failure, -1 for user cancellation. */
     if (n < 0 && ok == 1) ok = 0;
+    fs_copy_buffer_free(&buffer);
     /* Stamp the still-open handle; closing can itself reveal a write error. */
     if (ok == 1 && !fs_stamp(out, &source)) ok = 0;
     if (fs_close(out) < 0 && ok == 1) ok = 0;

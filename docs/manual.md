@@ -96,10 +96,16 @@ external font or icon files.
 | Ctrl-O | Open DOS shell; `EXIT` returns to the navigator |
 | Esc | Clear command line / cancel dialog |
 
-Help uses a grouped reference window in graphics modes and lists the repository,
-program version and build commit in every display mode. A `-dirty` suffix means
+Help presents scrollable documentation with regular-weight headings. Up/Down
+scroll one line, PgUp/PgDn scroll a page, and Home/End jump to the beginning/end.
+Esc, F1 or Q closes Help; A opens About. The graphical modal keeps its title,
+repository, version, build commit and controls fixed around the document.
+Text mode offers the same documentation and controls. A `-dirty` suffix means
 the build includes uncommitted changes; source exports without Git show
 `unknown`. The build refreshes this information automatically.
+The document is embedded with the fonts outside the 64 KiB data segment;
+no external help file is required. Edit `assets/help.txt` and run `make assets`
+to regenerate it. Authored lines are checked against the narrowest viewport.
 
 Prompts accept Enter, Escape and Ctrl-U (clear). Copy/move targets must be
 absolute DOS paths; multiple marked entries require an existing destination
@@ -120,7 +126,10 @@ files are copied until the scan succeeds. Directories do not count as files.
 Totals are limited to 4,294,967,295 bytes; larger selections report an error.
 The copy dialog shows completed/total files, skipped files, current-file bytes,
 and separate file and overall progress bars in every display mode. Graphics
-modes use solid pixel bars with inset tracks; text mode uses character bars. Overall
+modes use solid pixel bars with inset tracks; text mode uses character bars.
+Graphical updates paint only the added fill, keeping the existing fill and
+frame in place. Tracks are rebuilt when the dialog opens or resumes after an
+overwrite prompt; the current-file fill resets when the next file starts. Overall
 progress includes skipped bytes, so all resolved files advance the bar.
 For selections containing only empty files it advances by resolved file count.
 A smoothed recent transfer rate appears in KiB/s with estimated time remaining
@@ -135,6 +144,19 @@ levels and 127-byte paths, with an explicit error. Read-only files are preserved
 and are not automatically made writable for deletion. File timestamps and
 file/directory DOS attributes are preserved; directory timestamps are not
 copied. Returning to a parent reselects the directory just left.
+
+Copying uses a 16 KiB buffer allocated in conventional far memory, outside the
+64 KiB data segment. If allocation fails, it uses the existing 2 KiB buffer.
+Escape is checked after each transferred block; progress remains based on bytes
+successfully written. No extended or expanded memory is required.
+
+`make benchmark-copy` compares 2, 8 and 16 KiB buffers on DOSBox-X's 8086 core
+at 3,000 cycles, checking copied bytes, transfer-block counts and cancellation
+cleanup. An initial run copying three 1 MiB files took 19, 15 and 14 BIOS ticks
+respectively, with 1,536, 384 and 192 blocks. These are coarse emulator timings
+on a cached host drive; they measure CPU/DOS overhead, not physical disk seeks
+or expected throughput on real hardware. Cancellation is checked after at most
+one additional block, whose I/O duration depends on the drive.
 
 Both viewers offer **F7** search, **F8** next match and **Ctrl-G** byte-offset
 jump. Search accepts case-insensitive literal ASCII or exact binary patterns

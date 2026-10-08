@@ -1,5 +1,5 @@
 ; SPDX-License-Identifier: GPL-3.0-only
-; Test-only INT 21h observer: inject BIOS keys at the first 2 KB file write.
+; Test-only INT 21h observer: inject BIOS keys at the first copy-block write.
 ; Preserve all registers and chain directly to the original DOS handler.
 .8086
 .MODEL SMALL
@@ -23,14 +23,17 @@ _cancel_count PROC NEAR
     mov ax,cs:injected
     ret
 _cancel_count ENDP
-; INT 21h AH=40h, CX=2048 identifies a transfer-block write. Inject once
+; INT 21h AH=40h, CX=2048 or 16384 identifies a transfer-block write. Inject once
 ; without calling DOS recursively; tail-chain with the original entry flags.
 _cancel_hook PROC FAR
     pushf
     cmp ah,40h
     jne chain
     cmp cx,2048
+    je transfer
+    cmp cx,16384
     jne chain
+transfer:
     cmp WORD PTR cs:injected,0
     jne chain
     mov WORD PTR cs:injected,1

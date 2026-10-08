@@ -39,7 +39,7 @@ jumps; an external editor and DOS shell are also available.
 
 | CGA | VGA |
 | --- | --- |
-| <img src="docs/screenshots/help-cga.png" width="400" alt="CGA keyboard help with navigation, files, viewer and tools sections"> | <img src="docs/screenshots/help-vga.png" width="400" alt="VGA help window showing the repository, version and build commit"> |
+| <img src="docs/screenshots/help-cga.png" width="400" alt="CGA scrollable documentation with regular headings"> | <img src="docs/screenshots/help-vga.png" width="400" alt="VGA scrollable Help with fixed repository, version and build commit"> |
 
 </details>
 
@@ -106,6 +106,7 @@ make test                               # host regression tests + sanitizers
 make test-dos                           # DOS filesystem tests on FAT12
 make test-video                         # all display modes + BIOS/8086 checks
 make screenshots                        # test and refresh README captures
+make benchmark-copy                     # compare copy buffer sizes on 8086
 make package                            # build/dist/ release files
 ```
 
