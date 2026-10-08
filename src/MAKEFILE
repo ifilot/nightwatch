@@ -5,8 +5,8 @@ CFLAGS=-1- -ms -O -Z -w -IC:\TC\INCLUDE -LC:\TC\LIB
 
 # -1- disables 80186 instructions; -ms keeps code/data near except the explicitly
 # far immutable font segment. Staging removes objects before linking *.OBJ.
-NIGHT.EXE: MAIN.OBJ CORE.OBJ FSDOS.OBJ VIDEO.OBJ GRAPH.OBJ HEX.OBJ VIEW.OBJ FONT.OBJ
-	$(CC) $(CFLAGS) -M -eNIGHT.EXE *.OBJ
+NW.EXE: MAIN.OBJ CORE.OBJ FSDOS.OBJ VIDEO.OBJ GRAPH.OBJ HEX.OBJ VIEW.OBJ FONT.OBJ
+	$(CC) $(CFLAGS) -M -eNW.EXE *.OBJ
 
 MAIN.OBJ: MAIN.C NW.H VERSION.H BUILD.H VIDEO.H GRAPH.H HELP.H HEX.H VIEW.H
 	$(CC) $(CFLAGS) -c MAIN.C

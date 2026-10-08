@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     for (i = 0; i < sizeof(keys)/sizeof(keys[0]); ++i) buffer[i] = keys[i];
     *head = 0x1e; *tail = 0x1e + sizeof(keys);
     enable();
-    result = spawnl(P_WAIT, "NIGHT.EXE", "NIGHT", argc > 1 ? argv[1] : "/text", "D:\\LEFT", "D:\\RIGHT", NULL);
+    result = spawnl(P_WAIT, "NW.EXE", "NW", argc > 1 ? argv[1] : "/text", "D:\\LEFT", "D:\\RIGHT", NULL);
     printf("Production navigator returned %d\n", result);
     return result;
 }

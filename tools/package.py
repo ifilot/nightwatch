@@ -9,9 +9,9 @@ from version import read_version
 ROOT = Path(__file__).resolve().parents[1]
 DOS_README = """Nightwatch {version} - two-pane file navigator for MS-DOS 3.0+, 8088/8086.
 
-Run NIGHT /text, /cga, /ega or /vga.
-Optional pane paths: NIGHT /vga C:\\FILES D:\\BACKUP
-F1: help (A: About). Alt-F1: About. NIGHT /version prints the version.
+Run NW /text, /cga, /ega or /vga.
+Optional pane paths: NW /vga C:\\FILES D:\\BACKUP
+F1: help (A: About). Alt-F1: About. NW /version prints the version.
 F2: display mode. F3: text viewer. Shift-F3: hex viewer.
 F5: copy. F6: move. F7: mkdir. F8: delete. F10: quit.
 Ctrl-W saves mode, pane paths and sorting in NIGHT.CFG.
@@ -33,20 +33,23 @@ in the project repository at the matching release tag.
 # Output writes are not transactional. Publish only after successful completion;
 # an I/O failure can leave partial output that must be regenerated.
 def package(build, output):
-    executable = (build / 'NIGHT.EXE').read_bytes()
+    executable = (build / 'NW.EXE').read_bytes()
     license_data = (build / 'FONTLIC.TXT').read_bytes()
     icon_license = (build / 'ICONLIC.TXT').read_bytes()
     gpl = (build / 'LICENSE.TXT').read_bytes()
     version = 'v' + read_version()
     if len(executable) < 64 or executable[:2] != b'MZ':
-        raise ValueError('NIGHT.EXE is not a DOS MZ executable')
+        raise ValueError('NW.EXE is not a DOS MZ executable')
     if not license_data.strip() or not icon_license.strip() or not gpl.strip():
         raise ValueError('A required license file is empty')
     output.mkdir(parents=True, exist_ok=True)
-    members = {'NIGHT.EXE': executable, 'FONTLIC.TXT': license_data, 'ICONLIC.TXT': icon_license,
+    # A reused release directory must not publish the old executable name.
+    legacy = output / 'NIGHT.EXE'
+    if legacy.is_file(): legacy.unlink()
+    members = {'NW.EXE': executable, 'FONTLIC.TXT': license_data, 'ICONLIC.TXT': icon_license,
                'LICENSE.TXT': gpl, 'VERSION.TXT': (version + '\r\n').encode('ascii'),
                'README.TXT': DOS_README.format(version=version).replace('\n', '\r\n').encode('ascii')}
-    for name in ('NIGHT.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT'):
+    for name in ('NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT'):
         (output / name).write_bytes(members[name])
     archive = output / 'NIGHTWATCH-DOS.zip'
     with zipfile.ZipFile(archive, 'w') as zipped:
@@ -55,7 +58,7 @@ def package(build, output):
             entry.compress_type = zipfile.ZIP_DEFLATED
             entry.external_attr = 0o100644 << 16
             zipped.writestr(entry, data)
-    names = ('NIGHT.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', archive.name)
+    names = ('NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', archive.name)
     (output / 'SHA256SUMS.txt').write_text(''.join(
         hashlib.sha256((output / name).read_bytes()).hexdigest() + '  ' + name + '\n'
         for name in names), encoding='ascii')

@@ -3,9 +3,12 @@
 from pathlib import Path
 import os
 import subprocess as sp
+import sys
 from dosbuild import compile_dos
 
 root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(root/'tools'))
+from vram import decode, palette
 work = root/'build/progress'
 work.mkdir(parents=True, exist_ok=True)
 toolchain = os.environ.get('DOS_TOOLCHAIN', str(root/'buildenv'))
@@ -76,4 +79,15 @@ for machine, mode in [('cga', 0), ('cga', 1), ('ega', 2), ('vgaonly', 3)]:
     assert 'PASS: differential copy dialog' in (work/'RESULT.LOG').read_text(), (work/'RESULT.LOG').read_text()
     frames = [(work/f'F{i:03d}.BIN').read_bytes() for i in range(6)]
     assert frames[3] == frames[4] == frames[5], 'Incremental, rebuilt and post-prompt output differ'
+    if mode:
+        image = decode(work/'F000.BIN')
+        pitch = {1:8, 2:14, 3:16}[mode]
+        top = (25 // 2 - 5) * pitch if mode != 3 else (30 // 2 - 5) * pitch
+        left, right, bottom = 24, 616, top + 11*pitch
+        # Every outermost pixel of the filled dialog must be its black frame:
+        # a centered text-cell stroke leaves a grey/white rim outside it.
+        for box in ((left,top,right,top+1), (left,bottom-1,right,bottom),
+                    (left,top,left+1,bottom), (right-1,top,right,bottom)):
+            edge = image.crop(box)
+            assert edge.getcolors() == [(edge.width*edge.height,palette[0])], (mode,'dialog rim',box)
     print(f'PASS: mode {mode} no-op progress writes zero VRAM; file reset, shorter path and prompt restoration match full redraw', flush=True)

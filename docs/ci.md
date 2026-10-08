@@ -30,7 +30,7 @@ notices remain in `buildenv/`; Debian's DOSBox-X license notices are installed
 under `/usr/share/doc/dosbox-x/` in the image. The old vendored DOSBox-X sources
 remain available for manual source builds and earlier benchmark reproduction.
 
-The workflow removes old output, compiles `NIGHT.EXE`, checks the small-model
+The workflow removes old output, compiles `NW.EXE`, checks the small-model
 memory limit, then runs DOS/FAT12 filesystem tests, display/keyboard workflows,
 production BIOS input/cancellation on an emulated 8086, and the rendering
 benchmark. Host tests enforce C89 warnings and address/undefined sanitizers.
@@ -52,7 +52,7 @@ git push origin v1.0.0
 The release waits for both test jobs and downloads that run's DOS artifact.
 It verifies SHA-256 hashes before publishing:
 
-- `NIGHT.EXE`: one 8088 executable containing every display mode.
+- `NW.EXE`: one 8088 executable containing every display mode.
 - `LICENSE.TXT`: GNU GPL version 3 for Nightwatch.
 - `VERSION.TXT`: the built version, such as `v1.0.0`.
 - `FONTLIC.TXT`: the embedded font license.

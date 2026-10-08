@@ -46,9 +46,10 @@ These checks cover interface output and instruction compatibility, not physical
 
 ## Compact layout
 
-The current default layout displays 18 CGA, 16 EGA and 24 VGA entries per pane,
+The current default layout displays 18 CGA, 15 EGA and 22 VGA entries per pane,
 versus 17 in text. Fonts retain their original sizes; EGA and VGA share 16x16
-monochrome 16pxls icons. EGA rows are 16 pixels high, with taller path captions. The title and permanent help strips were removed, the footer uses one
+monochrome 16pxls icons. VGA/EGA rows are 17 pixels high, including a one-pixel white separator;
+EGA has taller path captions. The title and permanent help strips were removed, the footer uses one
 line, and operation status shares the command field when no command is typed.
 
 Before EGA adopted 16x16 icons, the compact layout measured on the same 8086 benchmark:

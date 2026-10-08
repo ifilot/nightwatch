@@ -979,7 +979,7 @@ int main(int argc, char **argv)
         else if (!stricmp(argv[i], "/ega")) { mode = VIDEO_EGA; explicit_mode = 1; }
         else if (!stricmp(argv[i], "/vga")) { mode = VIDEO_VGA; explicit_mode = 1; }
         else if (!stricmp(argv[i], "/?")) {
-            puts("NIGHT [/text|/cga|/ega|/vga] [left-directory] [right-directory]\nNIGHT /version | Alt-F1 About"); return 0;
+            puts("NW [/text|/cga|/ega|/vga] [left-directory] [right-directory]\nNW /version | Alt-F1 About"); return 0;
         } else if (!stricmp(argv[i], "/version") || !stricmp(argv[i], "--version")) {
             puts("Nightwatch " NW_VERSION_TAG); return 0;
         } else if (paths < 2 && fs_canonical(argv[i], panes[paths].path)) ++paths;

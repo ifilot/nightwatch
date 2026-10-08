@@ -155,7 +155,7 @@ for identifier,family,title,mask in entries:
     (destination/(identifier+'.txt')).write_text('\n'.join(rows)+'\n',encoding='ascii')
     render(mask,family,transparent=True)[0].save(destination/(identifier+'.png'))
 (destination/'README.md').write_text(
-    '# Icon candidates\n\nThese are review alternatives; they are not used by NIGHT.EXE.\n'
+    '# Icon candidates\n\nThese are review alternatives; they are not used by NW.EXE.\n'
     'Each numbered candidate has an editable 16×16 mask and a transparent PNG.\n'
     '`X` is outline, `o` is body, `+` is detail/highlight, `.` is transparent.\n'
     'File bodies use white; parent folders use yellow. The comparison sheet\n'

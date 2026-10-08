@@ -22,7 +22,7 @@ int main(int argc, char **argv)
      * exits so DOS never retains a vector into freed program memory. */
     previous=getvect(0x21); cancel_set(FP_OFF(previous),FP_SEG(previous));
     setvect(0x21,cancel_hook);
-    result=spawnl(P_WAIT,"NIGHT.EXE","NIGHT",argc>1 ? argv[1] : "/text","D:\\LEFT","D:\\RIGHT",NULL);
+    result=spawnl(P_WAIT,"NW.EXE","NW",argc>1 ? argv[1] : "/text","D:\\LEFT","D:\\RIGHT",NULL);
     setvect(0x21,previous);
     printf("Cancellation returned %d; injected %d\n",result,cancel_count());
     return result || cancel_count()!=1;

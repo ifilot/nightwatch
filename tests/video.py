@@ -120,7 +120,7 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     else:
         # Folder glyphs must remain recognizable outlines in every mode.
         image = images[0]
-        y = {'cga': 29, 'ega': 49, 'vga': 53}[mode]
+        y = {'cga': 29, 'ega': 50, 'vga': 54}[mode]
         icon = image.crop((22,y,38,y+{'cga': 8, 'ega': 16, 'vga': 16}[mode]))
         colors = icon.getcolors(256)
         assert len(colors) >= 2, (mode, 'icon layers')
@@ -180,7 +180,7 @@ print('PASS: all four renderers and monochrome text with the same backend/UI')
 
 # Dense directories: assert the scroll boundary and inspect every actual rendered row.
 # Expected capacities are product requirements, not values obtained from graph_rows.
-for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega',16), ('vgaonly','vga',24)]:
+for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega',15), ('vgaonly','vga',22)]:
     work = base / ('density-' + mode)
     if work.exists(): shutil.rmtree(work)
     work.mkdir(); (work/'LEFT').mkdir(); (work/'RIGHT').mkdir()
@@ -204,7 +204,7 @@ for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega
     last = decode(work/f'F{end_index:03d}.BIN')
     assert position(capacity+6)[3:5] == [0,0], (mode,'Home')
     if mode != 'text':
-        start, pitch, font_h = {'cga':(21,8,8), 'ega':(33,16,12), 'vga':(37,16,16)}[mode]
+        start, pitch, font_h = {'cga':(21,8,8), 'ega':(33,17,12), 'vga':(37,17,16)}[mode]
         # Each unselected row contains a distinct filename and no overlapping neighbor.
         for row in range(1,capacity):
             text_y = start+row*pitch+(pitch-font_h)//2
@@ -216,6 +216,11 @@ for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega
         assert sum(pixel==bg for pixel in selected.getdata()) > 200, (mode,'last row clipped')
         mark_y = start+(capacity-2)*pitch+pitch//2
         assert boundary.getpixel((12,mark_y)) == ((0,0,0) if mode=='cga' else palette[14]), (mode,'mark disappeared')
+        if mode != 'cga':
+            for image in (first, boundary, last):
+                for row in range(capacity):
+                    separator = image.crop((8,start+row*pitch+16,310,start+row*pitch+17))
+                    assert separator.getcolors() == [(302,palette[15])], (mode,'file separator',row)
         # A real proportional scrollbar reaches the bottom with End.
         track = capacity*pitch
         thumb = max(8,capacity*track//41)
@@ -239,7 +244,7 @@ compile_dos(base, dos, 'REFBUILD',
      r'tcc -DNW_DIAGNOSTICS -DNW_NO_SCROLL -1- -ms -IC:\TC\INCLUDE -c VIDEO.C > REFCOMP.LOG',
      r'tcc -ms -LC:\TC\LIB -eUIREF.EXE MAIN.OBJ CORE.OBJ FSDOS.OBJ VIDEO.OBJ GRAPH.OBJ HEX.OBJ VIEW.OBJ FONT.OBJ > REFLINK.LOG'],
     ['UIREF.EXE','VIDEO.OBJ'], ['REFCOMP.LOG','REFLINK.LOG'])
-for machine,mode,capacity in [('cga','cga',18),('ega','ega',16),('vgaonly','vga',24)]:
+for machine,mode,capacity in [('cga','cga',18),('ega','ega',15),('vgaonly','vga',22)]:
     work=base/('scroll-'+mode)
     if work.exists(): shutil.rmtree(work)
     work.mkdir(); (work/'LEFT').mkdir(); (work/'RIGHT').mkdir()
@@ -328,13 +333,14 @@ for machine, mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga
 # Query version from the actual executable without opening the UI.
 version_work=base/'version-production'
 if version_work.exists(): shutil.rmtree(version_work)
-version_work.mkdir(); shutil.copy2(root/'build/NIGHT.EXE',version_work/'NIGHT.EXE')
-dos(version_work,['NIGHT /version > VERSION.LOG','NIGHT --version > LONGVER.LOG'])
+version_work.mkdir(); shutil.copy2(root/'build/NW.EXE',version_work/'NW.EXE')
+dos(version_work,['NW /version > VERSION.LOG','NW --version > LONGVER.LOG','NW /? > USAGE.LOG'])
 for name in ('VERSION.LOG','LONGVER.LOG'):
     assert (version_work/name).read_text().strip()=='Nightwatch v'+version
+assert (version_work/'USAGE.LOG').read_text().startswith('NW [/text|/cga|/ega|/vga]')
 print('PASS: production /version and --version agree with VERSION',flush=True)
 
-# Compile a launcher that fills the real BIOS keyboard queue, then starts NIGHT.
+# Compile a launcher that fills the real BIOS keyboard queue, then starts NW.
 # This uses the production executable, without replacing key_read.
 (base / 'KEYTEST.C').write_bytes((root / 'tests/KEYTEST.C').read_text().replace('\n', '\r\n').encode('ascii'))
 compile_dos(base, dos, 'KEYBUILD', [r'set PATH=C:\TC;C:\TASM', r'tcc -1- -ms -IC:\TC\INCLUDE -LC:\TC\LIB -eKEYTEST.EXE KEYTEST.C > KEYCOMP.LOG'], ['KEYTEST.EXE'], ['KEYCOMP.LOG'])
@@ -344,11 +350,11 @@ production.mkdir(); (production / 'LEFT').mkdir(); (production / 'RIGHT').mkdir(
 content = b'BIOS keyboard test\r\n'
 (production / 'LEFT/ALPHA.TXT').write_bytes(content)
 shutil.copy2(base / 'KEYTEST.EXE', production / 'KEYTEST.EXE')
-shutil.copy2(root / 'build/NIGHT.EXE', production / 'NIGHT.EXE')
+shutil.copy2(root / 'build/NW.EXE', production / 'NW.EXE')
 dos(production, ['KEYTEST > RESULT.LOG'])
 assert (production / 'RIGHT/ALPHA.TXT').read_bytes() == content
 assert 'returned 0' in (production / 'RESULT.LOG').read_text()
-print('PASS: production NIGHT.EXE with real BIOS keyboard events; About, F2, Tab, selection, Shift-F3, viewer F4, F5 and F10')
+print('PASS: production NW.EXE with real BIOS keyboard events; About, F2, Tab, selection, Shift-F3, viewer F4, F5 and F10')
 
 # Check the 8086 instruction target using the real executable and BIOS input.
 # DOSBox-X has an explicit 8086 CPU core; ordinary DOSBox does not.
@@ -362,7 +368,7 @@ with (production / 'XT.LOG').open('w') as log:
     sp.run(args, env=env, stdout=log, stderr=log, check=True, timeout=45)
 assert (production / 'RIGHT/ALPHA.TXT').read_bytes() == content
 assert 'returned 0' in (production / 'XTRESULT.LOG').read_text()
-print('PASS: production NIGHT.EXE on DOSBox-X 8086 CPU + CGA, real BIOS input and file copy')
+print('PASS: production NW.EXE on DOSBox-X 8086 CPU + CGA, real BIOS input and file copy')
 
 # Real BIOS input injected during a write: previous commits survive cancellation.
 for name in ('KEYCAN.C','CANCEL.ASM'):
@@ -377,8 +383,8 @@ cancel_work.mkdir(); (cancel_work/'LEFT').mkdir(); (cancel_work/'RIGHT').mkdir()
 first=b'committed before cancellation\r\n'; second=bytes(range(256))*100
 (cancel_work/'LEFT/FIRST.TXT').write_bytes(first)
 (cancel_work/'LEFT/SECOND.BIN').write_bytes(second)
-for name in ('NIGHT.EXE','KEYCAN.EXE'):
-    shutil.copy2(root/'build/NIGHT.EXE' if name=='NIGHT.EXE' else base/name,cancel_work/name)
+for name in ('NW.EXE','KEYCAN.EXE'):
+    shutil.copy2(root/'build/NW.EXE' if name=='NW.EXE' else base/name,cancel_work/name)
 args=['dosbox-x','-fastlaunch','-nogui','-conf',str(root/'tools/dosbox.conf'),
       '-conf',str(base/'XT.CONF'),'-machine','cga']
 for cmd in [f'mount d "{cancel_work}"','d:','KEYCAN /cga > RESULT.LOG','exit']: args+=['-c',cmd]

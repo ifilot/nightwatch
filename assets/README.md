@@ -31,7 +31,7 @@ icons/compact/ are historical assets; they are no longer embedded or rendered.
 The original alternatives remain in [the candidate sheet](../docs/icon-options.png).
 
 Run `make assets` after editing a mask or upgrading a vendored font.
-No download or external font/icon file is needed to build or run NIGHT.EXE.
+No download or external font/icon file is needed to build or run NW.EXE.
 The generator emits src/ASSETS.H (icons), src/FONT.ASM (fonts and Help), and
 src/HELP.H. Fonts map DOS CP437 to Unicode; small fonts substitute light
 borders where upstream lacks double borders. Missing glyphs show a question mark.

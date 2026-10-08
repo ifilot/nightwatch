@@ -12,8 +12,8 @@ no graphics drivers, mouse driver, extender, EMS or XMS are required.
 | EGA | 10h | 640 x 350, 16 colors | Pixel layout, 16 x 16 icons, Spleen 6 x 12 | EGA with at least 128 KB video RAM, or VGA |
 | VGA | 12h | 640 x 480, 16 colors | Pixel layout, 16 x 16 icons, Spleen 8 x 16 | VGA |
 
-**Select the mode** at startup with `NIGHT /text`, `NIGHT /cga`, `NIGHT /ega`,
-or `NIGHT /vga`. During use, press **F2**, then **T**, **C**, **E**, or **V**.
+**Select the mode** at startup with `NW /text`, `NW /cga`, `NW /ega`,
+or `NW /vga`. During use, press **F2**, then **T**, **C**, **E**, or **V**.
 Escape cancels. Adapter detection rejects unsupported modes. Text mode defaults
 to 80-column color text, or monochrome text when launched from mode 07h.
 
@@ -46,7 +46,7 @@ make DOS_TOOLCHAIN=/path/to/buildenv
 make run MODE=vga DOSBOX=dosbox-x
 ```
 
-The executable is **`build/NIGHT.EXE`**. Compile logs and a linker map also
+The executable is **`build/NW.EXE`**. Compile logs and a linker map also
 appear in `build/`. Sources are staged there with DOS line endings and DOS
 filenames. The source directory and toolchain are not modified by
 compilation. `make clean` removes generated build artifacts.
@@ -58,12 +58,12 @@ mount their directory in DOSBox and invoke the executable manually. For example:
 mount c /path/to/nightwatch/build
 mount d /path/to/files
 c:
-NIGHT /vga D:\SOURCE D:\DEST
+NW /vga D:\SOURCE D:\DEST
 ```
 
-Use `NIGHT /?` for startup syntax. Optional arguments give the left and right
+Use `NW /?` for startup syntax. Optional arguments give the left and right
 pane directories. Without them both panes start in the current directory. On DOS
-hardware, copy `NIGHT.EXE`, `FONTLIC.TXT` and `ICONLIC.TXT` to a disk and run it directly. The
+hardware, copy `NW.EXE`, `FONTLIC.TXT` and `ICONLIC.TXT` to a disk and run it directly. The
 license file accompanies redistributed font data; the executable needs no
 external font or icon files.
 
@@ -215,14 +215,15 @@ strip replaces large buttons. The command field also shows operation status when
 empty; the permanent title and instructional strips have been removed. CGA uses
 high-contrast monochrome and 16 x 8 icons adjusted for its pixel aspect ratio.
 EGA and VGA share monochrome 16 x 16 icons from the 16pxls set. The existing
-font sizes remain readable, with less surrounding padding.
+font sizes remain readable. A single white scanline separates VGA/EGA file
+entries, including the selected entry.
 
 | Mode | Entries per pane | Row pitch | Function-key strip height |
 | --- | ---: | ---: | ---: |
 | Text | 17 | One character row | One character row |
 | CGA | 18 | 8 pixels | 10 pixels |
-| EGA | 16 | 16 pixels | 14 pixels |
-| VGA | 24 | 16 pixels | 18 pixels |
+| EGA | 15 | 17 pixels | 14 pixels |
+| VGA | 22 | 17 pixels | 18 pixels |
 
 Paging and scrolling use the actual visible capacity. Long command input scrolls
 horizontally within its field, preserving the footer and pane borders.
@@ -348,7 +349,7 @@ before/after comparisons, preserve the earlier sources in
 
 Nightwatch v1.0.0 is licensed under GPL-3.0-only; see [LICENSE](../LICENSE).
 Spleen font data remains BSD-2-Clause. The About window (Alt-F1 or F1 then A)
-shows the code, font and 16pxls icon credits. `NIGHT /version` or `NIGHT --version` prints the version.
+shows the code, font and 16pxls icon credits. `NW /version` or `NW --version` prints the version.
 [VERSION](../VERSION) is authoritative; `tools/version.py` updates its DOS
 header and README badge, and `--check` catches inconsistencies in CI. Release
 ZIPs include the GPL text as LICENSE.TXT, font license as FONTLIC.TXT, icon attribution/license as ICONLIC.TXT, and

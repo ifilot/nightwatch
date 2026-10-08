@@ -32,8 +32,14 @@ changes without a release tag are marked unreleased.
 
 ### Changed
 
+- The executable is now NW.EXE; startup commands, build outputs and release
+  packages use the shorter name. Existing NIGHT.CFG settings remain compatible.
+
+- Graphical cell-based dialogs draw crisp borders at the outside of their
+  filled background, removing the rim left by centered text-mode strokes.
 - VGA and EGA share monochrome 16x16 icons from Paul Mackenzie's 16pxls set.
-  EGA uses 16-pixel rows and taller path captions, with 16 entries per pane;
+  VGA/EGA use 17-pixel rows with a white separator, showing 22/15 entries
+  per pane respectively. EGA has taller path captions;
   CGA retains its previous icons and layout. Icon attribution and license
   are included in About and the DOS package as ICONLIC.TXT.
 - The CI build image uses Debian Trixie and its packaged DOSBox-X emulator,

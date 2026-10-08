@@ -16,14 +16,14 @@ cp "$repo/assets/ICON-LICENSE.txt" "$repo/build/ICONLIC.TXT"
 cp "$repo/LICENSE" "$repo/build/LICENSE.TXT"
 python3 "$repo/tools/stage.py" "$repo/src" "$repo/build"
 # DOSBox process success alone does not prove compiler success. The batch file
-# checks DOS errorlevel and emits a fresh marker only after NIGHT.EXE exists.
+# checks DOS errorlevel and emits a fresh marker only after NW.EXE exists.
 cat > "$repo/build/BUILD.BAT" <<'BAT'
 @echo off
 set PATH=C:\TC;C:\TASM
 D:
 make -fMAKEFILE > COMPILE.LOG
 if errorlevel 1 goto failed
-if not exist NIGHT.EXE goto failed
+if not exist NW.EXE goto failed
 echo OK>BUILD.OK
 goto done
 :failed
@@ -35,8 +35,8 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy dosbox -noconsole -conf "$repo/tools
     -c "mount c \"$toolchain\" -t dir -ro" \
     -c "mount d \"$repo/build\"" -c "d:" -c "call BUILD.BAT" > "$repo/build/dosbox.log" 2>&1
 cat "$repo/build/COMPILE.LOG"
-[[ -s "$repo/build/NIGHT.EXE" && -f "$repo/build/BUILD.OK" ]]
+[[ -s "$repo/build/NW.EXE" && -f "$repo/build/BUILD.OK" ]]
 # Linking can succeed even when Turbo C startup leaves too little near heap.
 # Check the map against the actual runtime stack before accepting the build.
-python3 "$repo/tools/check_memory.py" "$repo/build/NIGHT.MAP"
-printf 'Built %s (%s bytes)\n' "$repo/build/NIGHT.EXE" "$(stat -c %s "$repo/build/NIGHT.EXE")"
+python3 "$repo/tools/check_memory.py" "$repo/build/NW.MAP"
+printf 'Built %s (%s bytes)\n' "$repo/build/NW.EXE" "$(stat -c %s "$repo/build/NW.EXE")"

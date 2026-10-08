@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 import sys
 root=Path(__file__).resolve().parents[1]
-map_path=Path(sys.argv[1]) if len(sys.argv)>1 else root/'build/NIGHT.MAP'
+map_path=Path(sys.argv[1]) if len(sys.argv)>1 else root/'build/NW.MAP'
 # Turbo Link reports byte-addressed segment starts/stops/lengths in hex.
 # Use the data-group span to include intervening alignment/BSS, then round
 # the total to a paragraph for the startup memory calculation.

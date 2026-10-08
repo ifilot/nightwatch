@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* Test-only BIOS/VRAM capture and scripted keys; never linked into NIGHT.EXE. */
+/* Test-only BIOS/VRAM capture and scripted keys; never linked into NW.EXE. */
 #include <assert.h>
 const unsigned char far *asset_font(int mode);
 static FILE *test_keys;

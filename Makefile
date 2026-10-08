@@ -14,11 +14,11 @@ src/BUILD.H: build-metadata tools/build_metadata.py
 	python3 tools/build_metadata.py
 src/VERSION.H: VERSION tools/version.py
 	python3 tools/version.py --write
-build: build/NIGHT.EXE
-build/NIGHT.EXE: src/BUILD.H $(wildcard src/*.C src/*.H src/*.ASM) src/MAKEFILE VERSION LICENSE assets/ICON-LICENSE.txt build.sh tools/version.py tools/build_metadata.py tools/stage.py tools/check_memory.py tools/dosbox.conf
+build: build/NW.EXE
+build/NW.EXE: src/BUILD.H $(wildcard src/*.C src/*.H src/*.ASM) src/MAKEFILE VERSION LICENSE assets/ICON-LICENSE.txt build.sh tools/version.py tools/build_metadata.py tools/stage.py tools/check_memory.py tools/dosbox.conf
 	bash ./build.sh
 run: build
-	$(DOSBOX) -conf tools/dosbox.conf -c 'mount c "$(CURDIR)/build"' -c 'c:' -c 'NIGHT /$(MODE)' -c exit
+	$(DOSBOX) -conf tools/dosbox.conf -c 'mount c "$(CURDIR)/build"' -c 'c:' -c 'NW /$(MODE)' -c exit
 test:
 	bash ./tests/run.sh
 test-dos:

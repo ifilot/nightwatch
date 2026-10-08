@@ -129,7 +129,7 @@ static void metrics(void)
     icon_height = mono ? 8 : 16;
     caption_height = icon_height + 2;
     column_height = video_font_height + 2;
-    row_height = icon_height;
+    row_height = icon_height + (mono ? 0 : 1);
     foot_height = video_font_height + 2;
     button_y = video_height - video_font_height - 2;
     command_height = video_font_height + (mono ? 2 : 4);
@@ -198,7 +198,8 @@ static void size_text(char *text, const Entry *e)
 }
 /* A full desktop paint already provides the unselected paper background.
  * Incremental paints erase the whole row to remove old text, marks and icons;
- * selected rows need their distinct background even on the first paint. */
+ * selected rows need their distinct background even on the first paint.
+ * VGA/EGA reserve the final scanline as white space between 16-pixel icons. */
 static void entry_row(int panel, int row, const Entry *e, int selected, int fresh)
 {
     int x = 6 + panel * 318, y = list_top + row * row_height, icon;
@@ -206,6 +207,7 @@ static void entry_row(int panel, int row, const Entry *e, int selected, int fres
     unsigned fg = selected ? white : ink, body, edge, light;
     char size[16], date[12];
     if (!fresh || selected) video_rect(x + 2, y, PANEL_WIDTH - 8, row_height, bg);
+    if (!mono && selected) line(x + 2, y + icon_height, PANEL_WIDTH - 8, paper);
     if (!e) return;
     icon = file_icon(e);
     body = bg; edge = light = fg;

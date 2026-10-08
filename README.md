@@ -55,10 +55,10 @@ jumps; an external editor and DOS shell are also available.
 ## Run
 
 Download the DOS package from this repository's **Releases** page. Extract it and
-keep `LICENSE.TXT`, `FONTLIC.TXT` and `ICONLIC.TXT` alongside `NIGHT.EXE`.
+keep `LICENSE.TXT`, `FONTLIC.TXT` and `ICONLIC.TXT` alongside `NW.EXE`.
 
 ```dos
-NIGHT /vga C:\FILES D:\BACKUP
+NW /vga C:\FILES D:\BACKUP
 ```
 
 Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C/E/V**.
@@ -100,7 +100,7 @@ Pillow, DOSBox, DOSBox-X and mtools. The default compiler directory is `buildenv
 no sibling repository is needed.
 
 ```sh
-make                                    # build/NIGHT.EXE
+make                                    # build/NW.EXE
 make run MODE=vga                        # open a DOSBox window
 make test                               # host regression tests + sanitizers
 make test-dos                           # DOS filesystem tests on FAT12
@@ -126,7 +126,7 @@ The [source comment style](docs/commenting.md) describes the C89/TASM convention
 
 Every branch/tag push and pull request runs host regression tests. Branch/tag
 pushes also build and test the DOS program in the repository's Docker environment.
-Tag pushes publish the validated `NIGHT.EXE`, GPL/font/icon licenses, version
+Tag pushes publish the validated `NW.EXE`, GPL/font/icon licenses, version
 information, DOS ZIP package and checksums as a GitHub release. The executable
 includes all four display modes.
 

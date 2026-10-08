@@ -1,6 +1,6 @@
 # Icon candidates
 
-These are review alternatives; they are not used by NIGHT.EXE.
+These are review alternatives; they are not used by NW.EXE.
 Each numbered candidate has an editable 16×16 mask and a transparent PNG.
 `X` is outline, `o` is body, `+` is detail/highlight, `.` is transparent.
 File bodies use white; parent folders use yellow. The comparison sheet

@@ -437,6 +437,22 @@ static int box_char(int ch)
 {
     return ch == 205 || ch == 186 || ch == 201 || ch == 187 || ch == 200 || ch == 188;
 }
+/* Find the corner joined to a frame edge in the logical cell buffer. Native
+ * dialog borders belong at the outside of their cells, enclosing all of the
+ * background fill. Standalone box-drawing lines retain their centered stroke. */
+static int box_edge(int row, int col, int vertical)
+{
+    int at = row * 80 + col, left = vertical ? row : col, ch;
+    while (left-- > 0) {
+        at -= vertical ? 80 : 1;
+        ch = screen[at] & 255;
+        if (ch == (vertical ? 186 : 205)) continue;
+        if (ch == 201) return 0;
+        if (ch == (vertical ? 187 : 200)) return vertical ? 7 : glyph_height - 1;
+        break;
+    }
+    return vertical ? 4 : glyph_height / 2;
+}
 /* Translate changed cell runs to pixels for shared dialogs and viewers.
  * CP437 double-line frame glyphs are drawn geometrically, joining at cell
  * boundaries even when the compact font is narrower than the 8-pixel grid.
@@ -455,15 +471,14 @@ static void graphics_cells(int row, int first, int last)
         ch = screen[row * 80 + col] & 255;
         x = col * 8; y = row * glyph_height;
         if (box_char(ch)) {
-            int middle = glyph_height / 2;
             video_rect(x, y, 8, glyph_height, bg);
-            if (ch == 205) video_rect(x, y + middle, 8, 1, fg);
-            else if (ch == 186) video_rect(x + 4, y, 1, glyph_height, fg);
+            if (ch == 205) video_rect(x, y + box_edge(row, col, 0), 8, 1, fg);
+            else if (ch == 186) video_rect(x + box_edge(row, col, 1), y, 1, glyph_height, fg);
             else {
                 int right = ch == 201 || ch == 200;
                 int down = ch == 201 || ch == 187;
-                video_rect(x + (right ? 4 : 0), y + middle, right ? 4 : 5, 1, fg);
-                video_rect(x + 4, y + (down ? middle : 0), 1, down ? glyph_height - middle : middle + 1, fg);
+                video_rect(x, y + (down ? 0 : glyph_height - 1), 8, 1, fg);
+                video_rect(x + (right ? 0 : 7), y, 1, glyph_height, fg);
             }
             ++col; continue;
         }

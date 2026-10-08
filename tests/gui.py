@@ -9,7 +9,7 @@ from PIL import Image
 root = Path(__file__).resolve().parents[1]
 work = root / 'build' / 'gui'
 work.mkdir(exist_ok=True)
-shutil.copy2(root / 'build/NIGHT.EXE', work / 'NIGHT.EXE')
+shutil.copy2(root / 'build/NW.EXE', work / 'NW.EXE')
 (work / 'LEFT').mkdir(exist_ok=True)
 (work / 'RIGHT').mkdir(exist_ok=True)
 (work / 'LEFT/ALPHA.TXT').write_text('Hello from Nightwatch.\r\n' * 70)
@@ -35,7 +35,7 @@ for machine, mode in [('cga', 'text'), ('cga', 'cga'), ('ega', 'ega'), ('vgaonly
     marker.unlink(missing_ok=True)
     log = (work / (label + '.log')).open('w')
     p = sp.Popen(['dosbox', '-conf', str(root / 'tools/dosbox.conf'), '-machine', machine,
-                  '-c', f'mount d "{work}"', '-c', 'd:', '-c', f'NIGHT /{mode} D:\\LEFT D:\\RIGHT',
+                  '-c', f'mount d "{work}"', '-c', 'd:', '-c', f'NW /{mode} D:\\LEFT D:\\RIGHT',
                   '-c', 'echo RETURNED>EXIT.OK', '-c', 'exit'], stdout=log, stderr=log, env=dict(os.environ, SDL_AUDIODRIVER='dummy'))
     try:
         time.sleep(3)
