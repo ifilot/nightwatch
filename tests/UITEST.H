@@ -58,6 +58,26 @@ static void test_capture(void)
             video_bytes, viewer_pages, fs_list_calls, panes[0].marks, panes[1].marks);
     fclose(f);
 }
+/* Preserve keyboard frame numbering while saving actual transfer dialogs and
+ * their counters. Each emulator run starts a fresh progress sequence. */
+static void test_progress_capture(unsigned long done, unsigned long total)
+{
+    static unsigned sequence;
+    char old[13], name[13];
+    FILE *f;
+    if (!copy_progress) return;
+    test_capture(); --test_frame;
+    sprintf(old, "F%03d.BIN", test_frame);
+    sprintf(name, "P%03u.BIN", sequence);
+    remove(name); assert(!rename(old, name));
+    sprintf(old, "F%03d.POS", test_frame); remove(old);
+    sprintf(name, "P%03u.TXT", sequence++);
+    f = fopen(name, "w"); assert(f);
+    fprintf(f, "%d %lu %lu %lu %lu %lu %lu %lu %lu %lu\n", counting,
+            total_files, total_bytes, operation_files, operation_skipped,
+            done, total, operation_bytes, operation_current_bytes, transfer_rate);
+    fclose(f);
+}
 /* Capture before consuming each hexadecimal scripted key, matching production
  * key_read results. Exhaustion is a test failure, not a normal navigator exit. */
 static int test_key_read(void)

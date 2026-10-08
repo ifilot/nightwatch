@@ -1,7 +1,7 @@
 # Nightwatch
 
 [![GitHub Actions](https://github.com/ifilot/nightwatch/actions/workflows/build.yml/badge.svg)](https://github.com/ifilot/nightwatch/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-v1.0.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-v1.1.0-blue)](VERSION)
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
 A Midnight Commander style, two-pane file navigator for **MS-DOS on 8088/8086
@@ -15,8 +15,9 @@ EGA and VGA, with embedded fonts and icons.
 | <img src="docs/screenshots/ega.png" width="400" alt="Nightwatch EGA file browser"> | <img src="docs/screenshots/vga.png" width="400" alt="Nightwatch VGA file browser"> |
 
 Browse drives and directories, mark files with patterns, sort entries, and
-recursively copy, move or delete. Transfers offer overwrite/skip, progress and
-Escape cancellation. Built-in text and hex viewers support search and byte-offset
+recursively copy, move or delete. Transfers offer overwrite/skip and Escape cancellation. Copies count files
+recursively before starting and show file/overall progress bars, transfer speed
+and estimated time remaining for the current file. Built-in text and hex viewers support search and byte-offset
 jumps; an external editor and DOS shell are also available.
 
 <details>

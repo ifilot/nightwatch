@@ -38,6 +38,10 @@ static int cancel_after_member(const char *path, unsigned long done, unsigned lo
 {
     (void)path; (void)done; (void)total; return operation_files < 1;
 }
+static int cancel_scan(const char *path, unsigned long done, unsigned long total)
+{
+    (void)path; (void)done; (void)total; return 0;
+}
 static int exists(const char *path) { Entry e; return fs_info(path, &e); }
 static void no_artifacts(const char *root)
 {
@@ -65,6 +69,7 @@ int main(void)
     const char *suffixes[] = {"", "", "", "", "", ".TMP", ".BAK", ".NEW"};
     Entry old;
     unsigned i;
+    unsigned long files, bytes;
     assert(mkdtemp(root));
     assert(path_join(src,root,"SOURCE.BIN")); assert(path_join(dst,root,"TARGET.BIN"));
     assert(path_join(backup,root,"NW0000.BAK")); assert(path_join(staged,root,"NW0000.NEW"));
@@ -137,14 +142,38 @@ int main(void)
     assert(!tree_copy(b,a,0)); assert(!tree_copy(b,a,1)); exact(path,original,sizeof(original));
     assert(path_join(other,b,"DATA.BIN")); assert(!exists(other));
     assert(!tree_copy(a,b,0)); assert(tree_delete(a));
+    /* Recursive totals include empty files, ignore directories, and exceed the
+     * pane cache. Counting errors/cancellation never create a destination. */
+    assert(path_join(a,root,"COUNT")); assert(fs_mkdir(a));
+    assert(path_join(nested,a,"NEST")); assert(fs_mkdir(nested));
+    for (i = 0; i < 520; ++i) {
+        char name[13];
+        sprintf(name, "F%03u.TXT", i);
+        assert(path_join(path,nested,name)); put(path,replacement,i % 2);
+    }
+    assert(path_join(path,a,"DATA.BIN")); put(path,replacement,9001);
+    files = bytes = 0;
+    assert(tree_measure(a,&files,&bytes)); assert(files == 521 && bytes == 9261);
+    assert(tree_measure(src,&files,&bytes)); assert(files == 522 && bytes == 18262);
+    operation_progress = cancel_scan; files = bytes = 0;
+    assert(!tree_measure(a,&files,&bytes)); operation_progress = NULL;
+    assert(strstr(nw_error,"cancelled")); exact(path,replacement,9001);
+    fs_test_fail("enumerate","",1); files = bytes = 0;
+    assert(!tree_measure(a,&files,&bytes)); fs_test_reset();
+    assert(strstr(nw_error,"Read directory"));
+    files = 0; bytes = 0xffffffffUL;
+    assert(!tree_measure(src,&files,&bytes)); assert(strstr(nw_error,"32-bit"));
+    assert(tree_delete(a));
     /* Cross-drive merge move: one skipped child stays; others commit then disappear. */
     assert(path_join(a,root,"SRC")); assert(path_join(b,root,"DST")); assert(fs_mkdir(a)&&fs_mkdir(b));
     assert(path_join(path,a,"KEEP.TXT")); put(path,replacement,10);
     assert(path_join(other,b,"KEEP.TXT")); put(other,original,sizeof(original));
     assert(path_join(path,a,"MOVE.TXT")); put(path,replacement,20);
     operation_conflict = skip_one; operation_files = operation_skipped = 0; fs_test_cross_drive = 1;
+    operation_bytes = operation_current_bytes = operation_transferred = 0;
     assert(tree_copy(a,b,1)); fs_test_reset();
     assert(operation_skipped == 1 && operation_files == 1);
+    assert(operation_bytes == 30 && operation_transferred == 20 && operation_current_bytes == 0);
     assert(path_join(path,a,"KEEP.TXT")); exact(path,replacement,10); exact(other,original,sizeof(original));
     assert(path_join(path,a,"MOVE.TXT")); assert(!exists(path));
     assert(path_join(path,b,"MOVE.TXT")); exact(path,replacement,20);
@@ -172,9 +201,11 @@ int main(void)
     assert(!valid_name("CON.TXT")&&!valid_name("aUx")&&!valid_name("lpt9.bin")&&!valid_name("CLOCK$"));
     assert(valid_name("COM10") && valid_name("\202NAME.TXT"));
     memset(too_long,'X',sizeof(too_long)-1); too_long[sizeof(too_long)-1]=0;
+    files = bytes = 0; assert(!tree_measure(too_long,&files,&bytes));
     assert(!tree_copy(too_long,dst,0)); assert(!tree_delete(too_long));
     assert(path_join(a,root,"DEEP")); assert(fs_mkdir(a)); strcpy(path,a);
     for (i=0;i<33;++i) { strcat(path,"/X"); assert(fs_mkdir(path)); }
+    files = bytes = 0; assert(!tree_measure(a,&files,&bytes)); assert(strstr(nw_error,"32"));
     assert(path_join(b,root,"COPY")); assert(!tree_copy(a,b,0)); assert(strstr(nw_error,"32"));
     assert(!tree_delete(a)); assert(strstr(nw_error,"32"));
     /* Remove the extra level explicitly, then bounded traversal can clean both. */

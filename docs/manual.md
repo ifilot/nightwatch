@@ -109,8 +109,18 @@ containing directories. Replacement files are fully prepared before the original
 is moved to a temporary backup; a failed commit attempts to restore the
 original. Any retained backup is reported.
 
-File operations show bytes transferred for the current file and
-completed/skipped counts (a whole-directory rename counts as one completed
+Before copying, Nightwatch scans every selected file and subfolder to count
+files and sum their sizes. "Counting files" can be cancelled with Escape; no
+files are copied until the scan succeeds. Directories do not count as files.
+Totals are limited to 4,294,967,295 bytes; larger selections report an error.
+The copy dialog shows completed/total files, skipped files, current-file bytes,
+and separate file and overall progress bars in every display mode. Overall
+progress includes skipped bytes, so all resolved files advance the bar.
+For selections containing only empty files it advances by resolved file count.
+A smoothed recent transfer rate appears in KiB/s with estimated time remaining
+for the current file. Both show `--` until a sample is available; overwrite
+prompt time is excluded from the rate. Move/delete retain their existing byte
+and completed/skipped displays (a whole-directory rename counts as one completed
 operation; recursive transfers count committed files). Escape cancels between
 transfer blocks or directory entries. A partially copied current file is
 removed; previously completed files remain. Recursive operations enumerate every

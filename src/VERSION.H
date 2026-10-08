@@ -3,6 +3,6 @@
 /* Keep the plain version for metadata and the v-prefixed tag for display. */
 #ifndef VERSION_H
 #define VERSION_H
-#define NW_VERSION "1.0.0"
+#define NW_VERSION "1.1.0"
 #define NW_VERSION_TAG "v" NW_VERSION
 #endif

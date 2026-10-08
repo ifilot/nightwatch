@@ -32,6 +32,10 @@ for src in (root / 'src').iterdir():
             begin = text.index('static int key_read(void)')
             end = text.index('static int pane_rows', begin)
             text = text[:begin] + '#include "UITEST.H"\nstatic int key_read(void) { return test_key_read(); }\n' + text[end:]
+            # Capture copy dialogs separately so ordinary scripted-key frame
+            # numbers remain stable. Production source has no capture calls.
+            text = text.replace('video_flush(); paint_tick = now;',
+                                'video_flush(); test_progress_capture(done, total); paint_tick = now;')
         (base / src.name).write_bytes(text.replace('\n', '\r\n').encode('ascii'))
 (base / 'UITEST.H').write_bytes((root / 'tests/UITEST.H').read_text().replace('\n', '\r\n').encode('ascii'))
 compile_dos(base, dos, 'UIBUILD',

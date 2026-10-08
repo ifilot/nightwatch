@@ -120,7 +120,10 @@ The build's memory guard checks static data and the real 8192-byte runtime stack
 against the 64 KB small-model segment. The guard reserves at least 2048 bytes for
 the near heap; fonts still live in their separate segment. Recursive operations
 use small traversal frames with a 32-level bound; the transfer buffer is now
-2048 bytes to accommodate the larger stack and additional commands.
+2048 bytes to accommodate the larger stack and additional commands. The hex
+viewer keeps its 432-byte page buffer on the stack; viewing and recursive
+transfers never nest. This leaves near-heap room for the v1.1.0 copy progress
+state and text.
 
 The byte-exact comparisons against the earlier speed-only build are optional
 (`NW_COMPARE_OLD_VRAM=1`), because help, operation dialogs and viewer footers

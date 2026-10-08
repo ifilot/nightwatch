@@ -16,6 +16,7 @@ static char copy_buffer[2048];
 int (*operation_progress)(const char *, unsigned long, unsigned long);
 int (*operation_conflict)(const char *, const char *);
 unsigned long operation_files, operation_skipped;
+unsigned long operation_bytes, operation_current_bytes, operation_transferred;
 static int sort_order, sort_reverse;
 
 /* Join a directory and one name into an NW_PATH-sized, distinct output
@@ -304,6 +305,8 @@ int file_copy(const char *src, const char *dst)
         }
         if (!ok) break;
         copied += n;
+        operation_current_bytes = copied;
+        operation_transferred += n;
         if (operation_progress && !operation_progress(src, copied, source.size)) { ok = -1; break; }
     }
     /* ok is 1 for success, 0 for I/O failure, -1 for user cancellation. */
@@ -399,6 +402,57 @@ static int replace_file(const char *src, const char *dst, const Entry *old)
     }
     return 1;
 }
+/* Enumerate without the pane cache or destination changes. Reject totals that
+ * do not fit DOS unsigned long rather than silently wrapping the progress bar. */
+static int measure_tree(char *path, unsigned depth, unsigned long *files,
+                        unsigned long *bytes)
+{
+    Entry e;
+    FsSearch search;
+    unsigned a = strlen(path);
+    int result, ok = 1;
+    if (!fs_info(path, &e)) { fs_error("Read source"); return 0; }
+    if ((e.attr & NW_DIR) && depth > 32) {
+        strcpy(nw_error, "Directory nesting exceeds 32 levels"); return 0;
+    }
+    if (!(e.attr & NW_DIR)) {
+        if (*files == 0xffffffffUL || e.size > 0xffffffffUL - *bytes) {
+            strcpy(nw_error, "Copy totals exceed 32-bit range"); return 0;
+        }
+        ++*files; *bytes += e.size;
+    }
+    if (!progress(path, 0, e.size)) return 0;
+    if (!(e.attr & NW_DIR)) return 1;
+    result = fs_first(&search, path, &e);
+    while (result > 0) {
+        /* The append below checks the complete path, not just the member. */
+        if (a + strlen(e.name) + 1 >= NW_PATH) {
+            strcpy(nw_error, "Recursive path is too long"); ok = 0; break;
+        }
+#ifdef NW_HOST
+        path[a] = '/';
+#else
+        path[a] = '\\';
+#endif
+        strcpy(path + a + 1, e.name);
+        ok = measure_tree(path, depth + 1, files, bytes);
+        path[a] = 0;
+        if (!ok) break;
+        result = fs_next(&search, &e);
+    }
+    fs_end(&search);
+    if (result < 0) ok = 0;
+    return ok;
+}
+/* Accumulate a selection's recursive totals; callers initialize both sums. */
+int tree_measure(const char *src, unsigned long *files, unsigned long *bytes)
+{
+    char path[NW_PATH];
+    if (strlen(src) >= NW_PATH) { strcpy(nw_error, "Path is too long"); return 0; }
+    strcpy(path, src);
+    return measure_tree(path, 0, files, bytes);
+}
+
 /*
  * Walk a tree using shared path buffers and one search state per stack frame.
  * Append a child name, recurse, then restore both parent terminators.  Limit
@@ -415,18 +469,22 @@ static int copy_tree(char *src, char *dst, int move, unsigned depth)
     int result, ok = 1, exists;
     if (!fs_info(src, &e)) { fs_error("Read source"); return 0; }
     if ((e.attr & NW_DIR) && depth > 32) { strcpy(nw_error, "Directory nesting exceeds 32 levels"); return 0; }
+    operation_current_bytes = 0;
     if (!progress(src, 0, e.size)) return 0;
     exists = fs_info(dst, &existing);
     if (!(e.attr & NW_DIR)) {
         if (exists) {
             if (existing.attr & NW_DIR) { strcpy(nw_error, "File destination is a directory"); return 0; }
             result = operation_conflict ? operation_conflict(src, dst) : 0;
-            if (result == 2) { ++operation_skipped; return 1; }
+            if (result == 2) {
+                ++operation_skipped; operation_bytes += e.size; return 1;
+            }
             if (result != 1) { strcpy(nw_error, "Destination exists or operation cancelled"); return 0; }
             ok = replace_file(src, dst, &existing);
             if (ok && move && !fs_delete(src, 0)) { fs_error("Remove moved source"); ok = 0; }
         } else ok = move ? file_move(src, dst) : file_copy(src, dst);
-        if (ok) ++operation_files;
+        if (ok) { ++operation_files; operation_bytes += e.size; }
+        operation_current_bytes = 0;
         return ok;
     }
     if (exists && !(existing.attr & NW_DIR)) { strcpy(nw_error, "Directory destination is a file"); return 0; }

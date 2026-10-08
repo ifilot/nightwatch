@@ -12,7 +12,7 @@ env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
 toolchain = Path(os.environ.get('DOS_TOOLCHAIN', str(root / 'buildenv')))
 def dos(work, command, machine, before=(), xt=False):
     # Every launch must produce its own evidence, including saved-mode reloads.
-    for pattern in ('F*.BIN','F*.POS'):
+    for pattern in ('F*.BIN','F*.POS','P*.BIN','P*.TXT'):
         for capture in work.glob(pattern): capture.unlink()
     fat = xt or bool(os.environ.get('NW_FEATURE_8086'))
     if fat:
@@ -85,6 +85,19 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
         def row(index): return (work/f'F{index:03d}.BIN').read_bytes()[3+320:3+480:2].decode('ascii')
         assert row(jumped).startswith('00010000')
         assert row(found).startswith('00010041  41 42 43')
+    # Actual dialog captures prove both counting and transfer UI run in every
+    # renderer. A skipped file advances overall bytes without counting writes.
+    progress = [list(map(int, p.read_text().split())) for p in sorted(work.glob('P*.TXT'))]
+    assert any(p[0] == 1 and p[1] >= 1 for p in progress), 'Missing counting dialog'
+    assert any(p[0] == 0 and p[1] == 1 and p[2] == len(content) for p in progress)
+    assert any(p[0] == 0 and p[4] == 1 and p[7] == p[2] for p in progress), 'Skip must resolve bytes'
+    assert any(p[0] == 0 and p[3] == p[1] and p[7] == p[2] for p in progress), 'Missing completed totals'
+    if mode == 'text':
+        captures = sorted(work.glob('P*.BIN'))
+        decoded = [p.read_bytes()[3:4003:2].decode('cp437') for p in captures]
+        assert any('Counting files' in frame for frame in decoded)
+        assert any('File     [' in frame and 'Overall  [' in frame and
+                   'KiB/s' in frame and 'Time left:' in frame for frame in decoded)
     cfg = (work/'NIGHT.CFG').read_text().splitlines()
     assert cfg[0] == 'NIGHTWATCH1' and int(cfg[1].split()[0]) == ['text','cga','ega','vga'].index(mode)
     assert cfg[1].split()[1] == '1' and cfg[2:] == [r'D:\LEFT', r'D:\RIGHT']
@@ -159,6 +172,22 @@ int main(void) {
     assert(strlen(startup)==119);
     settings_load(&mode); assert(mode==2);
     video_init(); assert(video_set(VIDEO_TEXT));
+    assert(fraction(1,3,40)==13);
+    assert(fraction(0xfffffffeUL,0xffffffffUL,100)==99);
+    assert(fraction(0x80000000UL,0xffffffffUL,100)==50);
+    assert(fraction(0,0,40)==40);
+    assert(tick_elapsed(3,0x1800afUL)==4);
+    begin_operation(); copy_progress=1; total_files=1; total_bytes=4096;
+    assert(operation_ui("D:\\RATE.BIN",0,4096));
+    sample_tick=(unsigned long)biostime(0,0L);
+    sample_tick=sample_tick>=18 ? sample_tick-18 : 0x1800b0UL+sample_tick-18;
+    operation_transferred=operation_current_bytes=2048; force_progress=1;
+    assert(operation_ui("D:\\RATE.BIN",2048,4096));
+    assert(transfer_rate>=1024 && transfer_rate<=2071);
+    total_files=2; total_bytes=0; operation_files=1;
+    operation_bytes=operation_current_bytes=0; force_progress=1;
+    assert(operation_ui("D:\\EMPTY.TXT",0,0));
+    copy_progress=0; end_operation();
     settings_save(); assert(!strcmp(nw_error,"Path is too long"));
     video_restore(); puts("PASS: checked settings paths"); return 0;
 }
@@ -170,6 +199,12 @@ compile_dos(work,lambda directory,cmds: dos(directory,cmds[0],'cga'),'LNBUILD',
     ['LONG.EXE'],['LONG.LOG'])
 script(work,[27]); dos(work,'LONG > LONGRUN.LOG','cga')
 assert 'PASS: checked settings paths' in (work/'LONGRUN.LOG').read_text()
+rate_frame=(work/'P001.BIN').read_bytes()[3:4003:2].decode('cp437')
+assert '50%' in rate_frame and 'KiB/s' in rate_frame and 'Time left: 0:' in rate_frame
+assert '-- KiB/s' not in rate_frame
+empty_frame=(work/'P002.BIN').read_bytes()[3:4003:2].decode('cp437')
+assert '100%' in empty_frame and '50%' in empty_frame
+print('PASS: DOS progress fractions near 4 GiB, midnight ticks, sampled speed, file ETA and empty-file batches',flush=True)
 notice=(work/'F000.BIN').read_bytes()[3+12*160:3+13*160:2].decode('cp437')
 assert 'Path is too long' in notice and not (work/'NIGHT.CFG').exists()
 print('PASS: oversized startup path skips settings load and reports save failure',flush=True)

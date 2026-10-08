@@ -102,6 +102,12 @@ extern int (*operation_conflict)(const char *, const char *);
  * Directory creation/removal do not increment the completed count.
  */
 extern unsigned long operation_files, operation_skipped;
+/* Resolved bytes include skipped files; current/transferred count actual writes.
+ * Reset all three before a batch. Current bytes reset after each file resolves. */
+extern unsigned long operation_bytes, operation_current_bytes, operation_transferred;
+/* Add recursive file-only totals without writing; polls operation_progress for
+ * cancellation. Fails on inaccessible paths, nesting/path limits or overflow. */
+int tree_measure(const char *src, unsigned long *files, unsigned long *bytes);
 /* Recursive operations enumerate beyond the pane cache. The root is depth zero;
  * directories through depth 32 are accepted, with files allowed one level deeper.
  * move removes source entries only after their copy/rename succeeds; cancellation

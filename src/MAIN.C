@@ -41,6 +41,11 @@ static char startup[NW_PATH];
 /* Preserve queued commands while progress scans the entire BIOS queue for Esc. */
 static unsigned pending_keys[16];
 static unsigned pending_head, pending_count;
+static int copy_progress, counting, force_progress;
+static unsigned long total_files, total_bytes;
+static unsigned long sample_tick, paint_tick, sample_bytes, transfer_rate;
+static unsigned long shown_files, shown_skipped, last_total;
+static char progress_path[NW_PATH];
 /* Turbo C startup reserves this stack inside DGROUP. Recursive operations
  * and viewer locals must share it; tools/check_memory.py guards near-heap room.
  */
@@ -235,17 +240,44 @@ static int confirm(const char *message)
     video_text(5, video_rows / 2 + 2, "Y = yes; any other key = cancel", COLOR_DIALOG);
     video_flush(); k = key_read(); return k == 'y' || k == 'Y';
 }
-/* Transfer callback: return zero on Escape, otherwise keep going. Scan the BIOS
- * queue to find Escape behind unrelated keys, retaining up to 16 other keys.
- * Non-Escape keys beyond ring capacity are discarded while polling continues.
- * Poll every callback but throttle expensive progress painting on an 8088.
- */
+/* BIOS ticks wrap at midnight; intervals here are always less than one day. */
+static unsigned long tick_elapsed(unsigned long now, unsigned long before)
+{
+    return now >= before ? now - before : 0x1800b0UL - before + now;
+}
+/* Scale a bounded ratio without multiplying a potentially 4 GB byte count. */
+static unsigned fraction(unsigned long done, unsigned long total, unsigned scale)
+{
+    unsigned low = 0, high = scale, mid, remainder;
+    unsigned long whole;
+    if (!total || done >= total) return scale;
+    whole = total / scale; remainder = (unsigned)(total % scale);
+    while (low < high) {
+        mid = (low + high + 1) / 2;
+        if (done >= whole * mid + (remainder * mid + scale - 1) / scale)
+            low = mid;
+        else high = mid - 1;
+    }
+    return low;
+}
+/* ASCII bars work in every renderer and avoid adapter-specific drawing paths. */
+static void progress_bar(int row, const char *label, unsigned long done,
+                         unsigned long total)
+{
+    char line[76];
+    unsigned i, filled = fraction(done, total, 40);
+    sprintf(line, "%-8s [", label);
+    for (i = 0; i < 40; ++i) line[10 + i] = i < filled ? '#' : '-';
+    sprintf(line + 50, "] %3u%%", fraction(done, total, 100));
+    video_text(5, row, line, COLOR_DIALOG);
+}
+/* Poll every transfer block, retaining unrelated keys. Painting and rate samples
+ * use BIOS time so slow disks update without repeatedly repainting on an 8088. */
 static int operation_ui(const char *path, unsigned long done, unsigned long total)
 {
-    static unsigned long previous;
-    static char last[NW_PATH];
-    char line[100];
-    /* Poll every transfer block, paint once per 16 KB or on a new file. */
+    unsigned long now = (unsigned long)biostime(0, 0L), elapsed, bytes, seconds, rate_base;
+    int changed = strcmp(progress_path, path) != 0, y, i;
+    char line[100], eta[32];
     while (bioskey(1)) {
         unsigned key = bioskey(0);
         if ((key & 255) == 27) return 0;
@@ -254,13 +286,70 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
             ++pending_count;
         }
     }
-    if (!done || strcmp(last, path) || done == total || done - previous >= 16384UL) {
-        dialog("File operation - Esc cancels", path);
-        sprintf(line, "%lu / %lu bytes; %lu completed, %lu skipped", done, total,
-                operation_files, operation_skipped);
-        video_text(5, video_rows / 2 + 1, line, COLOR_DIALOG);
-        video_flush(); previous = done; strcpy(last, path);
+    if (changed) {
+        sample_tick = now; sample_bytes = operation_transferred; transfer_rate = 0;
     }
+    elapsed = tick_elapsed(now, sample_tick);
+    if (!counting && elapsed >= 9) {
+        bytes = operation_transferred - sample_bytes;
+        /* 18.2 ticks/s; divide first only when the product would overflow. */
+        if (bytes <= 0xffffffffUL / 182UL) bytes = bytes * 182UL / (elapsed * 10UL);
+        else {
+            rate_base = bytes / elapsed;
+            bytes = rate_base > 0xffffffffUL / 19UL ? 0xffffffffUL :
+                    rate_base * 18UL + rate_base / 5UL +
+                    (bytes % elapsed) * 182UL / (elapsed * 10UL);
+        }
+        transfer_rate = transfer_rate ? transfer_rate / 2 + bytes / 2 : bytes;
+        sample_tick = now; sample_bytes = operation_transferred;
+    }
+    if (force_progress || (changed && !counting) || shown_files != operation_files ||
+        shown_skipped != operation_skipped || tick_elapsed(now, paint_tick) >= 4) {
+        if (counting) {
+            sprintf(line, "%.70s", path);
+            dialog("Counting files - Esc cancels", line);
+            sprintf(line, "%lu files; %lu bytes found", total_files, total_bytes);
+            video_text(5, video_rows / 2 + 1, line, COLOR_DIALOG);
+        } else if (!copy_progress) {
+            dialog("File operation - Esc cancels", path);
+            sprintf(line, "%lu / %lu bytes; %lu completed, %lu skipped", done, total,
+                    operation_files, operation_skipped);
+            video_text(5, video_rows / 2 + 1, line, COLOR_DIALOG);
+        } else {
+            y = video_rows / 2 - 5;
+            video_overlay_begin(0);
+            for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
+            frame(3, y, 74, 11, COLOR_DIALOG);
+            video_text(5, y + 1, "Copying - Esc cancels", COLOR_DIALOG);
+            /* Keep long DOS paths inside the dialog border. */
+            sprintf(line, "%.70s", path); video_text(5, y + 2, line, COLOR_DIALOG);
+            sprintf(line, "Files: %lu / %lu completed; %lu skipped",
+                    operation_files, total_files, operation_skipped);
+            video_text(5, y + 3, line, COLOR_DIALOG);
+            progress_bar(y + 4, "File", done, total);
+            if (total_bytes)
+                progress_bar(y + 5, "Overall", operation_bytes + operation_current_bytes, total_bytes);
+            else progress_bar(y + 5, "Overall", operation_files + operation_skipped, total_files);
+            sprintf(line, "%lu / %lu bytes", done, total);
+            video_text(5, y + 6, line, COLOR_DIALOG);
+            strcpy(eta, "--");
+            if (transfer_rate) {
+                bytes = done < total ? total - done : 0;
+                seconds = bytes / transfer_rate + (bytes % transfer_rate != 0);
+                sprintf(eta, "%lu:%02lu", seconds / 60, seconds % 60);
+                sprintf(line, "%lu.%lu KiB/s   Time left: %s", transfer_rate / 1024,
+                        (transfer_rate % 1024) * 10 / 1024, eta);
+            } else strcpy(line, "-- KiB/s   Time left: --");
+            video_text(5, y + 7, line, COLOR_DIALOG);
+            sprintf(line, "Overall: %lu / %lu bytes processed", operation_bytes + operation_current_bytes, total_bytes);
+            video_text(5, y + 8, line, COLOR_DIALOG);
+        }
+        video_flush(); paint_tick = now;
+        shown_files = operation_files; shown_skipped = operation_skipped;
+    }
+    if (changed) strcpy(progress_path, path);
+    last_total = total;
+    force_progress = 0;
     return 1;
 }
 /* Map overwrite/skip/cancel keys to the backend callback results 1/2/0.
@@ -272,6 +361,9 @@ static int conflict_ui(const char *src, const char *dst)
     dialog("Destination exists", dst);
     video_text(5, video_rows / 2 + 1, "O overwrite | S skip | Esc cancel", COLOR_DIALOG);
     video_flush(); k = key_read();
+    /* Exclude time spent answering the conflict prompt from transfer samples. */
+    sample_tick = (unsigned long)biostime(0, 0L);
+    sample_bytes = operation_transferred; transfer_rate = 0; force_progress = 1;
     if (k == 'o' || k == 'O') return 1;
     if (k == 's' || k == 'S') return 2;
     return 0;
@@ -281,6 +373,11 @@ static int conflict_ui(const char *src, const char *dst)
 static void begin_operation(void)
 {
     operation_files = operation_skipped = 0;
+    operation_bytes = operation_current_bytes = operation_transferred = 0;
+    copy_progress = counting = 0; total_files = total_bytes = 0;
+    progress_path[0] = 0; force_progress = 1;
+    sample_tick = paint_tick = (unsigned long)biostime(0, 0L);
+    sample_bytes = transfer_rate = shown_files = shown_skipped = 0;
     operation_progress = operation_ui; operation_conflict = conflict_ui;
 }
 /* Remove UI callbacks so unrelated filesystem calls do not open transfer dialogs.
@@ -455,7 +552,9 @@ static void viewer(int hex_mode)
     unsigned char needle[64];
     unsigned needle_length = 0;
     int needle_hex = 0;
-    static unsigned char bytes[(NW_ROWS - 3) * 16];
+    /* Viewer and recursive transfers never nest. Use the 8 KB stack here
+     * to preserve near-heap room for the copy progress state and strings. */
+    unsigned char bytes[(NW_ROWS - 3) * 16];
     char row[80];
     int n, rows, got, dirty = 1, first = 1;
     long position;
@@ -660,6 +759,24 @@ static void operate(int move)
     if (marked > 1 && !directory) { notice("Multiple files require an existing destination directory"); return; }
     affected = destination_mask(target, directory) | (move ? 1 << active : 0);
     begin_operation();
+    copy_progress = !move;
+    if (!move) {
+        counting = 1; ok = 1;
+        for (i = 0; i < p->count; ++i) {
+            Entry *e = &p->files[i];
+            if (marked ? !e->marked : i != p->cursor) continue;
+            if (!path_join(src, p->path, e->name) ||
+                !tree_measure(src, &total_files, &total_bytes)) { ok = 0; break; }
+        }
+        if (ok && progress_path[0]) {
+            force_progress = 1;
+            if (!operation_ui(progress_path, 0, 0)) {
+                strcpy(nw_error, "Operation cancelled"); ok = 0;
+            }
+        }
+        counting = 0; progress_path[0] = 0; force_progress = 1;
+        if (!ok) { end_operation(); notice(nw_error); refresh(); return; }
+    }
     for (i = 0; i < p->count; ++i) {
         Entry *e = &p->files[i];
         if (marked ? !e->marked : i != p->cursor) continue;
@@ -669,6 +786,11 @@ static void operate(int move)
         else strcpy(dst, target);
         ok = tree_copy(src, dst, move);
         if (!ok) { notice(nw_error); break; }
+    }
+    if (copy_progress && progress_path[0] &&
+        operation_files + operation_skipped == total_files) {
+        force_progress = 1;
+        operation_ui(progress_path, last_total, last_total);
     }
     end_operation();
     sprintf(status, "%lu completed, %lu skipped (%s)", operation_files, operation_skipped, move ? "move" : "copy"); refresh_mask(affected);
