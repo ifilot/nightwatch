@@ -126,16 +126,16 @@ static void metrics(void)
 {
     mono = video_mode == VIDEO_CGA;
     top = 1;
-    caption_height = video_font_height + 2;
+    icon_height = mono ? 8 : 16;
+    caption_height = icon_height + 2;
     column_height = video_font_height + 2;
-    row_height = video_font_height + (video_mode == VIDEO_EGA ? 1 : 0);
+    row_height = icon_height;
     foot_height = video_font_height + 2;
     button_y = video_height - video_font_height - 2;
     command_height = video_font_height + (mono ? 2 : 4);
     command_y = button_y - command_height;
     bottom = command_y - 2;
     list_top = top + caption_height + column_height;
-    icon_height = mono ? 8 : (video_mode == VIDEO_EGA ? 12 : 16);
     desktop_color = mono ? 0 : 7; paper = 15; ink = 0;
     white = 15; muted = mono ? 0 : 8; selection = mono ? 0 : 1;
 }
@@ -208,13 +208,7 @@ static void entry_row(int panel, int row, const Entry *e, int selected, int fres
     if (!fresh || selected) video_rect(x + 2, y, PANEL_WIDTH - 8, row_height, bg);
     if (!e) return;
     icon = file_icon(e);
-    if (mono) { body = bg; edge = light = fg; }
-    else {
-        body = icon == ICON_FOLDER || icon == ICON_PARENT ? 14 :
-               (icon == ICON_PROGRAM ? 11 : (icon == ICON_ARCHIVE ? 6 : (icon == ICON_IMAGE ? 10 : 7)));
-        edge = icon == ICON_FOLDER || icon == ICON_PARENT ? 6 : (selected ? 7 : 8);
-        light = icon == ICON_FOLDER || icon == ICON_PARENT ? 15 : (selected ? 11 : 1);
-    }
+    body = bg; edge = light = fg;
     if (e->marked) {
         video_rect(x + 5, y + row_height / 2 - 2, 4, 4, mono ? fg : 14);
         if (!mono) outline(x + 4, y + row_height / 2 - 3, 6, 6, selected ? 15 : 6);
@@ -286,7 +280,7 @@ void graph_draw(Panel *panels, int active, const char *status, const char *comma
             caption = p == active ? (mono ? 0 : 1) : (mono ? 15 : 8);
             fg = mono && p != active ? 0 : 15;
             video_rect(x + 1, top + 1, PANEL_WIDTH - 2, caption_height - 1, caption);
-            video_icon(x + 8, top + (caption_height - icon_height) / 2, ICON_DRIVE, mono ? caption : 7, mono ? fg : 0, mono ? fg : 15);
+            video_icon(x + 8, top + (caption_height - icon_height) / 2, ICON_DRIVE, caption, fg, fg);
             video_label(x + 30, top + (caption_height - video_font_height) / 2, path, fg, caption, 0);
             strcpy(paths[p], panel->path);
         }

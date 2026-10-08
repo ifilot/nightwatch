@@ -662,6 +662,7 @@ help_offsets label word
     dw offset help_74
     dw offset help_75
     dw offset help_76
+    dw offset help_77
 help_0 label byte
     db 04eh,069h,067h,068h,074h,077h,061h,074h,063h,068h,020h,069h,073h,020h,061h,020h
     db 074h,077h,06fh,02dh,070h,061h,06eh,065h,020h,066h,069h,06ch,065h,020h,06eh,061h
@@ -998,6 +999,11 @@ help_76 label byte
     db 065h,065h,06eh,020h,066h,06fh,06eh,074h,073h,020h,075h,073h,065h,020h,042h,053h
     db 044h,02dh,032h,02dh,043h,06ch,061h,075h,073h,065h,03bh,020h,073h,065h,065h,020h
     db 046h,04fh,04eh,054h,04ch,049h,043h,02eh,054h,058h,054h,02eh,000h
+help_77 label byte
+    db 056h,047h,041h,02fh,045h,047h,041h,020h,069h,063h,06fh,06eh,073h,03ah,020h,031h
+    db 036h,070h,078h,06ch,073h,020h,062h,079h,020h,050h,061h,075h,06ch,020h,04dh,061h
+    db 063h,06bh,065h,06eh,07ah,069h,065h,03bh,020h,073h,065h,065h,020h,049h,043h,04fh
+    db 04eh,04ch,049h,043h,02eh,054h,058h,054h,02eh,000h
 FONTDATA ends
 _TEXT segment byte public 'CODE'
 assume cs:_TEXT

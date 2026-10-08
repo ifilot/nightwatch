@@ -55,7 +55,7 @@ jumps; an external editor and DOS shell are also available.
 ## Run
 
 Download the DOS package from this repository's **Releases** page. Extract it and
-keep `LICENSE.TXT` and `FONTLIC.TXT` alongside `NIGHT.EXE`.
+keep `LICENSE.TXT`, `FONTLIC.TXT` and `ICONLIC.TXT` alongside `NIGHT.EXE`.
 
 ```dos
 NIGHT /vga C:\FILES D:\BACKUP
@@ -113,7 +113,9 @@ make package                            # build/dist/ release files
 The included Borland tools retain their original proprietary notices; see
 [build environment provenance](buildenv/BORLAND-NOTICE.md). Bundled DOSBox-X
 sources retain their GPLv2 and component notices.
-Nightwatch code and original icons are **GPLv3** ([license](LICENSE)). Fonts use
+Nightwatch code and original CGA icons are **GPLv3** ([license](LICENSE)).
+VGA/EGA icons use [16pxls](https://16pxls.com/) by Paul Mackenzie under
+CC-BY-SA-4.0 ([attribution and license](assets/ICON-LICENSE.txt)). Fonts use
 [Spleen](https://github.com/fcambus/spleen) under its BSD license. See the
 [manual](docs/manual.md), [rendering notes](docs/rendering.md) and
 [asset credits](assets/README.md) for more detail. Release history is recorded in
@@ -124,7 +126,7 @@ The [source comment style](docs/commenting.md) describes the C89/TASM convention
 
 Every branch/tag push and pull request runs host regression tests. Branch/tag
 pushes also build and test the DOS program in the repository's Docker environment.
-Tag pushes publish the validated `NIGHT.EXE`, GPL/font licenses, version
+Tag pushes publish the validated `NIGHT.EXE`, GPL/font/icon licenses, version
 information, DOS ZIP package and checksums as a GitHub release. The executable
 includes all four display modes.
 

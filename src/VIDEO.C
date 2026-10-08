@@ -366,9 +366,8 @@ void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigne
     const unsigned char *mask;
     int height;
     if (icon < 0 || icon > ICON_DRIVE) return;
-    height = video_mode == VIDEO_CGA ? 8 : (video_mode == VIDEO_EGA ? 12 : 16);
-    mask = video_mode == VIDEO_CGA ? cga_icon_masks[icon] :
-           (video_mode == VIDEO_EGA ? compact_icon_masks[icon] : icon_masks[icon]);
+    height = video_mode == VIDEO_CGA ? 8 : 16;
+    mask = video_mode == VIDEO_CGA ? cga_icon_masks[icon] : icon_masks[icon];
     video_mask(x, y, mask, 2, height, outline);
     video_mask(x, y, mask + height * 2, 2, height, body);
     video_mask(x, y, mask + height * 4, 2, height, highlight);

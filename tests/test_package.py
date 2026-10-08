@@ -22,15 +22,17 @@ class PackageTests(unittest.TestCase):
             license_data = b'BSD font license\n'
             (build / 'NIGHT.EXE').write_bytes(exe)
             (build / 'FONTLIC.TXT').write_bytes(license_data)
+            (build / 'ICONLIC.TXT').write_bytes(b'16pxls - Paul Mackenzie - CC-BY-SA-4.0\n')
             (build / 'LICENSE.TXT').write_bytes(b'GNU GENERAL PUBLIC LICENSE version 3\n')
             (build / 'TCC.EXE').write_bytes(b'never redistribute compiler')
             output = build / 'dist'
             archive = module.package(build, output)
             first = archive.read_bytes()
             with zipfile.ZipFile(archive) as zipped:
-                self.assertEqual(set(zipped.namelist()), {'NIGHT.EXE', 'FONTLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', 'README.TXT'})
+                self.assertEqual(set(zipped.namelist()), {'NIGHT.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', 'README.TXT'})
                 self.assertEqual(zipped.read('NIGHT.EXE'), exe)
                 self.assertEqual(zipped.read('FONTLIC.TXT'), license_data)
+                self.assertEqual(zipped.read('ICONLIC.TXT'), (build/'ICONLIC.TXT').read_bytes())
                 self.assertEqual(zipped.read('LICENSE.TXT'), (build / 'LICENSE.TXT').read_bytes())
                 self.assertEqual(zipped.read('VERSION.TXT'), ('v' + module.read_version() + '\r\n').encode('ascii'))
                 text = zipped.read('README.TXT')
@@ -51,6 +53,7 @@ class PackageTests(unittest.TestCase):
             output = build / 'dist'
             (build / 'NIGHT.EXE').write_bytes(b'not a DOS executable')
             (build / 'FONTLIC.TXT').write_text('license')
+            (build / 'ICONLIC.TXT').write_text('icon license')
             (build / 'LICENSE.TXT').write_text('GPL version 3')
             with self.assertRaises(ValueError):
                 module.package(build, output)

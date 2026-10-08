@@ -118,12 +118,12 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
             assert cells[(y*80+x)*2] == code, (machine, 'CP437 frame', x, y)
         assert cells[(24*80+1)*2+1] != cells[(24*80+2)*2+1], 'Footer key colors must differ'
     else:
-        # Folder glyphs must remain recognizable outlines in CGA, and layered color in EGA/VGA.
+        # Folder glyphs must remain recognizable outlines in every mode.
         image = images[0]
-        y = {'cga': 29, 'ega': 42, 'vga': 53}[mode]
-        icon = image.crop((22,y,38,y+{'cga': 8, 'ega': 12, 'vga': 16}[mode]))
+        y = {'cga': 29, 'ega': 49, 'vga': 53}[mode]
+        icon = image.crop((22,y,38,y+{'cga': 8, 'ega': 16, 'vga': 16}[mode]))
         colors = icon.getcolors(256)
-        assert len(colors) >= (2 if mode == 'cga' else 3), (mode, 'icon layers')
+        assert len(colors) >= 2, (mode, 'icon layers')
         if mode == 'cga':
             black = sum(n for n, color in colors if color == (0,0,0))
             assert 8 < black < 100, 'CGA folder must not be a solid block'
@@ -180,7 +180,7 @@ print('PASS: all four renderers and monochrome text with the same backend/UI')
 
 # Dense directories: assert the scroll boundary and inspect every actual rendered row.
 # Expected capacities are product requirements, not values obtained from graph_rows.
-for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega',21), ('vgaonly','vga',24)]:
+for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega',16), ('vgaonly','vga',24)]:
     work = base / ('density-' + mode)
     if work.exists(): shutil.rmtree(work)
     work.mkdir(); (work/'LEFT').mkdir(); (work/'RIGHT').mkdir()
@@ -204,12 +204,13 @@ for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega
     last = decode(work/f'F{end_index:03d}.BIN')
     assert position(capacity+6)[3:5] == [0,0], (mode,'Home')
     if mode != 'text':
-        start, pitch, font_h = {'cga':(21,8,8), 'ega':(29,13,12), 'vga':(37,16,16)}[mode]
+        start, pitch, font_h = {'cga':(21,8,8), 'ega':(33,16,12), 'vga':(37,16,16)}[mode]
         # Each unselected row contains a distinct filename and no overlapping neighbor.
         for row in range(1,capacity):
-            crop = first.crop((40,start+row*pitch,150,start+row*pitch+font_h))
+            text_y = start+row*pitch+(pitch-font_h)//2
+            crop = first.crop((40,text_y,150,text_y+font_h))
             assert any(min(pixel)<100 for pixel in crop.getdata()), (mode,'missing row',row)
-        y = start+(capacity-1)*pitch
+        y = start+(capacity-1)*pitch+(pitch-font_h)//2
         selected = boundary.crop((40,y,150,y+font_h))
         bg = (0,0,0) if mode=='cga' else palette[1]
         assert sum(pixel==bg for pixel in selected.getdata()) > 200, (mode,'last row clipped')
@@ -238,7 +239,7 @@ compile_dos(base, dos, 'REFBUILD',
      r'tcc -DNW_DIAGNOSTICS -DNW_NO_SCROLL -1- -ms -IC:\TC\INCLUDE -c VIDEO.C > REFCOMP.LOG',
      r'tcc -ms -LC:\TC\LIB -eUIREF.EXE MAIN.OBJ CORE.OBJ FSDOS.OBJ VIDEO.OBJ GRAPH.OBJ HEX.OBJ VIEW.OBJ FONT.OBJ > REFLINK.LOG'],
     ['UIREF.EXE','VIDEO.OBJ'], ['REFCOMP.LOG','REFLINK.LOG'])
-for machine,mode,capacity in [('cga','cga',18),('ega','ega',21),('vgaonly','vga',24)]:
+for machine,mode,capacity in [('cga','cga',18),('ega','ega',16),('vgaonly','vga',24)]:
     work=base/('scroll-'+mode)
     if work.exists(): shutil.rmtree(work)
     work.mkdir(); (work/'LEFT').mkdir(); (work/'RIGHT').mkdir()
@@ -317,7 +318,7 @@ for machine, mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga
     assert frames[1]==frames[4] and frames[1]!=frames[0],(mode,'About entry paths differ')
     if mode=='text':
         cells=frames[1][3:4003:2].decode('cp437')
-        for caption in ('Nightwatch v'+version,'GPLv3','LICENSE.TXT','Spleen','BSD-2-Clause','FONTLIC.TXT'):
+        for caption in ('Nightwatch v'+version,'GPLv3','LICENSE.TXT','Spleen','BSD-2-Clause','FONTLIC.TXT','16pxls','Paul Mackenzie','ICONLIC.TXT'):
             assert caption in cells,(machine,caption)
     else:
         image=decode(work/'F001.BIN')

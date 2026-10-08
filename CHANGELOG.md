@@ -32,6 +32,10 @@ changes without a release tag are marked unreleased.
 
 ### Changed
 
+- VGA and EGA share monochrome 16x16 icons from Paul Mackenzie's 16pxls set.
+  EGA uses 16-pixel rows and taller path captions, with 16 entries per pane;
+  CGA retains its previous icons and layout. Icon attribution and license
+  are included in About and the DOS package as ICONLIC.TXT.
 - The CI build image uses Debian Trixie and its packaged DOSBox-X emulator,
   avoiding emulator compilation during image creation.
 - Overall copy progress includes skipped files' sizes, so it reaches completion

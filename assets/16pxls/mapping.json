@@ -1,0 +1,10 @@
+{
+  "folder": "Folder",
+  "parent": "File-Upload",
+  "document": "File-Text",
+  "binary": "Menu-Four",
+  "program": "Browser",
+  "archive": "Archive",
+  "image": "PhotoSet",
+  "drive": "Server"
+}

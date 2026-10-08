@@ -517,6 +517,7 @@ static void about(void)
     video_text(15, y + 4, "8088/8086 | Text, CGA, EGA and VGA", COLOR_DIALOG);
     video_text(15, y + 6, "GPLv3 - no warranty. See LICENSE.TXT", COLOR_DIALOG);
     video_text(15, y + 7, "Spleen: BSD-2-Clause (FONTLIC.TXT)", COLOR_DIALOG);
+    video_text(15, y + 8, "16pxls: Paul Mackenzie (ICONLIC.TXT)", COLOR_DIALOG);
     video_text(15, y + 9, "Press any key to return", COLOR_DIALOG);
     video_flush(); key_read();
 }

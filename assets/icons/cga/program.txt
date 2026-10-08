@@ -1,0 +1,8 @@
+.XXXXXXXXXXXXXX.
+.XooooooooooooX.
+.XoXXoooooooooX.
+.XooXXooooooooX.
+.XoXooXXXXooooX.
+.XXXXXXXXXXXXXX.
+....XXXXXXXX....
+................

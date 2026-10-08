@@ -33,7 +33,7 @@ for machine, mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga
     assert writes[1]==writes[2]==writes[3] and writes[8]==writes[9]==writes[10], 'Boundary keys repainted'
     if mode=='text':
         last=frames[8][3:4003:2].decode('cp437')
-        assert 'FONTLIC.TXT' in last and 'GPLv3' in last and '#ABOUT' not in last
+        assert 'FONTLIC.TXT' in last and 'ICONLIC.TXT' in last and 'GPLv3' in last and '#ABOUT' not in last
     else:
         images=[decode(work/f'F{i:03d}.BIN') for i in range(len(keys))]
         f={'cga':8,'ega':12,'vga':16}[mode]

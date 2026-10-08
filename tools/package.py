@@ -17,8 +17,9 @@ F5: copy. F6: move. F7: mkdir. F8: delete. F10: quit.
 Ctrl-W saves mode, pane paths and sorting in NIGHT.CFG.
 
 Allow 128 KB free conventional RAM. EGA needs 128 KB video RAM.
-All fonts/icons are embedded. Keep FONTLIC.TXT with the executable:
-it contains the BSD license for the embedded Spleen fonts.
+All fonts/icons are embedded. Keep FONTLIC.TXT and ICONLIC.TXT with the
+executable. Spleen fonts use BSD-2-Clause. The VGA/EGA icons are 16pxls by
+Paul Mackenzie (https://16pxls.com/), adapted under CC-BY-SA-4.0.
 
 Nightwatch is free software under GNU GPL version 3, with no warranty.
 See LICENSE.TXT for the full license. Corresponding source is available
@@ -34,17 +35,18 @@ in the project repository at the matching release tag.
 def package(build, output):
     executable = (build / 'NIGHT.EXE').read_bytes()
     license_data = (build / 'FONTLIC.TXT').read_bytes()
+    icon_license = (build / 'ICONLIC.TXT').read_bytes()
     gpl = (build / 'LICENSE.TXT').read_bytes()
     version = 'v' + read_version()
     if len(executable) < 64 or executable[:2] != b'MZ':
         raise ValueError('NIGHT.EXE is not a DOS MZ executable')
-    if not license_data.strip() or not gpl.strip():
+    if not license_data.strip() or not icon_license.strip() or not gpl.strip():
         raise ValueError('A required license file is empty')
     output.mkdir(parents=True, exist_ok=True)
-    members = {'NIGHT.EXE': executable, 'FONTLIC.TXT': license_data,
+    members = {'NIGHT.EXE': executable, 'FONTLIC.TXT': license_data, 'ICONLIC.TXT': icon_license,
                'LICENSE.TXT': gpl, 'VERSION.TXT': (version + '\r\n').encode('ascii'),
                'README.TXT': DOS_README.format(version=version).replace('\n', '\r\n').encode('ascii')}
-    for name in ('NIGHT.EXE', 'FONTLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT'):
+    for name in ('NIGHT.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT'):
         (output / name).write_bytes(members[name])
     archive = output / 'NIGHTWATCH-DOS.zip'
     with zipfile.ZipFile(archive, 'w') as zipped:
@@ -53,7 +55,7 @@ def package(build, output):
             entry.compress_type = zipfile.ZIP_DEFLATED
             entry.external_attr = 0o100644 << 16
             zipped.writestr(entry, data)
-    names = ('NIGHT.EXE', 'FONTLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', archive.name)
+    names = ('NIGHT.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', archive.name)
     (output / 'SHA256SUMS.txt').write_text(''.join(
         hashlib.sha256((output / name).read_bytes()).hexdigest() + '  ' + name + '\n'
         for name in names), encoding='ascii')

@@ -75,3 +75,4 @@ Read-only files are preserved and cannot be deleted directly.
 A in Help opens About with version and license information.
 Nightwatch is licensed under GPLv3; see LICENSE.TXT.
 The embedded Spleen fonts use BSD-2-Clause; see FONTLIC.TXT.
+VGA/EGA icons: 16pxls by Paul Mackenzie; see ICONLIC.TXT.

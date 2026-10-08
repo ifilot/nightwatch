@@ -12,6 +12,7 @@ mkdir -p "$repo/build"
 python3 "$repo/tools/version.py" --write
 python3 "$repo/tools/build_metadata.py"
 cp "$repo/assets/FONT-LICENSE.txt" "$repo/build/FONTLIC.TXT"
+cp "$repo/assets/ICON-LICENSE.txt" "$repo/build/ICONLIC.TXT"
 cp "$repo/LICENSE" "$repo/build/LICENSE.TXT"
 python3 "$repo/tools/stage.py" "$repo/src" "$repo/build"
 # DOSBox process success alone does not prove compiler success. The batch file

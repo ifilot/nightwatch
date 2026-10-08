@@ -56,7 +56,8 @@ It verifies SHA-256 hashes before publishing:
 - `LICENSE.TXT`: GNU GPL version 3 for Nightwatch.
 - `VERSION.TXT`: the built version, such as `v1.0.0`.
 - `FONTLIC.TXT`: the embedded font license.
-- `NIGHTWATCH-DOS.zip`: executable, both licenses, version and a DOS README.
+- `ICONLIC.TXT`: 16pxls icon attribution and CC-BY-SA-4.0 license.
+- `NIGHTWATCH-DOS.zip`: executable, all licenses, version and a DOS README.
 - `SHA256SUMS.txt`: hashes for the executable, licenses, version and ZIP.
 
 Only release publishing receives `contents: write`; build jobs receive read
