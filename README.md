@@ -67,8 +67,9 @@ archive support is outside the current scope.
 
 ## Build and test
 
-The complete DOS toolchain and a Docker build recipe live in
-[`buildenv/`](buildenv/README.md). Build from this checkout with Docker:
+The complete DOS toolchain and a Debian Trixie Docker build recipe live in
+[`buildenv/`](buildenv/README.md). The image installs DOSBox and DOSBox-X from
+Debian's binary packages. Build from this checkout with Docker:
 
 ```sh
 docker build -t nightwatch-build buildenv
@@ -95,7 +96,8 @@ sources retain their GPLv2 and component notices.
 Nightwatch code and original icons are **GPLv3** ([license](LICENSE)). Fonts use
 [Spleen](https://github.com/fcambus/spleen) under its BSD license. See the
 [manual](docs/manual.md), [rendering notes](docs/rendering.md) and
-[asset credits](assets/README.md) for more detail.
+[asset credits](assets/README.md) for more detail. Release history is recorded in
+the [changelog](CHANGELOG.md).
 The [source comment style](docs/commenting.md) describes the C89/TASM conventions.
 
 ## Continuous integration and releases

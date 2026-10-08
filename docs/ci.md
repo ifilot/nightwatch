@@ -8,10 +8,11 @@ test DOS in the standalone [build environment](../buildenv/README.md).
 ## Build environment
 
 `buildenv/TC/` and `buildenv/TASM/` contain the supplied Turbo C 2.0 and Turbo
-Assembler 2.0.1 tools, headers and libraries. `buildenv/vendor/` contains the
-checked DOSBox-X 2024.03.01 Linux sources. The Dockerfile installs standard Ubuntu
-packages, builds DOSBox-X from those sources, and installs the DOS toolchain.
-No compiler files or emulator sources are fetched from another repository.
+Assembler 2.0.1 tools, headers and libraries. The Docker image uses Debian
+Trixie and installs DOSBox and DOSBox-X as binary packages from Debian, alongside
+the host build and test tools. The GitHub-hosted runner remains Ubuntu 24.04.
+Compiler inputs come from this checkout; no emulator is compiled during image
+creation.
 No self-hosted runner, compiler secret or Actions variable is required.
 
 To reproduce the CI environment locally:
@@ -23,9 +24,10 @@ docker run --rm --user "$(id -u):$(id -g)" \
   bash -c 'make clean && make build && make test-dos && make test-video && make benchmark && make package'
 ```
 
-The image build needs Ubuntu's base image and package mirrors. Compiler and
-emulator inputs come from this checkout. Original Borland notices and DOSBox-X
-source/component licenses are preserved in `buildenv/`.
+The image build needs Debian's base image and package mirrors. Original Borland
+notices remain in `buildenv/`; Debian's DOSBox-X license notices are installed
+under `/usr/share/doc/dosbox-x/` in the image. The old vendored DOSBox-X sources
+remain available for manual source builds and earlier benchmark reproduction.
 
 The workflow removes old output, compiles `NIGHT.EXE`, checks the small-model
 memory limit, then runs DOS/FAT12 filesystem tests, display/keyboard workflows,
