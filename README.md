@@ -1,7 +1,7 @@
 # Nightwatch
 
 [![GitHub Actions](https://github.com/ifilot/nightwatch/actions/workflows/build.yml/badge.svg)](https://github.com/ifilot/nightwatch/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-v1.1.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-v1.2.0-blue)](VERSION)
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
 A Midnight Commander style, two-pane file navigator for **MS-DOS on 8088/8086
@@ -72,16 +72,18 @@ Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C
 | F3 / Shift-F3 | Text / hex viewer; F4 toggles inside the viewer |
 | F4, F5, F6, F7, F8 | Editor, copy, move, mkdir, delete |
 | Ctrl-F, Ctrl-P / Ctrl-N, Ctrl-S | Find filename, mark / unmark patterns, sort |
+| Ctrl-U | Unpack selected ZIP into the other pane |
 | F9, Ctrl-R, Ctrl-O | Change drive/path, refresh, DOS shell |
 | F1, F10 | Help, quit |
 
 Inside either viewer: **F7** searches, **F8** finds the next match, and **Ctrl-G**
 jumps to an offset. Search accepts ASCII or bytes such as `hex:DE AD 00 BE EF`.
 
-Requires DOS 3.0+, DOS 8.3 filenames and about **128 KB free conventional RAM**.
+Requires DOS 3.0+, DOS 8.3 filenames and about **256 KB free conventional RAM**.
 EGA needs at least 128 KB video RAM. Each pane caches 512 entries; recursive
-operations traverse beyond that cache, up to 32 directory levels. Keyboard only;
-archive support is outside the current scope.
+operations traverse beyond that cache, up to 32 directory levels. Keyboard only. ZIP extraction supports stored and DEFLATE entries, including
+Windows and Linux archives. ZIP64, encryption and Deflate64 are unsupported.
+See [ZIP support](docs/zip-support.md) for filename and format limits.
 
 ## Build and test
 

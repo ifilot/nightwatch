@@ -7,6 +7,7 @@ import struct
 import sys
 import subprocess as sp
 from dosbuild import compile_dos
+from doszip import compile_app
 root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(root / 'tools'))
 from vram import decode
@@ -182,7 +183,7 @@ print('PASS: 63-byte binary search, F8 no-match retention and invalid/cancelled 
 
 # Exercise the app path bound directly: DOS shells impose shorter cwd limits.
 for source in base.iterdir():
-    if source.suffix in {'.C','.H','.OBJ'}: shutil.copy2(source,work/source.name)
+    if source.suffix in {'.C','.H','.OBJ','.ASM'}: shutil.copy2(source,work/source.name)
 long_source = r'''
 #define main navigator_main
 #include "MAIN.C"
@@ -215,9 +216,9 @@ int main(void) {
 }
 '''
 (work/'LONG.C').write_bytes(long_source.replace('\n','\r\n').encode('ascii'))
-compile_dos(work,lambda directory,cmds: dos(directory,cmds[0],'cga'),'LNBUILD',
+compile_app(work,lambda directory,cmds: dos(directory,cmds[0],'cga'),'LNBUILD',
     [r'set PATH=C:\TC;C:\TASM',r'set INCLUDE=C:\TC\INCLUDE',r'set LIB=C:\TC\LIB',
-     'tcc -DNW_DIAGNOSTICS -1- -ms -O -Z -eLONG.EXE LONG.C CORE.C FSDOS.C VIDEO.C GRAPH.C HEX.C VIEW.C FONT.OBJ > LONG.LOG'],
+     'tcc -DNW_DIAGNOSTICS -1- -mm -O -Z -eLONG.EXE LONG.C CORE.C FSDOS.C VIDEO.C GRAPH.C HEX.C VIEW.C FONT.OBJ > LONG.LOG'],
     ['LONG.EXE'],['LONG.LOG'])
 script(work,[27]); dos(work,'LONG > LONGRUN.LOG','cga')
 assert 'PASS: checked settings paths' in (work/'LONGRUN.LOG').read_text()

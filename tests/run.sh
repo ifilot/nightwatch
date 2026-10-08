@@ -33,9 +33,15 @@ cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -Itests \
 ASAN_OPTIONS=detect_leaks=0 build/test_operations
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -Itests \
     -fsanitize=address,undefined -fno-omit-frame-pointer -g \
+    src/CORE.C tests/fs_host.c tests/test_copy_integrity.c -o build/test_copy_integrity
+ASAN_OPTIONS=detect_leaks=0 build/test_copy_integrity
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -Itests \
+    -fsanitize=address,undefined -fno-omit-frame-pointer -g \
     src/CORE.C tests/fs_host.c tests/test_navigation.c -o build/test_navigation
 ASAN_OPTIONS=detect_leaks=0 build/test_navigation
 python3 tests/test_dosbuild.py
 python3 tests/test_package.py
 python3 tests/test_version.py
 python3 tests/test_build_metadata.py
+python3 tests/test_assets.py
+python3 tests/zip.py

@@ -11,7 +11,7 @@ for old in target.iterdir():
         old.unlink()
 # Turbo C/TASM consume DOS CRLF and 8.3 uppercase names. Reject non-ASCII
 # source here, rather than silently corrupting comments or string literals.
-for src in source.iterdir():
+for src in [*source.iterdir(), *(source.parent/'vendor/zlib').iterdir()]:
     if src.suffix.upper() in {'.C', '.H', '.ASM'} or src.name == 'MAKEFILE':
         text = src.read_text(encoding='ascii').replace('\r\n', '\n')
         (target / src.name.upper()).write_bytes(text.replace('\n', '\r\n').encode('ascii'))

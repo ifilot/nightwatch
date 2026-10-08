@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Keep Turbo C small-model data, runtime stack and stdio heap within 64 KB."""
+"""Keep Turbo C near data, runtime stack and stdio heap within 64 KB."""
 from pathlib import Path
 import re
 import sys
@@ -21,5 +21,5 @@ static=(static+15)&~15
 # The font segment is outside DGROUP. Keep at least 2 KB for stdio/runtime
 # allocations after startup expands the stack, rather than merely fitting data.
 heap=65536-static-stack
-assert heap>=2048,f'Small-model overflow: {static} static + {stack} stack leaves only {heap} heap bytes'
-print(f'PASS: small model: {static} static + {stack} stack; {heap} bytes available for near heap')
+assert heap>=2048,f'Near-data overflow: {static} static + {stack} stack leaves only {heap} heap bytes'
+print(f'PASS: near data: {static} static + {stack} stack; {heap} bytes available for near heap')

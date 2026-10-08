@@ -21,7 +21,7 @@ to 80-column color text, or monochrome text when launched from mode 07h.
 
 Turbo C 2.0 and its DOS MAKE run inside DOSBox. The code uses C89, the small
 memory model, and `-1-` to explicitly disable 80186/286 instructions. A small 8086 assembly module embeds font
-resources outside the small-model data segment; no Borland BGI driver is used.
+resources outside the near-data segment; no Borland BGI driver is used.
 Turbo Assembler 2.0 is also required.
 
 Host prerequisites: GNU Make, Bash, Python 3 and DOSBox. Provide Turbo C 2.0 in
@@ -116,8 +116,10 @@ exclusive temporary file in the destination directory, closes it, then renames
 it into place. DOS timestamps and readonly/hidden/system/archive attributes are
 preserved. Cross-drive moves copy first and remove each source only after
 successful copying. A skipped member remains at its source, together with its
-containing directories. Replacement files are fully prepared before the original
-is moved to a temporary backup; a failed commit attempts to restore the
+containing directories. Copies verify the transferred length against the
+source's size before committing; unexpected EOF or a source-size change leaves
+the source and any existing destination intact. Replacement files are fully
+prepared before the original is moved to a temporary backup; a failed commit attempts to restore the
 original. Any retained backup is reported.
 
 Before copying, Nightwatch scans every selected file and subfolder to count
@@ -132,6 +134,10 @@ frame in place. Tracks are rebuilt when the dialog opens or resumes after an
 overwrite prompt; the current-file fill resets when the next file starts. Overall
 progress includes skipped bytes, so all resolved files advance the bar.
 For selections containing only empty files it advances by resolved file count.
+During batches of small files, ordinary progress updates are coalesced to one
+paint per four BIOS ticks. First/final updates and restoration after a prompt
+are immediate. Keys typed during copying are deferred for pane navigation and
+cannot answer a later overwrite prompt.
 A smoothed recent transfer rate appears in KiB/s with estimated time remaining
 for the current file. Both show `--` until a sample is available; overwrite
 prompt time is excluded from the rate. Move/delete retain their existing byte
@@ -261,13 +267,15 @@ content revisions avoid directory scans and entry comparisons on ordinary input.
 Text mode retains its cell buffer and updates affected rows instead of
 rebuilding the desktop.
 
-Two 512-entry pane caches occupy about 25 KB. The transfer buffer is 2 KB; cell
-buffers total 9,600 bytes, the font cache is 4 KB, and the stack is 8 KB.
-Embedded fonts live in their own segment outside DGROUP. The executable is about
-60 KB; **allow 128 KB free conventional memory**. 256 KB or more installed RAM
-remains a practical DOS system target. Shells/editors need additional memory.
-The build checks that static near data plus the actual 8 KB runtime stack leave
-at least 2 KB of the 64 KB small-model segment for stdio and other heap use.
+Two 512-entry pane caches occupy about 25 KB. The copy fallback buffer is
+2 KB, cell buffers total 9,600 bytes, and the runtime stack is 8 KB. Font/help
+and fixed Huffman tables live in immutable segments outside DGROUP; there is
+no duplicate font cache. The medium memory model permits separate code
+segments while retaining near pointers for ordinary data. The ZIP-enabled
+executable is about 102 KB. **Allow 256 KB free conventional memory**, including
+roughly 40 KB of far allocations during inflation. Shells/editors need
+additional memory. The build checks that near data plus the actual stack leave
+at least 2 KB of the 64 KB data segment for stdio and other heap use.
 Detailed VRAM/cell/refresh counters are enabled only in diagnostic test builds.
 The instruction target is 8086/8088; physical 4.77 MHz IBM 5150 performance and
 CGA snow behavior still need hardware testing.
@@ -283,10 +291,34 @@ CGA/EGA/VGA screens and 23/49/55 ticks for ten moves. See
 These compare the old and new interfaces, rather than claiming physical hardware
 timing.
 
+## ZIP extraction
+
+Select a ZIP file and press **Ctrl-U**. The destination defaults to the inactive
+pane and must be an existing directory. The operation validates the complete
+archive structure and paths before creating files. Existing files offer
+**O** overwrite, **S** skip or **Esc** cancel. The transfer dialog shows the
+current uncompressed bytes, current-file and overall bars, speed and time left.
+A corrupt or cancelled entry cannot replace its destination; earlier completed
+entries and created directories remain.
+
+For unattended extraction, use `NW /unzip D:\PACK.ZIP D:\OUT`. This command
+refuses existing destination files and returns a nonzero status on failure.
+Relative archive filenames are also accepted. Standard stored/DEFLATE entries
+work at all compression levels, with ASCII DOS 8.3 names. Long/Unicode names,
+ZIP64, encryption, split archives, Deflate64 and filesystem links are rejected.
+Paths must fit the existing 127-byte program limit. Total uncompressed size and
+archive offsets are limited to 2,147,483,647 bytes.
+
 ## Validation
+
+ZIP extraction is tested with retained archives actually produced by Windows
+PowerShell/.NET and Linux Info-ZIP, plus generated compression and malformed
+archive cases. See [ZIP support](zip-support.md) for formats, memory use,
+compression details, fixture provenance and recovery behavior.
 
 ```sh
 make test         # strict C89 host backend tests with address/undefined sanitizers
+make test-zip-dos # ZIP extraction on the 8086 and FAT12, Windows/Linux archives
 make test-dos     # real DOS calls on a FAT12 image (DOSBox-X + mtools required)
 make test-video   # adapter + BIOS input + 8086 checks; Pillow and DOSBox-X required
 ```
@@ -298,6 +330,9 @@ loads and directory-cache bounds. Dedicated fault tests use different original
 and replacement contents to verify commit/rollback failures, retained backups,
 cancellation, skipped cross-drive moves, overlapping trees and temporary-name
 collisions. Navigation tests assert every sort order, reversal and tie handling.
+Additional tests cover premature EOF with both transfer buffers, source growth,
+copy/move source retention, exact VGA/EGA/CGA icon masks, and the number of
+metadata lookups performed during recursive counting.
 LeakSanitizer is disabled because the sandbox runs processes under tracing;
 address and undefined-behavior instrumentation remain enabled.
 
@@ -305,15 +340,20 @@ DOS integration tests exercise byte-exact copying, moving, timestamps,
 attributes, root-directory lookup, overwrite recovery, cancellation, recursive
 operations, cross-drive moves and traversal at the 32-level stack bound. They
 use DOSBox-X because DOSBox 0.74 does not implement attribute setting
-faithfully.
+faithfully. Deterministic adapter unit tests also inject DOS listing errors, distinguishing
+normal exhaustion and the pane limit from partial failures. A scan that cannot
+start preserves the valid cached listing; a failed partial scan clears its
+entries, marks and selection and invalidates rendering.
 
 Video tests include file-type icon fixtures and compile a separate test
 executable with scripted key input; the production executable still reads BIOS
 keyboard events. They run the actual UI and backend against each emulated
 adapter, capture real video memory, decode it to PNG, and check visible output,
 selection movement, viewer paging, copy, mkdir, delete, mode selection and exit.
-Captures appear in `build/video/`. These tests run without an X server. Text
-captures preserve and verify actual CP437 cells; their image previews substitute
+Captures appear in `build/video/`. These tests run without an X server. Each
+display mode also exercises overwrite input isolation,
+timed progress throttling, forced completion and Escape polling between paints.
+Text captures preserve and verify actual CP437 cells; their image previews substitute
 Spleen glyphs for the upper half of the ROM font. The production executable is
 also launched with real BIOS keyboard events, including a CGA graphics run on
 the DOSBox-X 8086 CPU core. A production cancellation test injects a key
@@ -352,5 +392,5 @@ Spleen font data remains BSD-2-Clause. The About window (Alt-F1 or F1 then A)
 shows the code, font and 16pxls icon credits. `NW /version` or `NW --version` prints the version.
 [VERSION](../VERSION) is authoritative; `tools/version.py` updates its DOS
 header and README badge, and `--check` catches inconsistencies in CI. Release
-ZIPs include the GPL text as LICENSE.TXT, font license as FONTLIC.TXT, icon attribution/license as ICONLIC.TXT, and
+ZIPs include the GPL text as LICENSE.TXT, font license as FONTLIC.TXT, icon attribution/license as ICONLIC.TXT, the zlib license as ZLIBLIC.TXT, and
 VERSION.TXT.

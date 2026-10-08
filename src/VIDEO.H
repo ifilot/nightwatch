@@ -37,13 +37,12 @@ extern unsigned long video_cells;
  * row-major bytes, most significant bit first; zero bits leave VRAM intact.
  * Masks reject negative x but clip vertically and at the right edge. Labels
  * reject negative origins and clip whole characters at the right edge;
- * label paints both colors, string paints foreground glyph bits only.
+ * Labels paint both foreground and background colors.
  * Callers supply valid near-memory mask storage and short terminated strings
  * whose length/advance products fit a DOS int. Coordinates/dimensions are
  * screen-scale values; clipping does not protect arbitrary int extremes. */
 void video_rect(int x, int y, int width, int height, unsigned color);
 void video_label(int x, int y, const char *s, unsigned fg, unsigned bg, int bold);
-void video_string(int x, int y, const char *s, unsigned color, int bold);
 void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigned highlight);
 /* Scroll moves the overlapping interior by signed pixel dy. It rounds x
  * outward to byte boundaries: callers must keep those edge gutters uniform,

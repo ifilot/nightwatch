@@ -3,7 +3,7 @@
 #ifndef HELP_H
 #define HELP_H
 #include "NW.H"
-#define HELP_LINES 78
+#define HELP_LINES 88
 #define HELP_WIDTH 66
 const char NW_FAR *asset_help(unsigned index);
 void help_line(unsigned index, char *out);

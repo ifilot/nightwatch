@@ -24,6 +24,7 @@ F5                  Copy files and directories.
 F6                  Move or rename files and directories.
 F7                  Create a directory.
 F8                  Delete recursively, after confirmation.
+Ctrl-U              Unpack the selected ZIP into the other pane.
 Copy and move destinations must be absolute DOS paths.
 For several marked entries, choose an existing directory.
 Existing directories merge; existing files ask what to do.
@@ -40,6 +41,14 @@ Speed and time show -- until a sample is available.
 Esc cancels between transfer blocks or directory entries.
 The unfinished copy is removed; completed files remain.
 Timestamps and file attributes are preserved.
+
+#ZIP EXTRACTION
+Choose an existing destination directory. O overwrites, S skips.
+Stored and DEFLATE ZIP entries work at all compression levels.
+Names must fit ASCII DOS 8.3; unsafe paths are rejected.
+CRC and sizes are checked before a file replaces the original.
+ZIP64, encryption, split archives and Deflate64 are unsupported.
+NW /unzip D:\PACK.ZIP D:\OUT extracts without overwriting.
 
 #VIEWING AND EDITING
 F3                  Open the text viewer.
@@ -76,3 +85,4 @@ A in Help opens About with version and license information.
 Nightwatch is licensed under GPLv3; see LICENSE.TXT.
 The embedded Spleen fonts use BSD-2-Clause; see FONTLIC.TXT.
 VGA/EGA icons: 16pxls by Paul Mackenzie; see ICONLIC.TXT.
+zlib 1.3.2 is embedded for inflate; see ZLIBLIC.TXT.

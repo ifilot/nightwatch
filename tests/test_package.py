@@ -23,6 +23,7 @@ class PackageTests(unittest.TestCase):
             (build / 'NW.EXE').write_bytes(exe)
             (build / 'FONTLIC.TXT').write_bytes(license_data)
             (build / 'ICONLIC.TXT').write_bytes(b'16pxls - Paul Mackenzie - CC-BY-SA-4.0\n')
+            (build / 'ZLIBLIC.TXT').write_bytes(b'zlib license\n')
             (build / 'LICENSE.TXT').write_bytes(b'GNU GENERAL PUBLIC LICENSE version 3\n')
             (build / 'TCC.EXE').write_bytes(b'never redistribute compiler')
             output = build / 'dist'
@@ -33,7 +34,7 @@ class PackageTests(unittest.TestCase):
             self.assertEqual((output/'NW.EXE').read_bytes(),exe)
             first = archive.read_bytes()
             with zipfile.ZipFile(archive) as zipped:
-                self.assertEqual(set(zipped.namelist()), {'NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', 'README.TXT'})
+                self.assertEqual(set(zipped.namelist()), {'NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', 'README.TXT', 'ZLIBLIC.TXT'})
                 self.assertEqual(zipped.read('NW.EXE'), exe)
                 self.assertEqual(zipped.read('FONTLIC.TXT'), license_data)
                 self.assertEqual(zipped.read('ICONLIC.TXT'), (build/'ICONLIC.TXT').read_bytes())
@@ -59,6 +60,7 @@ class PackageTests(unittest.TestCase):
             (build / 'FONTLIC.TXT').write_text('license')
             (build / 'ICONLIC.TXT').write_text('icon license')
             (build / 'LICENSE.TXT').write_text('GPL version 3')
+            (build / 'ZLIBLIC.TXT').write_text('zlib license')
             with self.assertRaises(ValueError):
                 module.package(build, output)
             self.assertFalse(output.exists())

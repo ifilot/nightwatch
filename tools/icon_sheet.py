@@ -24,7 +24,7 @@ descriptions = {
 def icon(name, mode, selected=False, help_icon=False):
     prefix, width, height = {'VGA': ('icon_',16,16), 'EGA': ('icon_',16,16), 'CGA': ('cga_',16,8)}[mode]
     mask = tables[prefix+name]
-    assert len(mask) == 3 * height * 2
+    assert len(mask) == (3 if mode == 'CGA' else 1) * height * 2
     if mode == 'CGA':
         bg = 0 if selected or help_icon else 15
         body, edge, light = bg, 15 if bg == 0 else 0, 15 if bg == 0 else 0
@@ -35,8 +35,8 @@ def icon(name, mode, selected=False, help_icon=False):
         bg = 1 if selected else 15
         body, edge, light = bg, 15 if selected else 0, 15 if selected else 0
     bitmap = Image.new('RGB',(width,height),palette[bg])
-    # video_icon paints outline, body, then highlight; zero bits are transparent.
-    for layer, color in enumerate((edge,body,light)):
+    # VGA/EGA draw one ink mask; CGA draws outline/body/highlight layers.
+    for layer, color in enumerate((edge,body,light) if mode == 'CGA' else (edge,)):
         for y in range(height):
             at = layer * height * 2 + y * 2
             bits = (mask[at] << 8) | mask[at+1]

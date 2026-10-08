@@ -21,6 +21,7 @@ typedef struct { const char *operation, *suffix; unsigned call; } Fault;
 static Fault faults[8];
 static unsigned fault_count;
 int fs_test_cross_drive;
+unsigned fs_test_info_calls;
 /* Clear scheduled boundary faults and cross-drive simulation, not legacy flags.
  */
 void fs_test_reset(void) { fault_count = 0; fs_test_cross_drive = 0; }
@@ -65,6 +66,7 @@ int fs_info(const char *path, Entry *e)
 {
     struct stat s;
     struct tm *t;
+    ++fs_test_info_calls;
     if (stat(path, &s)) return 0;
     memset(e, 0, sizeof(*e));
     e->size = s.st_size; e->attr = S_ISDIR(s.st_mode) ? NW_DIR : 32;
@@ -113,8 +115,13 @@ int fs_rename(const char *a, const char *b)
     return rename(a, b) == 0;
 }
 int fs_read_open(const char *p) { return open(p, O_RDONLY); }
+long fs_seek(int fd, long offset, int origin)
+{
+    if (fault("seek", NULL)) return -1;
+    return (long)lseek(fd, offset, origin);
+}
 int fs_create(const char *p) { if (fault("create", p)) return -1; return open(p, O_WRONLY | O_CREAT | O_EXCL, 0600); }
-int fs_read(int fd, void *p, unsigned n) { if (fault("read", NULL)) return -1; if (test_read_fail) { errno = EIO; return -1; } return read(fd, p, n); }
+int fs_read(int fd, void *p, unsigned n) { if (fault("eof", NULL)) return 0; if (fault("read", NULL)) return -1; if (test_read_fail) { errno = EIO; return -1; } return read(fd, p, n); }
 int fs_write(int fd, const void *p, unsigned n)
 {
     if (fault("write", NULL)) return -1;

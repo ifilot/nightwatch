@@ -20,12 +20,13 @@ notices as ICONLIC.TXT, and About credits the author.
 
 Run `python3 tools/import_16pxls.py` to convert the selected PNGs. Conversion
 thresholds their original alpha at 128, without resizing or redrawing. The
-native masks in icons/*.txt use `X` for outline, `o` for body, `+` for detail
-and `.` for transparency. Monochrome outlines use black normally and white
+native monochrome masks in icons/*.txt use `X` for ink and `.` for transparency.
+Each VGA/EGA icon compiles to a single 32-byte mask. Outlines use black normally and white
 when selected; the surrounding application theme retains its existing colors.
 
 CGA retains its original GPL-3.0-only artwork at 16x8, including the P5 parent
 badge. All eight definitions are preserved independently in icons/cga/*.txt,
+using `X` for outline, `o` for body, `+` for detail and `.` for transparency,
 so changing VGA/EGA artwork cannot change CGA. The old 12x12 drawings in
 icons/compact/ are historical assets; they are no longer embedded or rendered.
 The original alternatives remain in [the candidate sheet](../docs/icon-options.png).

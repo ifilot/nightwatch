@@ -17,7 +17,7 @@ docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD:/workspace" nightwatch-build make build
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD:/workspace" nightwatch-build \
-  bash -c 'make test && make test-dos && make test-video && make benchmark && make package'
+  bash -c 'make test && make test-zip-dos && make test-dos && make test-video && make benchmark && make package'
 ```
 
 Outputs appear in the checkout's `build/` directory. The image contains the
@@ -37,3 +37,9 @@ Turbo C/TASM build, host and DOS regression tests, all display modes, production
 The older DOSBox-X source archive and `build-dosbox-x.sh` remain available for
 manual source builds and reproducing earlier measurements. They are not used by
 the Docker image. See [vendor provenance](vendor/README.md).
+
+ZIP support vendors a pinned zlib inflate subset in `vendor/zlib`; no network
+fetch or external runtime library is needed. Production uses Turbo C medium
+model (far code, near data), with immutable font/help and fixed decode tables
+outside DGROUP. `make test-zip-dos` runs the cross-platform ZIP fixtures on the
+8086 and validates extraction/replacement on a real FAT12 volume.

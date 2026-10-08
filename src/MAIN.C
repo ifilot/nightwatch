@@ -15,6 +15,7 @@
 #include <dir.h>
 #include <bios.h>
 #include "NW.H"
+#include "ZIP.H"
 #include "VIDEO.H"
 #include "GRAPH.H"
 #include "HELP.H"
@@ -61,6 +62,11 @@ static unsigned long viewer_pages;
 /* Read a queued or BIOS key using the common ASCII/scan-code convention.
  * Transfer progress can defer non-Escape keys in the bounded pending ring.
  */
+static int key_value(int k)
+{
+    if ((k & 255) == 0 || (k & 255) == 224) return k & 0xff00;
+    return k & 255;
+}
 static int key_read(void)
 {
     int k;
@@ -68,9 +74,11 @@ static int key_read(void)
         k = pending_keys[pending_head];
         pending_head = (pending_head + 1) & 15; --pending_count;
     } else k = bioskey(0);
-    if ((k & 255) == 0 || (k & 255) == 224) return k & 0xff00;
-    return k & 255;
+    return key_value(k);
 }
+/* Commands deferred by progress belong to the pane, never to an overwrite
+ * decision. Modal input reads the BIOS queue without consuming that ring. */
+static int modal_key_read(void) { return key_value(bioskey(0)); }
 /* Return visible entry rows, independent of the character grid used by dialogs.
  */
 static int pane_rows(void) { return video_mode == VIDEO_TEXT ? video_rows - 8 : graph_rows(); }
@@ -317,8 +325,12 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
         transfer_rate = transfer_rate ? transfer_rate / 2 + bytes / 2 : bytes;
         sample_tick = now; sample_bytes = operation_transferred;
     }
-    if (force_progress || (changed && !counting) || shown_files != operation_files ||
-        shown_skipped != operation_skipped || tick_elapsed(now, paint_tick) >= 4) {
+    /* Coalesce tiny-file copy updates across path/count changes. Escape is
+     * still checked on every callback; forced first/final/prompt paints bypass
+     * the timer. Labels, counters and bars always share this callback snapshot. */
+    if (force_progress || tick_elapsed(now, paint_tick) >= 4 ||
+        (!copy_progress && !counting && (changed || shown_files != operation_files ||
+                                       shown_skipped != operation_skipped))) {
         if (counting) {
             copy_dialog = 0;
             sprintf(line, "%.70s", path);
@@ -338,7 +350,7 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
             if (reset) {
                 for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
                 frame(3, y, 74, 11, COLOR_DIALOG);
-                video_text(5, y + 1, "Copying - Esc cancels", COLOR_DIALOG);
+                video_text(5, y + 1, copy_progress == 2 ? "Unpacking ZIP - Esc cancels" : "Copying - Esc cancels", COLOR_DIALOG);
             }
             copy_dialog = 1; copy_generation = video_generation();
             /* Keep long DOS paths inside the dialog border. */
@@ -391,7 +403,7 @@ static int conflict_ui(const char *src, const char *dst)
     copy_dialog = 0;
     dialog("Destination exists", dst);
     video_text(5, video_rows / 2 + 1, "O overwrite | S skip | Esc cancel", COLOR_DIALOG);
-    video_flush(); k = key_read();
+    video_flush(); k = modal_key_read();
     /* Exclude time spent answering the conflict prompt from transfer samples. */
     sample_tick = (unsigned long)biostime(0, 0L);
     sample_bytes = operation_transferred; transfer_rate = 0; force_progress = 1;
@@ -842,6 +854,26 @@ static void operate(int move)
 /* Confirm once, recursively delete the marked/current selection, and refresh
  * affected directories even when cancellation leaves earlier deletions committed.
  */
+static void extract_zip(void)
+{
+    char source[NW_PATH], target[NW_PATH];
+    int ok;
+    Entry *e = current();
+    if (!e || (e->attr & NW_DIR) || !current_path(source)) return;
+    strcpy(target, panes[1-active].path);
+    if (!prompt("Unpack ZIP into existing directory", target, sizeof(target))) return;
+    begin_operation(); counting = 1;
+    ok = zip_measure(source, target, &total_files, &total_bytes);
+    counting = 0; copy_progress = 2; progress_path[0] = 0; force_progress = 1;
+    if (ok) ok = zip_extract(source, target);
+    if (ok && progress_path[0]) {
+        force_progress = 1; operation_ui(progress_path, last_total, last_total);
+    }
+    end_operation();
+    if (!ok) notice(nw_error);
+    sprintf(status, "%lu unpacked, %lu skipped (ZIP)", operation_files, operation_skipped);
+    refresh();
+}
 static void delete_entries(void)
 {
     Panel *p = &panes[active];
@@ -970,6 +1002,12 @@ static void settings_save(void)
 int main(int argc, char **argv)
 {
     int mode = VIDEO_TEXT, k, i, paths = 0, quit = 0, explicit_mode = 0;
+    if (argc > 1 && !stricmp(argv[1], "/unzip")) {
+        if (argc != 4) { puts("NW /unzip archive.zip existing-directory"); return 1; }
+        /* Command-line extraction never implicitly overwrites existing files. */
+        if (!zip_extract(argv[2], argv[3])) { puts(nw_error); return 1; }
+        printf("%lu files unpacked\n", operation_files); return 0;
+    }
     if (!getcwd(startup, sizeof(startup))) { puts("Cannot read current directory"); return 1; }
     strcpy(panes[0].path, startup); strcpy(panes[1].path, startup);
     settings_load(&mode);
@@ -1023,6 +1061,7 @@ int main(int argc, char **argv)
         case 14: find_name(2); break;
         case 19: sort_menu(); break;
         case 23: settings_save(); break;
+        case 21: extract_zip(); break;
         case 15: run_shell(NULL); break;
         case 27: command[0] = 0; break;
         case 8:

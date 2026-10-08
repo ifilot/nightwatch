@@ -40,6 +40,8 @@ jobs:
           docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build bash -c 'make clean && make build'
       - name: Test real DOS filesystem calls
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make test-dos
+      - name: Test ZIP inflation on the 8086 with Windows and Linux archives
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make test-zip-dos
       - name: Test all displays and production BIOS input
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make test-video
       - name: Check rendering work on the 8086 core

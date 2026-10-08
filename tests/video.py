@@ -12,6 +12,7 @@ import hashlib
 import sys
 from PIL import Image
 from dosbuild import compile_dos
+from doszip import compile_app
 root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(root / 'tools'))
 from vram import decode, palette
@@ -34,7 +35,9 @@ for src in (root / 'src').iterdir():
         if src.name == 'MAIN.C':
             begin = text.index('static int key_read(void)')
             end = text.index('static int pane_rows', begin)
-            text = text[:begin] + '#include "UITEST.H"\nstatic int key_read(void) { return test_key_read(); }\n' + text[end:]
+            text = text[:begin] + ('#include "UITEST.H"\n'
+                                  'static int key_read(void) { return test_key_read(); }\n'
+                                  'static int modal_key_read(void) { return test_key_read(); }\n') + text[end:]
             # Capture copy dialogs separately so ordinary scripted-key frame
             # numbers remain stable. Production source has no capture calls.
             text = text.replace('        paint_tick = now;',
@@ -47,10 +50,10 @@ for src in (root / 'src').iterdir():
                                 '        delay(5); operation_current_bytes = copied;')
         (base / src.name).write_bytes(text.replace('\n', '\r\n').encode('ascii'))
 (base / 'UITEST.H').write_bytes((root / 'tests/UITEST.H').read_text().replace('\n', '\r\n').encode('ascii'))
-compile_dos(base, dos, 'UIBUILD',
+compile_app(base, dos, 'UIBUILD',
     [r'set PATH=C:\TC;C:\TASM', 'tasm /mx FONT.ASM > ASSEMBLE.LOG',
      r'set INCLUDE=C:\TC\INCLUDE', r'set LIB=C:\TC\LIB',
-     r'tcc -DNW_DIAGNOSTICS -1- -ms -O -Z -eUITEST.EXE MAIN.C CORE.C FSDOS.C VIDEO.C GRAPH.C HEX.C VIEW.C FONT.OBJ > COMPILE.LOG'],
+     r'tcc -DNW_DIAGNOSTICS -1- -mm -O -Z -eUITEST.EXE MAIN.C CORE.C FSDOS.C VIDEO.C GRAPH.C HEX.C VIEW.C FONT.OBJ > COMPILE.LOG'],
     ['UITEST.EXE','FONT.OBJ'], ['ASSEMBLE.LOG','COMPILE.LOG'])
 
 def baseline_compare(work):
@@ -241,8 +244,8 @@ for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega
 # Compare viewport copies with an independent forced-redraw executable, both panes.
 compile_dos(base, dos, 'REFBUILD',
     [r'set PATH=C:\TC;C:\TASM',
-     r'tcc -DNW_DIAGNOSTICS -DNW_NO_SCROLL -1- -ms -IC:\TC\INCLUDE -c VIDEO.C > REFCOMP.LOG',
-     r'tcc -ms -LC:\TC\LIB -eUIREF.EXE MAIN.OBJ CORE.OBJ FSDOS.OBJ VIDEO.OBJ GRAPH.OBJ HEX.OBJ VIEW.OBJ FONT.OBJ > REFLINK.LOG'],
+     r'tcc -DNW_DIAGNOSTICS -DNW_NO_SCROLL -1- -mm -IC:\TC\INCLUDE -c VIDEO.C > REFCOMP.LOG',
+     r'tcc -mm -LC:\TC\LIB -eUIREF.EXE *.OBJ > REFLINK.LOG'],
     ['UIREF.EXE','VIDEO.OBJ'], ['REFCOMP.LOG','REFLINK.LOG'])
 for machine,mode,capacity in [('cga','cga',18),('ega','ega',15),('vgaonly','vga',22)]:
     work=base/('scroll-'+mode)
@@ -343,7 +346,7 @@ print('PASS: production /version and --version agree with VERSION',flush=True)
 # Compile a launcher that fills the real BIOS keyboard queue, then starts NW.
 # This uses the production executable, without replacing key_read.
 (base / 'KEYTEST.C').write_bytes((root / 'tests/KEYTEST.C').read_text().replace('\n', '\r\n').encode('ascii'))
-compile_dos(base, dos, 'KEYBUILD', [r'set PATH=C:\TC;C:\TASM', r'tcc -1- -ms -IC:\TC\INCLUDE -LC:\TC\LIB -eKEYTEST.EXE KEYTEST.C > KEYCOMP.LOG'], ['KEYTEST.EXE'], ['KEYCOMP.LOG'])
+compile_dos(base, dos, 'KEYBUILD', [r'set PATH=C:\TC;C:\TASM', r'tcc -1- -mm -IC:\TC\INCLUDE -LC:\TC\LIB -eKEYTEST.EXE KEYTEST.C > KEYCOMP.LOG'], ['KEYTEST.EXE'], ['KEYCOMP.LOG'])
 production = base / 'production'
 if production.exists(): shutil.rmtree(production)
 production.mkdir(); (production / 'LEFT').mkdir(); (production / 'RIGHT').mkdir(); (production / 'LEFT/SUB').mkdir()
@@ -396,3 +399,24 @@ assert (cancel_work/'LEFT/SECOND.BIN').read_bytes()==second
 assert not (cancel_work/'RIGHT/SECOND.BIN').exists()
 assert not list((cancel_work/'RIGHT').glob('*.TMP'))
 print('PASS: production 8086 BIOS Escape behind another key during transfer; current temporary removed, prior commit preserved',flush=True)
+
+# The actual Ctrl-U workflow must extract into the inactive pane in every mode,
+# restore the desktop, and feed skip decisions through the fresh modal reader.
+import json
+zip_manifest=json.loads((root/'tests/fixtures/zip/manifest.json').read_text())
+for machine,mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga')]:
+    work=base/('zip-'+mode)
+    if work.exists(): shutil.rmtree(work)
+    work.mkdir(); (work/'LEFT').mkdir(); (work/'RIGHT').mkdir()
+    shutil.copy2(base/'UITEST.EXE',work/'UITEST.EXE')
+    shutil.copy2(root/'tests/fixtures/zip/WINPS.ZIP',work/'LEFT/PACK.ZIP')
+    # First invocation copies all; second skips every existing file.
+    keys=[0x5000,21,13,21,13]+[ord('S')]*5+[0x4400]
+    (work/'KEYS.TXT').write_text('\n'.join(f'{k:x}' for k in keys))
+    dos(work,[r'UITEST /'+mode+r' D:\LEFT D:\RIGHT'],machine)
+    for name,info in zip_manifest.items():
+        assert hashlib.sha256((work/'RIGHT'/name).read_bytes()).hexdigest()==info['sha256'],(mode,name)
+    assert (work/'RIGHT/SUB/EMPTY').is_dir()
+    assert not list((work/'RIGHT').rglob('*.TMP')) and not list((work/'RIGHT').rglob('*.BAK'))
+    assert list(work.glob('P*.BIN')),(mode,'no extraction progress captured')
+    print('PASS:',mode,'Ctrl-U ZIP extraction, Windows separator paths, skip prompts and progress',flush=True)

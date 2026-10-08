@@ -14,12 +14,15 @@ Optional pane paths: NW /vga C:\\FILES D:\\BACKUP
 F1: help (A: About). Alt-F1: About. NW /version prints the version.
 F2: display mode. F3: text viewer. Shift-F3: hex viewer.
 F5: copy. F6: move. F7: mkdir. F8: delete. F10: quit.
+Ctrl-U unpacks the selected ZIP into the other panel (store/DEFLATE, DOS 8.3).
+NW /unzip D:\\PACK.ZIP D:\\OUT extracts without overwriting existing files.
 Ctrl-W saves mode, pane paths and sorting in NIGHT.CFG.
 
-Allow 128 KB free conventional RAM. EGA needs 128 KB video RAM.
+Allow 256 KB free conventional RAM, including ZIP inflation. EGA needs 128 KB video RAM.
 All fonts/icons are embedded. Keep FONTLIC.TXT and ICONLIC.TXT with the
 executable. Spleen fonts use BSD-2-Clause. The VGA/EGA icons are 16pxls by
 Paul Mackenzie (https://16pxls.com/), adapted under CC-BY-SA-4.0.
+The embedded zlib 1.3.2 inflate subset uses the zlib license (ZLIBLIC.TXT).
 
 Nightwatch is free software under GNU GPL version 3, with no warranty.
 See LICENSE.TXT for the full license. Corresponding source is available
@@ -37,19 +40,20 @@ def package(build, output):
     license_data = (build / 'FONTLIC.TXT').read_bytes()
     icon_license = (build / 'ICONLIC.TXT').read_bytes()
     gpl = (build / 'LICENSE.TXT').read_bytes()
+    zlib_license = (build / 'ZLIBLIC.TXT').read_bytes()
     version = 'v' + read_version()
     if len(executable) < 64 or executable[:2] != b'MZ':
         raise ValueError('NW.EXE is not a DOS MZ executable')
-    if not license_data.strip() or not icon_license.strip() or not gpl.strip():
+    if not license_data.strip() or not icon_license.strip() or not gpl.strip() or not zlib_license.strip():
         raise ValueError('A required license file is empty')
     output.mkdir(parents=True, exist_ok=True)
     # A reused release directory must not publish the old executable name.
     legacy = output / 'NIGHT.EXE'
     if legacy.is_file(): legacy.unlink()
     members = {'NW.EXE': executable, 'FONTLIC.TXT': license_data, 'ICONLIC.TXT': icon_license,
-               'LICENSE.TXT': gpl, 'VERSION.TXT': (version + '\r\n').encode('ascii'),
+               'LICENSE.TXT': gpl, 'ZLIBLIC.TXT': zlib_license, 'VERSION.TXT': (version + '\r\n').encode('ascii'),
                'README.TXT': DOS_README.format(version=version).replace('\n', '\r\n').encode('ascii')}
-    for name in ('NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT'):
+    for name in ('NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'ZLIBLIC.TXT', 'VERSION.TXT'):
         (output / name).write_bytes(members[name])
     archive = output / 'NIGHTWATCH-DOS.zip'
     with zipfile.ZipFile(archive, 'w') as zipped:
@@ -58,7 +62,7 @@ def package(build, output):
             entry.compress_type = zipfile.ZIP_DEFLATED
             entry.external_attr = 0o100644 << 16
             zipped.writestr(entry, data)
-    names = ('NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'VERSION.TXT', archive.name)
+    names = ('NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'ZLIBLIC.TXT', 'VERSION.TXT', archive.name)
     (output / 'SHA256SUMS.txt').write_text(''.join(
         hashlib.sha256((output / name).read_bytes()).hexdigest() + '  ' + name + '\n'
         for name in names), encoding='ascii')

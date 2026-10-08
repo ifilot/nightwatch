@@ -4,7 +4,39 @@ Notable changes to Nightwatch, newest first. This history was reconstructed
 from the repository's commits and release tags. Release dates follow the tags;
 changes without a release tag are marked unreleased.
 
-## v1.1.0 — Unreleased
+## v1.2.0 — Unreleased
+
+### Added
+
+- Built-in ZIP extraction using the vendored zlib 1.3.2 raw-inflate subset:
+  Ctrl-U unpacks into the inactive pane; `/unzip` supports unattended extraction.
+  Stored/DEFLATE entries, subfolders, data descriptors, overwrite/skip/cancel,
+  size/CRC validation and staged recovery are supported with DOS 8.3 names.
+- Windows PowerShell/.NET and Linux Info-ZIP fixtures, compression level/strategy
+  coverage, malformed-archive and fault tests, and actual 8086/FAT12 checks.
+- Retained the optional zlib Turbo C/8086 feasibility probe.
+- Regression coverage for copy length, source preservation, DOS listing
+  faults, overwrite input isolation, progress throttling and exact icon masks.
+
+### Changed
+
+- Medium-model far code removes the single 64 KiB code limit. Fonts are read
+  directly from their immutable segment; fixed Huffman tables also move outside
+  near data to retain the pane caches, copy buffer and runtime heap budget.
+- Recursive counting reuses directory-entry metadata; tiny-file copy batches
+  coalesce progress paints while retaining per-callback Escape polling.
+- VGA/EGA icons store and draw one monochrome mask; removed the unused text
+  renderer and reduced the graphical row cache to its 22-row maximum.
+
+### Fixed
+
+- Hardened copy/move staging against premature EOF and source-size changes,
+  and isolated deferred pane keys from overwrite decisions.
+- Directory refresh distinguishes DOS enumeration failures from normal
+  completion and invalidates failed partial listings while preserving valid
+  cached listings when a scan cannot start.
+
+## v1.1.0 — 2026-10-08
 
 ### Added
 

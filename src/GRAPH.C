@@ -6,8 +6,8 @@
 #include "GRAPH.H"
 #include "HELP.H"
 /* Every supported graph_rows() result must fit this painted-row capacity.
- * Current CGA/EGA/VGA layouts expose 18/21/24 rows respectively. */
-#define MAX_VISIBLE 24
+ * Current CGA/EGA/VGA layouts expose 18/15/22 rows respectively. */
+#define MAX_VISIBLE 22
 #define PANEL_WIDTH 310
 static const char *actions[] = { "Help", "Mode", "View", "Edit", "Copy", "Move", "Mkdir", "Delete", "Path", "Quit" };
 /* This is a cache of what is actually on screen, including the selected
@@ -141,7 +141,10 @@ static void metrics(void)
 }
 int graph_rows(void)
 {
-    metrics(); return (bottom - list_top - foot_height - 1) / row_height;
+    int rows;
+    metrics(); rows = (bottom - list_top - foot_height - 1) / row_height;
+    /* Keep future layout changes within the fixed painted-row cache. */
+    return rows > MAX_VISIBLE ? MAX_VISIBLE : rows;
 }
 static void buttons(void)
 {

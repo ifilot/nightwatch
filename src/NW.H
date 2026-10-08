@@ -51,7 +51,9 @@ extern unsigned fs_list_calls;
  */
 int path_join(char *out, const char *dir, const char *name);
 /* Reload/sort from p->path, preserving selected filename when possible.
- * Successful loads clear marks/top and bump revision; failure is not a snapshot.
+ * Successful loads clear marks/top and bump revision. Failed partial scans
+ * empty the cache, reset navigation/marks and bump revision; failure before scanning
+ * preserves the existing cache and UI state.
  */
 int panel_load(Panel *p);
 /* Copy a successful same-directory listing, preserving receiving sort/selection.
@@ -129,6 +131,8 @@ int valid_name(const char *name);
 /* Platform boundary: DOS implementation and a POSIX test implementation. */
 /* Fill a bounded pane listing with a synthetic parent except at the drive root.
  * Metadata is raw filesystem data; panel_load owns sorting and revisions.
+ * Failure before scanning preserves the old cache; a failed partial scan must
+ * set count/truncated to zero so panel_load can invalidate its UI state.
  */
 int fs_list(Panel *p);
 /* Resolve an existing directory into an NW_PATH-byte output, which may alias path.
@@ -153,6 +157,8 @@ int fs_rename(const char *src, const char *dst);
 int fs_read_open(const char *path);
 int fs_create(const char *path);
 int fs_read(int fd, void *data, unsigned count);
+/* Absolute/relative/end seek; -1 on error. ZIP offsets fit signed DOS long. */
+long fs_seek(int fd, long offset, int origin);
 int fs_write(int fd, const void *data, unsigned count);
 /* Copy-only storage can live outside the small-model data segment. Keep the
  * original allocation for freeing and a normalized pointer for DOS I/O. */
@@ -171,6 +177,10 @@ void fs_copy_buffer_free(FsCopyBuffer *buffer);
 int fs_copy_read(int fd, FsCopyBuffer *buffer);
 int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count);
 int fs_close(int fd);
+/* Shared staged-file recovery, used by copy and ZIP extraction. */
+int operation_discard(const char *path);
+int operation_temp(const char *dst, char *out, const char *extension);
+int operation_commit(const char *staged, const char *dst, const Entry *old);
 /* Set the open output file timestamp from packed DOS words; fs_attr sets final
  * path attributes after closing. Both return nonzero on success.
  */

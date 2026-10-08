@@ -10,6 +10,7 @@ import subprocess as sp
 import re
 import sys
 from dosbuild import compile_dos
+from doszip import compile_app
 root = Path(__file__).resolve().parents[1]
 toolchain = Path(os.environ.get('DOS_TOOLCHAIN',str(root / 'buildenv')))
 env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
@@ -72,7 +73,8 @@ for label in (('no-scroll',) if scroll_only else ('before','after','no-scroll'))
         text=source.read_text()
         if source.name=='MAIN.C':
             start=text.index('static int key_read(void)'); end=text.index('static int pane_rows',start)
-            text=text[:start]+'static int key_read(void) { return speed_key_read(); }\n'+text[end:]
+            text=text[:start]+('static int key_read(void) { return speed_key_read(); }\n'
+                              'static int modal_key_read(void) { return speed_key_read(); }\n')+text[end:]
         (work/source.name).write_bytes(text.replace('\n','\r\n').encode('ascii'))
     (work/'SPEED.C').write_bytes(bench.replace('\n','\r\n').encode('ascii'))
     (work/'CPU.CONF').write_text('[cpu]\ncputype=8086\ncore=normal\ncycles=3000\n')
@@ -88,9 +90,9 @@ for label in (('no-scroll',) if scroll_only else ('before','after','no-scroll'))
     commands=[r'set PATH=C:\TC;C:\TASM','tasm /mx FONT.ASM > ASSEMBLE.LOG']
     modules=('SPEED','CORE','FSDOS','VIDEO','GRAPH','HEX') + (('VIEW',) if (sources/'VIEW.C').exists() else ())
     for module in modules:
-        commands.append(rf'tcc {flags}-1- -ms -O -Z -IC:\TC\INCLUDE -c {module}.C > C{module}.LOG')
-    commands.append(r'tcc -ms -LC:\TC\LIB -eSPEED.EXE SPEED.OBJ CORE.OBJ FSDOS.OBJ VIDEO.OBJ GRAPH.OBJ HEX.OBJ ' + ('VIEW.OBJ ' if 'VIEW' in modules else '') + 'FONT.OBJ > LINK.LOG')
-    compile_dos(work, lambda directory, cmds: run(cmds), 'SPBUILD', commands,
+        commands.append(rf'tcc {flags}-1- -mm -O -Z -IC:\TC\INCLUDE -c {module}.C > C{module}.LOG')
+    commands.append(r'tcc -mm -LC:\TC\LIB -eSPEED.EXE SPEED.OBJ CORE.OBJ FSDOS.OBJ VIDEO.OBJ GRAPH.OBJ HEX.OBJ ' + ('VIEW.OBJ ' if 'VIEW' in modules else '') + 'FONT.OBJ > LINK.LOG')
+    compile_app(work, lambda directory, cmds: run(cmds), 'SPBUILD', commands,
                 ['SPEED.EXE','FONT.OBJ'], ['ASSEMBLE.LOG','LINK.LOG']+[f'C{m}.LOG' for m in modules])
     for mode in range(4):
         for kind in range(5):
