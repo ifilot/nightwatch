@@ -30,3 +30,4 @@ ASAN_OPTIONS=detect_leaks=0 build/test_navigation
 python3 tests/test_dosbuild.py
 python3 tests/test_package.py
 python3 tests/test_version.py
+python3 tests/test_build_metadata.py

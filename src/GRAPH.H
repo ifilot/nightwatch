@@ -11,4 +11,9 @@
  * Drawing uses direct VRAM primitives, not the cell buffer/video_flush(). */
 int graph_rows(void);
 void graph_draw(Panel *panels, int active, const char *status, const char *command);
+/* Native overlays share desktop invalidation; help has 18 keyboard lines. */
+void graph_help(const char *version, const char *commit, const char *repository,
+                const char * const *lines);
+/* Draw after the cell overlay flush. Percent is clipped to 0..100. */
+void graph_progress(int row, unsigned percent);
 #endif

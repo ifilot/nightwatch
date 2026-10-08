@@ -96,6 +96,11 @@ external font or icon files.
 | Ctrl-O | Open DOS shell; `EXIT` returns to the navigator |
 | Esc | Clear command line / cancel dialog |
 
+Help uses a grouped reference window in graphics modes and lists the repository,
+program version and build commit in every display mode. A `-dirty` suffix means
+the build includes uncommitted changes; source exports without Git show
+`unknown`. The build refreshes this information automatically.
+
 Prompts accept Enter, Escape and Ctrl-U (clear). Copy/move targets must be
 absolute DOS paths; multiple marked entries require an existing destination
 directory. Existing files prompt for **O** overwrite, **S** skip, or Escape to
@@ -114,7 +119,8 @@ files and sum their sizes. "Counting files" can be cancelled with Escape; no
 files are copied until the scan succeeds. Directories do not count as files.
 Totals are limited to 4,294,967,295 bytes; larger selections report an error.
 The copy dialog shows completed/total files, skipped files, current-file bytes,
-and separate file and overall progress bars in every display mode. Overall
+and separate file and overall progress bars in every display mode. Graphics
+modes use solid pixel bars with inset tracks; text mode uses character bars. Overall
 progress includes skipped bytes, so all resolved files advance the bar.
 For selections containing only empty files it advances by resolved file count.
 A smoothed recent transfer rate appears in KiB/s with estimated time remaining

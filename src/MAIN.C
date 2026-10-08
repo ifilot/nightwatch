@@ -17,6 +17,7 @@
 #include "NW.H"
 #include "VIDEO.H"
 #include "GRAPH.H"
+#include "BUILD.H"
 #include "HEX.H"
 #include "VIEW.H"
 /* BIOS extended keys keep the scan code in the high byte. Ordinary keys are
@@ -260,15 +261,17 @@ static unsigned fraction(unsigned long done, unsigned long total, unsigned scale
     }
     return low;
 }
-/* ASCII bars work in every renderer and avoid adapter-specific drawing paths. */
+/* Lay out labels and percentages; graphics paint native tracks after flush. */
 static void progress_bar(int row, const char *label, unsigned long done,
                          unsigned long total)
 {
     char line[76];
     unsigned i, filled = fraction(done, total, 40);
     sprintf(line, "%-8s [", label);
-    for (i = 0; i < 40; ++i) line[10 + i] = i < filled ? '#' : '-';
-    sprintf(line + 50, "] %3u%%", fraction(done, total, 100));
+    for (i = 0; i < 40; ++i) line[10 + i] = video_mode == VIDEO_TEXT ? (i < filled ? '#' : '-') : ' ';
+    if (video_mode != VIDEO_TEXT) line[9] = ' ';
+    sprintf(line + 50, video_mode == VIDEO_TEXT ? "] %3u%%" : "  %3u%%",
+            fraction(done, total, 100));
     video_text(5, row, line, COLOR_DIALOG);
 }
 /* Poll every transfer block, retaining unrelated keys. Painting and rate samples
@@ -344,7 +347,14 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
             sprintf(line, "Overall: %lu / %lu bytes processed", operation_bytes + operation_current_bytes, total_bytes);
             video_text(5, y + 8, line, COLOR_DIALOG);
         }
-        video_flush(); paint_tick = now;
+        video_flush();
+        if (copy_progress && !counting && video_mode != VIDEO_TEXT) {
+            graph_progress(y + 4, fraction(done, total, 100));
+            graph_progress(y + 5, total_bytes ?
+                fraction(operation_bytes + operation_current_bytes, total_bytes, 100) :
+                fraction(operation_files + operation_skipped, total_files, 100));
+        }
+        paint_tick = now;
         shown_files = operation_files; shown_skipped = operation_skipped;
     }
     if (changed) strcpy(progress_path, path);
@@ -493,35 +503,39 @@ static void about(void)
 static void help(void)
 {
     static const char *lines[] = {
-        "NIGHTWATCH - two-pane DOS file navigator",
-        "Tab switches panes; arrows/Home/End/PgUp/PgDn navigate",
-        "Enter opens directory/file or runs the command line",
-        "Backspace returns to parent when command line is empty",
-        "Insert/Space mark entry; + marks all, - clears marks",
-        "F1 Help / A About  F2 Text / CGA / EGA / VGA display mode",
-        "F3 Text viewer  Shift-F3 Hex viewer  F4 External editor",
-        "F5 Copy         F6 Move/rename      F7 Make directory",
-        "F8 Recursive delete (confirmation) F9 Change path/drive",
-        "F10 Quit        Ctrl-R Refresh     Ctrl-O DOS shell",
-        "Ctrl-F Find filename pattern (* and ?)",
-        "Ctrl-P Mark / Ctrl-N Unmark pattern; Ctrl-S Sort pane",
-        "Ctrl-W Save display mode, paths and sorting to NIGHT.CFG",
-        "Viewer: F4 Text/hex, F7 Search, F8 Next, Ctrl-G Offset",
-        "Viewer search: literal ASCII or hex:DE AD 00 BE EF",
-        "Copy/move/delete recurse; Esc cancels between blocks",
-        "Existing files: O overwrite, S skip, Esc cancel",
-        "Completed work remains after cancellation or an error",
-        "512 entries/pane; [LIMIT] reports omitted entries",
-        "Recursive operations include entries beyond this limit",
-        "DOS 8.3 names; dates MM-DD-YY; hidden/system files shown",
-        "A About; any other key returns"
+        "Tab  Switch panes",
+        "Arrows/Home/End/PgUp/PgDn",
+        "Enter  Open / run command",
+        "Backspace  Parent directory",
+        "Ins/Space Mark; + all, - clear",
+        "F5 Copy  F6 Move  F7 Mkdir",
+        "F8 Delete  F9 Path  F10 Quit",
+        "Ctrl-F Find  Ctrl-P/N Mark/unmark",
+        "Filename patterns: * and ?",
+        "O Overwrite  S Skip  Esc Cancel",
+        "F3 Text  Shift-F3 Hex  F4 Edit",
+        "Viewer F4 Text/hex  F7 Search",
+        "F8 Next  Ctrl-G Byte offset",
+        "ASCII or hex:DE AD 00 BE EF",
+        "F2 Display mode  Ctrl-S Sort",
+        "Ctrl-R Refresh  Ctrl-O Shell",
+        "Ctrl-W Save NIGHT.CFG",
+        "Esc cancels; completed work remains"
     };
     unsigned i;
     int key;
-    video_overlay_begin(1);
-    video_clear(COLOR_NORMAL);
-    for (i = 0; i < sizeof(lines)/sizeof(lines[0]); ++i) video_text(2, i + 1, lines[i], COLOR_ACTIVE);
-    video_flush();
+    if (video_mode != VIDEO_TEXT)
+        graph_help(NW_VERSION_TAG, NW_BUILD_COMMIT, NW_REPOSITORY, lines);
+    else {
+        video_overlay_begin(1); video_clear(COLOR_NORMAL);
+        video_text(2, 1, "Nightwatch " NW_VERSION_TAG " - Keyboard help", COLOR_TITLE);
+        video_text(2, 2, NW_REPOSITORY, COLOR_ACTIVE);
+        video_text(2, 3, "Commit: " NW_BUILD_COMMIT, COLOR_ACTIVE);
+        for (i = 0; i < sizeof(lines)/sizeof(lines[0]); ++i)
+            video_text(2, i + 5, lines[i], COLOR_ACTIVE);
+        video_text(2, 24, "A About; any other key returns", COLOR_TITLE);
+        video_flush();
+    }
     key = key_read();
     if (key == 'a' || key == 'A') { draw(); about(); }
 }

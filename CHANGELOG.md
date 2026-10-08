@@ -8,6 +8,11 @@ changes without a release tag are marked unreleased.
 
 ### Added
 
+- Solid graphical copy-progress bars with shaded tracks, grouped graphical Help
+  with repository/version/build-commit details, and an original perspective
+  hard-drive icon for panel paths.
+- Reproducible README screenshots from emulator VRAM via `make screenshots`.
+
 - Recursive counting of selected files and their total size before copying,
   including files in subfolders and beyond the 512-entry pane cache. The
   counting pass supports Escape cancellation and finishes before copying starts.

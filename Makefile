@@ -6,12 +6,16 @@ MODE ?= text
 DOSBOX ?= dosbox
 DOS_TOOLCHAIN ?= $(CURDIR)/buildenv
 export DOS_TOOLCHAIN
-.PHONY: all build run test test-dos test-video assets benchmark benchmark-speed package clean
+.PHONY: all build run test test-dos test-video assets benchmark benchmark-speed package screenshots clean
 all: build
+.PHONY: build-metadata
+build-metadata:
+src/BUILD.H: build-metadata tools/build_metadata.py
+	python3 tools/build_metadata.py
 src/VERSION.H: VERSION tools/version.py
 	python3 tools/version.py --write
 build: build/NIGHT.EXE
-build/NIGHT.EXE: $(wildcard src/*.C src/*.H src/*.ASM) src/MAKEFILE VERSION LICENSE build.sh tools/version.py tools/stage.py tools/check_memory.py tools/dosbox.conf
+build/NIGHT.EXE: src/BUILD.H $(wildcard src/*.C src/*.H src/*.ASM) src/MAKEFILE VERSION LICENSE build.sh tools/version.py tools/build_metadata.py tools/stage.py tools/check_memory.py tools/dosbox.conf
 	bash ./build.sh
 run: build
 	$(DOSBOX) -conf tools/dosbox.conf -c 'mount c "$(CURDIR)/build"' -c 'c:' -c 'NIGHT /$(MODE)' -c exit
@@ -22,6 +26,8 @@ test-dos:
 test-video: build
 	python3 tests/video.py
 	python3 tests/features.py
+screenshots: test-video
+	python3 tools/screenshots.py
 assets:
 	python3 tools/assets.py
 benchmark: build

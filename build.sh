@@ -10,6 +10,7 @@ if [[ ! -f "$toolchain/TC/TCC.EXE" || ! -f "$toolchain/TASM/TASM.EXE" ]]; then
 fi
 mkdir -p "$repo/build"
 python3 "$repo/tools/version.py" --write
+python3 "$repo/tools/build_metadata.py"
 cp "$repo/assets/FONT-LICENSE.txt" "$repo/build/FONTLIC.TXT"
 cp "$repo/LICENSE" "$repo/build/LICENSE.TXT"
 python3 "$repo/tools/stage.py" "$repo/src" "$repo/build"

@@ -12,7 +12,8 @@ Assembler 2.0.1 tools, headers and libraries. The Docker image uses Debian
 Trixie and installs DOSBox and DOSBox-X as binary packages from Debian, alongside
 the host build and test tools. The GitHub-hosted runner remains Ubuntu 24.04.
 Compiler inputs come from this checkout; no emulator is compiled during image
-creation.
+creation. Git generates the build commit in `src/BUILD.H`, which is refreshed at
+build time and excluded from version control.
 No self-hosted runner, compiler secret or Actions variable is required.
 
 To reproduce the CI environment locally:

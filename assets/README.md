@@ -18,3 +18,7 @@ No download or external font file is needed to build or run NIGHT.EXE.
 
 Nightwatch code and the original icons are GPL-3.0-only (see ../LICENSE).
 The vendored Spleen fonts and derived glyph data retain BSD-2-Clause licensing.
+
+The panel-path drive icon is an original perspective hard-drive drawing inspired
+by early Windows desktop icons, with a beveled case, front slot and activity
+light. Its full, compact and monochrome variants use the same mask system.

@@ -29,6 +29,69 @@ static void outline(int x, int y, int width, int height, unsigned color)
     line(x, y, width, color); line(x, y + height - 1, width, color);
     video_rect(x, y, 1, height, color); video_rect(x + width - 1, y, 1, height, color);
 }
+/* Solid pixel tracks replace character bars only in graphics modes. Cell
+ * overlay rows use BIOS spacing, independently of the desktop font metrics. */
+void graph_progress(int row, unsigned percent)
+{
+    int h = video_height / video_rows - 2, x = 120;
+    int y = row * (video_height / video_rows) + 1, fill;
+    int black_white = video_mode == VIDEO_CGA;
+    if (percent > 100) percent = 100;
+    fill = (318 * percent) / 100;
+    video_rect(x, y, 320, h, black_white ? 0 : 8);
+    video_rect(x + 1, y + 1, 318, h - 2, black_white ? 15 : 7);
+    if (!black_white) {
+        line(x, y + h - 1, 320, 15);
+        video_rect(x + 319, y, 1, h, 15);
+    }
+    if (fill) {
+        video_rect(x + 1, y + 1, fill, h - 2, black_white ? 0 : 1);
+        if (!black_white) line(x + 1, y + 1, fill, 9);
+    }
+}
+/* Four compact reference cards fit the 200-line CGA display as well as the
+ * taller adapters. One shared string table keeps the small-model data bounded. */
+static void help_card(int x, int y, const char *title,
+                      const char * const *lines, int count)
+{
+    int i, f = video_font_height, width = 280;
+    unsigned edge = video_mode == VIDEO_CGA ? 0 : 8;
+    video_rect(x, y, width, f + 2 + count * (f + 1) + 4, 15);
+    outline(x, y, width, f + 2 + count * (f + 1) + 4, edge);
+    video_rect(x + 1, y + 1, width - 2, f + 2, video_mode == VIDEO_CGA ? 15 : 7);
+    video_label(x + 6, y + 2, title, video_mode == VIDEO_CGA ? 0 : 1,
+                video_mode == VIDEO_CGA ? 15 : 7, 1);
+    for (i = 0; i < count; ++i)
+        video_label(x + 6, y + f + 5 + i * (f + 1), lines[i], 0, 15, 0);
+}
+void graph_help(const char *version, const char *commit, const char *repository,
+                const char * const *lines)
+{
+    int f = video_font_height, height = f * 17 + 52;
+    int x = 18, y = (video_height - height) / 2, body, second;
+    unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
+    unsigned title = video_mode == VIDEO_CGA ? 0 : 1;
+    char text[80];
+    video_overlay_begin(0);
+    video_rect(x + 3, y + 3, 604, height, 0);
+    video_rect(x, y, 604, height, bg); outline(x, y, 604, height, 0);
+    line(x + 1, y + 1, 602, 15);
+    video_rect(x + 2, y + 2, 600, f + 6, title);
+    video_icon(x + 10, y + 3, ICON_DRIVE, video_mode == VIDEO_CGA ? 0 : 7, 15, 15);
+    sprintf(text, "Nightwatch %s", version);
+    video_label(x + 32, y + 4, text, 15, title, 1);
+    video_label(x + 550, y + 4, "HELP", 15, title, 1);
+    video_label(x + 14, y + f + 14, repository, 0, bg, 0);
+    sprintf(text, "Commit: %s", commit);
+    video_label(x + 330, y + f + 14, text, 0, bg, 0);
+    body = y + f * 2 + 24; second = body + (f + 1) * 7;
+    help_card(x + 14, body, "NAVIGATION", lines, 5);
+    help_card(x + 310, body, "FILES", lines + 5, 5);
+    help_card(x + 14, second, "VIEWER", lines + 10, 4);
+    help_card(x + 310, second, "TOOLS", lines + 14, 4);
+    line(x + 14, y + height - f - 15, 576, video_mode == VIDEO_CGA ? 0 : 8);
+    video_label(x + 14, y + height - f - 8, "A About | Any other key returns", 0, bg, 0);
+}
 /* Compact per-adapter fonts and margins preserve listing density. These
  * metrics also determine graph_rows(), so navigation and painting agree on
  * the usable area instead of assuming the text mode's 25-row geometry. */
@@ -196,7 +259,7 @@ void graph_draw(Panel *panels, int active, const char *status, const char *comma
             caption = p == active ? (mono ? 0 : 1) : (mono ? 15 : 8);
             fg = mono && p != active ? 0 : 15;
             video_rect(x + 1, top + 1, PANEL_WIDTH - 2, caption_height - 1, caption);
-            video_icon(x + 8, top + (caption_height - icon_height) / 2, ICON_DRIVE, mono ? caption : 11, fg, fg);
+            video_icon(x + 8, top + (caption_height - icon_height) / 2, ICON_DRIVE, mono ? caption : 7, mono ? fg : 0, mono ? fg : 15);
             video_label(x + 30, top + (caption_height - video_font_height) / 2, path, fg, caption, 0);
             strcpy(paths[p], panel->path);
         }

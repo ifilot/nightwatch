@@ -4,13 +4,16 @@ from pathlib import Path
 import os
 import shutil
 import struct
+import sys
 import subprocess as sp
 from dosbuild import compile_dos
 root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(root / 'tools'))
+from vram import decode
 base = root / 'build/video'
 env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
 toolchain = Path(os.environ.get('DOS_TOOLCHAIN', str(root / 'buildenv')))
-def dos(work, command, machine, before=(), xt=False):
+def dos(work, command, machine, before=(), xt=False, cycles=None):
     # Every launch must produce its own evidence, including saved-mode reloads.
     for pattern in ('F*.BIN','F*.POS','P*.BIN','P*.TXT'):
         for capture in work.glob(pattern): capture.unlink()
@@ -21,6 +24,9 @@ def dos(work, command, machine, before=(), xt=False):
                 '-conf',str(base/'CPUFEAT.CONF'),'-machine',machine]
     else:
         args = ['dosbox', '-conf', str(root/'tools/dosbox.conf'), '-conf', str(base/'FAST.CONF'), '-machine', machine]
+    if cycles is not None:
+        (work/'SLOW.CONF').write_text(f'[cpu]\ncycles={cycles}\n')
+        args += ['-conf', str(work/'SLOW.CONF')]
     # DOSBox-X local-drive directory caching can reject a recursive rmdir.
     # Use an actual DOS FAT volume for the 8086 integration run.
     if fat:
@@ -56,7 +62,7 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     if work.exists(): shutil.rmtree(work)
     work.mkdir(); (work/'LEFT/TREE/NEST').mkdir(parents=True); (work/'RIGHT').mkdir()
     shutil.copy2(base/'UITEST.EXE', work/'UITEST.EXE')
-    content = bytes(range(256))*300+b'ABC'
+    content = bytes(range(256))*4000+b'ABC'
     (work/'LEFT/BETA.BIN').write_bytes(content)
     (work/'LEFT/ALPHA.TXT').write_bytes(b'alpha\r\n')
     (work/'LEFT/TREE/NEST/INNER.TXT').write_bytes(b'nested\r\n')
@@ -73,7 +79,8 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     parent = len(keys)
     keys += [8,0x3f00,13,0x3f00,13,ord('o'),9,6] + text('TREE') + [0x4200,ord('y'),23,0x4400]
     script(work, keys)
-    dos(work, r'UITEST /'+mode+r' D:\LEFT D:\RIGHT', machine)
+    # Slow this copy fixture enough for BIOS-timed intermediate bar samples.
+    dos(work, r'UITEST /'+mode+r' D:\LEFT D:\RIGHT', machine, cycles=3000 if mode == 'vga' else 20000)
     assert (work/'RIGHT/BETA.BIN').read_bytes() == content
     assert (work/'RIGHT/ALPHA.TXT').read_bytes() == b'alpha\r\n'
     assert not (work/'RIGHT/TREE').exists()
@@ -92,6 +99,21 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     assert any(p[0] == 0 and p[1] == 1 and p[2] == len(content) for p in progress)
     assert any(p[0] == 0 and p[4] == 1 and p[7] == p[2] for p in progress), 'Skip must resolve bytes'
     assert any(p[0] == 0 and p[3] == p[1] and p[7] == p[2] for p in progress), 'Missing completed totals'
+    # Save an actual in-flight copy before later launches clear its captures.
+    candidates = [(p, list(map(int, p.read_text().split()))) for p in sorted(work.glob('P*.TXT'))]
+    partial = [(p, state) for p, state in candidates if not state[0] and 0 < state[5] < state[6]]
+    assert partial, 'Expected a copy in progress'
+    sampled = [(p, snapshot) for p, snapshot in partial if snapshot[9] > 0]
+    capture, copy_state = min(sampled or partial, key=lambda item: abs(item[1][5] / item[1][6] - 0.5))
+    screenshot = decode(capture.with_suffix('.BIN'), base/('copy-'+mode+'.png'))
+    if mode != 'text':
+        row_height = {'cga': 8, 'ega': 14, 'vga': 16}[mode]
+        row = (30 if mode == 'vga' else 25)//2 - 5 + 4
+        fill = 318 * (copy_state[5] * 100 // copy_state[6]) // 100
+        assert fill > 0
+        y = row * row_height + 3
+        assert screenshot.getpixel((121, y)) == ((0,0,0) if mode == 'cga' else (0,0,170))
+        assert screenshot.getpixel((121+fill, y)) == ((255,255,255) if mode == 'cga' else (170,170,170))
     if mode == 'text':
         captures = sorted(work.glob('P*.BIN'))
         decoded = [p.read_bytes()[3:4003:2].decode('cp437') for p in captures]

@@ -9,9 +9,12 @@ import os
 import shutil
 import subprocess as sp
 import hashlib
+import sys
 from PIL import Image
 from dosbuild import compile_dos
 root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(root / 'tools'))
+from vram import decode, palette
 base = root / 'build/video'
 base.mkdir(exist_ok=True)
 (base / 'FAST.CONF').write_text('[cpu]\ncycles=100000\n')
@@ -34,8 +37,14 @@ for src in (root / 'src').iterdir():
             text = text[:begin] + '#include "UITEST.H"\nstatic int key_read(void) { return test_key_read(); }\n' + text[end:]
             # Capture copy dialogs separately so ordinary scripted-key frame
             # numbers remain stable. Production source has no capture calls.
-            text = text.replace('video_flush(); paint_tick = now;',
-                                'video_flush(); test_progress_capture(done, total); paint_tick = now;')
+            text = text.replace('        paint_tick = now;',
+                                '        test_progress_capture(done, total); paint_tick = now;')
+        if src.name == 'CORE.C':
+            # Test-only pacing makes BIOS-timed copy snapshots deterministic,
+            # even when the mounted host filesystem transfers a MB instantly.
+            text = '#include <dos.h>\n' + text
+            text = text.replace('        operation_current_bytes = copied;',
+                                '        delay(5); operation_current_bytes = copied;')
         (base / src.name).write_bytes(text.replace('\n', '\r\n').encode('ascii'))
 (base / 'UITEST.H').write_bytes((root / 'tests/UITEST.H').read_text().replace('\n', '\r\n').encode('ascii'))
 compile_dos(base, dos, 'UIBUILD',
@@ -52,30 +61,6 @@ def baseline_compare(work):
     for frame in frames:
         assert (work/frame.name).read_bytes() == frame.read_bytes(), (work.name,frame.name,'baseline VRAM differs')
     print('PASS:',work.name,len(frames),'byte-exact before/after VRAM comparisons',flush=True)
-
-palette = [(0,0,0),(0,0,170),(0,170,0),(0,170,170),(170,0,0),(170,0,170),(170,85,0),(170,170,170),
-           (85,85,85),(85,85,255),(85,255,85),(85,255,255),(255,85,85),(255,85,255),(255,255,85),(255,255,255)]
-def decode(path):
-    raw = path.read_bytes(); mode = raw[0]; h = int.from_bytes(raw[1:3], 'little'); data = raw[3:]
-    im = Image.new('RGB', (640, h)); px = im.load()
-    if mode == 0:
-        assert len(data) == 6048
-        for y in range(h):
-            for x in range(640):
-                at = ((y // 8) * 80 + x // 8) * 2
-                ch, attr = data[at:at+2]
-                bit = data[4000 + ch * 8 + y % 8] & (128 >> (x % 8))
-                px[x,y] = palette[attr & 15 if bit else (attr >> 4) & 15]
-    else:
-        planes = 1 if mode == 1 else 4
-        assert len(data) == h * 80 * planes
-        for y in range(h):
-            for x in range(640):
-                index = y * 80 + x // 8; mask = 128 >> (x % 8)
-                color = sum((1 << p) for p in range(planes) if data[p * h * 80 + index] & mask)
-                px[x,y] = (255,255,255) if planes == 1 and color else palette[color]
-    im.save(path.with_suffix('.png'))
-    return im
 
 for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','vga'), ('hercules','text')]:
     work = base / (machine + '-' + mode)
@@ -126,6 +111,7 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     frames = sorted(work.glob('F*.BIN'))
     assert len(frames) >= 20, (machine, 'script stopped early', len(frames))
     images = [decode(f) for f in frames]
+    if mode == 'vga': images[checks['binary_start']].save(base/'hex.png')
     if mode == 'text':
         cells = frames[0].read_bytes()[3:4003]
         for x, y, code in [(0,1,201),(39,1,187),(40,1,201),(79,1,187),(0,21,200),(79,21,188)]:
@@ -146,6 +132,15 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
         colors = images[index].getcolors(640 * 480)
         assert len(colors) >= 2, (machine, index, 'blank')
         assert sum(n for n,c in colors if max(c) > 140) > 1000, (machine, index, 'missing glyphs')
+    if mode == 'text':
+        help_text = frames[1].read_bytes()[3:4003:2].decode('cp437')
+        commit = (root/'src/BUILD.H').read_text().split('NW_BUILD_COMMIT "')[1].split('"')[0]
+        for caption in ('Nightwatch v'+(root/'VERSION').read_text().strip(),
+                        'github.com/ifilot/nightwatch', commit):
+            assert caption in help_text, ('help metadata', caption)
+    else:
+        # Native help contains shaded cards and a title distinct from the desktop.
+        assert images[1].tobytes() != images[0].tobytes()
     # Full/partial binary rows and empty files, using actual text VRAM.
     page_bytes = (27 if mode == 'vga' else 22) * 16
     last_offset = (76803 - 1) // page_bytes * page_bytes

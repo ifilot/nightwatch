@@ -34,6 +34,24 @@ jumps; an external editor and DOS shell are also available.
 
 </details>
 
+<details>
+<summary>Keyboard help with version and build details</summary>
+
+| CGA | VGA |
+| --- | --- |
+| <img src="docs/screenshots/help-cga.png" width="400" alt="CGA keyboard help with navigation, files, viewer and tools sections"> | <img src="docs/screenshots/help-vga.png" width="400" alt="VGA help window showing the repository, version and build commit"> |
+
+</details>
+
+<details>
+<summary>Copy progress</summary>
+
+| CGA | VGA |
+| --- | --- |
+| <img src="docs/screenshots/copy-cga.png" width="400" alt="CGA copy dialog with solid file and overall progress bars"> | <img src="docs/screenshots/copy-vga.png" width="400" alt="VGA copy dialog with shaded progress bars, speed and remaining time"> |
+
+</details>
+
 ## Run
 
 Download the DOS package from this repository's **Releases** page. Extract it and
@@ -87,6 +105,7 @@ make run MODE=vga                        # open a DOSBox window
 make test                               # host regression tests + sanitizers
 make test-dos                           # DOS filesystem tests on FAT12
 make test-video                         # all display modes + BIOS/8086 checks
+make screenshots                        # test and refresh README captures
 make package                            # build/dist/ release files
 ```
 

@@ -2,7 +2,8 @@
 
 This directory contains the Turbo C 2.0 and Turbo Assembler 2.0.1 environment
 copied from the supplied local build environment, plus the Debian Trixie Docker
-recipe used by GitHub Actions. DOSBox and DOSBox-X are installed from Debian's
+recipe used by GitHub Actions. Git supplies the build commit shown in Help.
+DOSBox and DOSBox-X are installed from Debian's
 package repositories; the image does not compile an emulator. No sibling project,
 submodule, compiler download, Actions secret or self-hosted machine is required.
 The Borland files retain their original notices; see [BORLAND-NOTICE.md](BORLAND-NOTICE.md).
