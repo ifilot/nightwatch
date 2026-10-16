@@ -40,6 +40,7 @@ cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -Itests \
     src/CORE.C tests/fs_host.c tests/test_navigation.c -o build/test_navigation
 ASAN_OPTIONS=detect_leaks=0 build/test_navigation
 python3 tests/test_dosbuild.py
+python3 tests/test_memory.py
 python3 tests/test_package.py
 python3 tests/test_version.py
 python3 tests/test_build_metadata.py

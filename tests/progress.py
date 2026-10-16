@@ -16,7 +16,14 @@ toolchain = os.environ.get('DOS_TOOLCHAIN', str(root/'buildenv'))
 env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
 for source in (root/'src').iterdir():
     if source.suffix in ('.C', '.H', '.ASM'):
-        (work/source.name).write_bytes(source.read_text().replace('\n', '\r\n').encode('ascii'))
+        text = source.read_text()
+        if source.name == 'MAIN.C':
+            # This renderer-only probe never enters navigator_main or its
+            # recursive filesystem operations. Leave the production 8 KB stack
+            # unchanged; reserve 4 KB for these bounded UI/capture calls.
+            assert 'unsigned _stklen = 8192;' in text
+            text = text.replace('unsigned _stklen = 8192;', 'unsigned _stklen = 4096;', 1)
+        (work/source.name).write_bytes(text.replace('\n', '\r\n').encode('ascii'))
 (work/'UITEST.H').write_bytes((root/'tests/UITEST.H').read_text().replace('\n', '\r\n').encode('ascii'))
 (work/'FAST.CONF').write_text('[cpu]\ncycles=100000\n')
 program = r'''
@@ -113,7 +120,9 @@ compile_app(work, execute, 'PRBUILD',
             [r'set PATH=C:\TC;C:\TASM', r'set INCLUDE=C:\TC\INCLUDE', r'set LIB=C:\TC\LIB',
              'tasm /mx FONT.ASM > ASSEMBLE.LOG',
              'tcc -DNW_DIAGNOSTICS -1- -mm -O -Z -ePRGR.EXE PROGRESS.C CORE.C FSDOS.C VIDEO.C GRAPH.C HEX.C VIEW.C FONT.OBJ > COMPILE.LOG'],
-            ['PRGR.EXE', 'FONT.OBJ'], ['ASSEMBLE.LOG', 'COMPILE.LOG'])
+            ['PRGR.EXE', 'PRGR.MAP', 'FONT.OBJ'], ['ASSEMBLE.LOG', 'COMPILE.LOG'])
+sp.run([sys.executable, str(root/'tools/check_memory.py'), str(work/'PRGR.MAP'),
+        '--stack-source', str(work/'MAIN.C')], check=True)
 for machine, mode in [('cga', 0), ('cga', 1), ('ega', 2), ('vgaonly', 3)]:
     for pattern in ('F*.BIN', 'F*.POS', 'RESULT.LOG'):
         for capture in work.glob(pattern):

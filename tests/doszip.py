@@ -51,7 +51,7 @@ def compile_app(work, run, name, commands, outputs, logs):
                 compile_command = re.sub(r'\b\w+\.OBJ\s*', '', compile_command)
                 changed.append(compile_command)
             log = name[:6]+'LK.LOG'
-            changed.append(f'tcc -1- -mm -e{exe[1]} *.OBJ > {log}')
+            changed.append(f'tcc -1- -mm -M -e{exe[1]} *.OBJ > {log}')
             logs.append(log)
         else:
             changed.append(command)
