@@ -48,3 +48,10 @@ in the immutable font segment outside the small-model data segment.
 Nightwatch code and the original CGA icons are GPL-3.0-only (see ../LICENSE).
 The 16pxls artwork and bitmap adaptations retain CC-BY-SA-4.0. Spleen fonts
 and derived glyph data retain BSD-2-Clause.
+
+## Quick Menu launcher icon
+
+[quickmenu/NIGHT.ICC](quickmenu/NIGHT.ICC) is an original 32x32, 16-color EGA
+launcher icon with a binary transparency mask. A 4-bit PNG and preview are
+included beside it. See [the format and import notes](quickmenu/README.md).
+Regenerate with `python3 tools/quickmenu_icon.py`. This icon is GPL-3.0-only.

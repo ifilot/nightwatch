@@ -56,6 +56,8 @@ jumps; an external editor and DOS shell are also available.
 
 Download the DOS package from this repository's **Releases** page. Extract it and
 keep `LICENSE.TXT`, `FONTLIC.TXT` and `ICONLIC.TXT` alongside `NW.EXE`.
+The package also includes `NIGHT.ICC`, a transparent 32x32 EGA icon to import
+into Quick Menu for its Nightwatch launcher entry.
 
 ```dos
 NW /vga C:\FILES D:\BACKUP

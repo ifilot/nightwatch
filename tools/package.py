@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Package the DOS executable, version and required licenses."""
+"""Package the DOS executable, Quick Menu icon, version and required licenses."""
 from pathlib import Path
 import argparse
 import hashlib
@@ -17,9 +17,11 @@ F5: copy. F6: move. F7: mkdir. F8: delete. F10: quit.
 Ctrl-U unpacks the selected ZIP into the other panel (store/DEFLATE, DOS 8.3).
 NW /unzip D:\\PACK.ZIP D:\\OUT extracts without overwriting existing files.
 Ctrl-W saves mode, pane paths and sorting in NIGHT.CFG.
+Import NIGHT.ICC in Quick Menu to use the supplied launcher icon (32x32, 16 colors).
 
 Allow 256 KB free conventional RAM, including ZIP inflation. EGA needs 128 KB video RAM.
-All fonts/icons are embedded. Keep FONTLIC.TXT and ICONLIC.TXT with the
+All runtime fonts/icons are embedded. NIGHT.ICC is an optional Quick Menu icon
+under the same GPL license as Nightwatch. Keep FONTLIC.TXT and ICONLIC.TXT with the
 executable. Spleen fonts use BSD-2-Clause. The VGA/EGA icons are 16pxls by
 Paul Mackenzie (https://16pxls.com/), adapted under CC-BY-SA-4.0.
 The embedded zlib 1.3.2 inflate subset uses the zlib license (ZLIBLIC.TXT).
@@ -41,6 +43,9 @@ def package(build, output):
     icon_license = (build / 'ICONLIC.TXT').read_bytes()
     gpl = (build / 'LICENSE.TXT').read_bytes()
     zlib_license = (build / 'ZLIBLIC.TXT').read_bytes()
+    quickmenu_icon = (ROOT / 'assets/quickmenu/NIGHT.ICC').read_bytes()
+    if len(quickmenu_icon) != 1032 or any(quickmenu_icon[n:n+4] != b'\x1f\x00\x1f\x00' for n in (0,516)):
+        raise ValueError('NIGHT.ICC is not a 32x32 Quick Menu icon')
     version = 'v' + read_version()
     if len(executable) < 64 or executable[:2] != b'MZ':
         raise ValueError('NW.EXE is not a DOS MZ executable')
@@ -50,10 +55,10 @@ def package(build, output):
     # A reused release directory must not publish the old executable name.
     legacy = output / 'NIGHT.EXE'
     if legacy.is_file(): legacy.unlink()
-    members = {'NW.EXE': executable, 'FONTLIC.TXT': license_data, 'ICONLIC.TXT': icon_license,
+    members = {'NW.EXE': executable, 'NIGHT.ICC': quickmenu_icon, 'FONTLIC.TXT': license_data, 'ICONLIC.TXT': icon_license,
                'LICENSE.TXT': gpl, 'ZLIBLIC.TXT': zlib_license, 'VERSION.TXT': (version + '\r\n').encode('ascii'),
                'README.TXT': DOS_README.format(version=version).replace('\n', '\r\n').encode('ascii')}
-    for name in ('NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'ZLIBLIC.TXT', 'VERSION.TXT'):
+    for name in ('NW.EXE', 'NIGHT.ICC', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'ZLIBLIC.TXT', 'VERSION.TXT'):
         (output / name).write_bytes(members[name])
     archive = output / 'NIGHTWATCH-DOS.zip'
     with zipfile.ZipFile(archive, 'w') as zipped:
@@ -62,7 +67,7 @@ def package(build, output):
             entry.compress_type = zipfile.ZIP_DEFLATED
             entry.external_attr = 0o100644 << 16
             zipped.writestr(entry, data)
-    names = ('NW.EXE', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'ZLIBLIC.TXT', 'VERSION.TXT', archive.name)
+    names = ('NW.EXE', 'NIGHT.ICC', 'FONTLIC.TXT', 'ICONLIC.TXT', 'LICENSE.TXT', 'ZLIBLIC.TXT', 'VERSION.TXT', archive.name)
     (output / 'SHA256SUMS.txt').write_text(''.join(
         hashlib.sha256((output / name).read_bytes()).hexdigest() + '  ' + name + '\n'
         for name in names), encoding='ascii')

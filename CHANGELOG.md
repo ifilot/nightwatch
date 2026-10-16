@@ -8,6 +8,8 @@ changes without a release tag are marked unreleased.
 
 ### Added
 
+- Original transparent 32x32 EGA Quick Menu launcher icon (`NIGHT.ICC`),
+  included beside `NW.EXE` in the DOS package with import instructions.
 - Consolidated the v1.1.1 display-mode persistence option: F2, R toggles
   automatic mode saving in `NIGHT.CFG`, while Ctrl-W saves pane paths and sorting.
 - Ctrl-T storage integrity tests with quick/long profiles, recorded 32-bit seeds,
