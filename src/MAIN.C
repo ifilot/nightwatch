@@ -40,6 +40,13 @@ static int active;
 static char command[NW_PATH];
 static char status[160] = "Tab switches panes. F1 shows help. F2 selects display mode.";
 static char startup[NW_PATH];
+/* Keep manually saved pane settings while automatic saves update only mode. */
+/* Byte after the fixed "NIGHTWATCH1\n" header. */
+#define SETTINGS_MODE_AT 12
+static char settings_record[320];
+static int remember_mode;
+static int settings_write(const char *record);
+static void settings_remember(void);
 /* Preserve queued commands while progress scans the entire BIOS queue for Esc. */
 static unsigned pending_keys[16];
 static unsigned pending_head, pending_count;
@@ -776,13 +783,27 @@ static void editor(void)
 static void change_mode(void)
 {
     int k, mode = -1;
-    dialog("Display mode", "T text | C CGA 640x200 | E EGA 640x350 | V VGA 640x480");
+    char old;
+    dialog(remember_mode ? "Display mode (R remember: ON)" : "Display mode (R remember: OFF)",
+        "T text | C CGA | E EGA | V VGA | R remember mode");
     video_flush(); k = key_read();
     if (k == 't' || k == 'T') mode = VIDEO_TEXT;
     if (k == 'c' || k == 'C') mode = VIDEO_CGA;
     if (k == 'e' || k == 'E') mode = VIDEO_EGA;
     if (k == 'v' || k == 'V') mode = VIDEO_VGA;
-    if (mode >= 0 && !video_set(mode)) notice("This display mode requires a different video adapter");
+    if (k == 'r' || k == 'R') {
+        old = settings_record[SETTINGS_MODE_AT];
+        settings_record[SETTINGS_MODE_AT] = '0' + video_mode;
+        remember_mode = !remember_mode;
+        if (!settings_write(settings_record)) {
+            remember_mode = !remember_mode; settings_record[SETTINGS_MODE_AT] = old;
+        }
+        else strcpy(status, remember_mode ? "Display mode will be remembered" : "Automatic display mode saving disabled");
+    }
+    if (mode >= 0) {
+        if (!video_set(mode)) notice("This display mode requires a different video adapter");
+        else settings_remember();
+    }
 }
 /* Copy/move marked entries, or the cursor entry when there are no marks.
  * Multiple selections require an existing target directory. Keep the list stable
@@ -903,7 +924,7 @@ static int settings_file(char *path)
 static void settings_load(int *mode)
 {
     char path[NW_PATH], line[NW_PATH + 2], full[NW_PATH], paths[2][NW_PATH], *at;
-    int values[5], i;
+    int values[5], i, remember = 0;
     FILE *f;
     if (!settings_file(path)) return;
     f = fopen(path, "rt");
@@ -927,7 +948,13 @@ static void settings_load(int *mode)
         if (strlen(line) >= NW_PATH) { fclose(f); return; }
         strcpy(paths[i], line);
     }
+    /* Optional extension: old four-line NIGHTWATCH1 files remain valid. */
+    if (fgets(line, sizeof(line), f)) {
+        if (strcmp(line, "REMEMBER 1\n")) { fclose(f); return; }
+        remember = 1;
+    }
     fclose(f);
+    remember_mode = remember;
     *mode = values[0];
     panes[0].sort = values[1]; panes[0].reverse = values[2];
     panes[1].sort = values[3]; panes[1].reverse = values[4];
@@ -939,29 +966,55 @@ static void settings_load(int *mode)
  * Never overwrite a pre-existing temporary/backup file to make a save succeed.
  * Rollback and cleanup are best effort; NIGHT.BAK/NEW can remain for recovery.
  */
-static void settings_save(void)
+static int settings_write(const char *record)
 {
-    char path[NW_PATH], temp[NW_PATH], backup[NW_PATH], data[320];
+    char path[NW_PATH], temp[NW_PATH], backup[NW_PATH], data[340];
     int fd, n, existed;
     Entry e;
     if (!settings_file(path) || !path_join(temp, startup, "NIGHT.NEW") ||
-        !path_join(backup, startup, "NIGHT.BAK")) { notice(nw_error); return; }
-    n = sprintf(data, "NIGHTWATCH1\n%d %u %u %u %u\n%s\n%s\n", video_mode,
-        (unsigned)panes[0].sort, (unsigned)panes[0].reverse,
-        (unsigned)panes[1].sort, (unsigned)panes[1].reverse, panes[0].path, panes[1].path);
+        !path_join(backup, startup, "NIGHT.BAK")) { notice(nw_error); return 0; }
+    n = sprintf(data, "%s%s", record, remember_mode ? "REMEMBER 1\n" : "");
     fd = fs_create(temp);
-    if (fd < 0) { fs_error("Create settings temporary file"); notice(nw_error); return; }
+    if (fd < 0) { fs_error("Create settings temporary file"); notice(nw_error); return 0; }
     existed = fs_write(fd, data, n) == n;
     if (fs_close(fd) < 0) existed = 0;
-    if (!existed) { fs_delete(temp, 0); notice("Could not write settings"); return; }
+    if (!existed) { fs_delete(temp, 0); notice("Could not write settings"); return 0; }
     existed = fs_info(path, &e);
-    if (existed && !fs_rename(path, backup)) { fs_delete(temp, 0); notice("Could not back up settings; check NIGHT.BAK"); return; }
+    if (existed && !fs_rename(path, backup)) { fs_delete(temp, 0); notice("Could not back up settings; check NIGHT.BAK"); return 0; }
     if (!fs_rename(temp, path)) {
         if (existed) fs_rename(backup, path);
-        fs_delete(temp, 0); notice("Could not commit settings"); return;
+        fs_delete(temp, 0); notice("Could not commit settings"); return 0;
     }
-    if (existed && !fs_delete(backup, 0)) { notice("Settings saved; NIGHT.BAK could not be removed"); return; }
-    strcpy(status, "Saved display mode, paths and sorting to NIGHT.CFG (startup directory)");
+    if (existed && !fs_delete(backup, 0)) { notice("Settings saved; NIGHT.BAK could not be removed"); return 1; }
+    return 1;
+}
+/* Format the established four-line record, without the optional extension. */
+static void settings_format(char *data, int mode)
+{
+    sprintf(data, "NIGHTWATCH1\n%d %u %u %u %u\n%s\n%s\n", mode,
+        (unsigned)panes[0].sort, (unsigned)panes[0].reverse,
+        (unsigned)panes[1].sort, (unsigned)panes[1].reverse,
+        panes[0].path, panes[1].path);
+}
+/* Ctrl-W explicitly saves pane state as well as the current display mode. */
+static void settings_save(void)
+{
+    char data[320];
+    settings_format(data, video_mode);
+    if (settings_write(data)) {
+        strcpy(settings_record, data);
+        strcpy(status, "Saved display mode, paths and sorting to NIGHT.CFG (startup directory)");
+    }
+}
+/* Save successful mode selections immediately, retaining manually saved panes.
+ * A failed write leaves the snapshot unchanged so a later selection can retry.
+ */
+static void settings_remember(void)
+{
+    char old = settings_record[SETTINGS_MODE_AT];
+    if (!remember_mode || old == '0' + video_mode) return;
+    settings_record[SETTINGS_MODE_AT] = '0' + video_mode;
+    if (!settings_write(settings_record)) settings_record[SETTINGS_MODE_AT] = old;
 }
 /* Apply defaults, saved settings and command-line overrides in that order.
  * Load panes before changing the display, then run one blocking keyboard loop.
@@ -973,6 +1026,7 @@ int main(int argc, char **argv)
     if (!getcwd(startup, sizeof(startup))) { puts("Cannot read current directory"); return 1; }
     strcpy(panes[0].path, startup); strcpy(panes[1].path, startup);
     settings_load(&mode);
+    settings_format(settings_record, mode);
     for (i = 1; i < argc; ++i) {
         if (!stricmp(argv[i], "/text")) { mode = VIDEO_TEXT; explicit_mode = 1; }
         else if (!stricmp(argv[i], "/cga")) { mode = VIDEO_CGA; explicit_mode = 1; }
@@ -992,6 +1046,7 @@ int main(int argc, char **argv)
     /* A stale saved mode falls back to text; an explicit unsupported mode fails. */
     if (!explicit_mode && !video_supported(mode)) mode = VIDEO_TEXT;
     if (!video_set(mode)) { puts("Requested display mode is unavailable on this adapter."); return 1; }
+    settings_remember();
     while (!quit) {
         Panel *p = &panes[active];
         Entry *e;

@@ -54,7 +54,7 @@ Search text directly, or use hex:DE AD 00 BE EF for bytes.
 Esc closes the viewer and returns to the panels.
 
 #TOOLS AND SETTINGS
-F2                  Choose text, CGA, EGA or VGA display mode.
+F2                  Choose display mode; R toggles remembering it.
 Ctrl-S              Choose the panel's sorting order.
 Ctrl-O              Open a DOS shell; EXIT returns to Nightwatch.
 Ctrl-W              Save mode, paths and sorting to NIGHT.CFG.

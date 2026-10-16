@@ -4,6 +4,15 @@ Notable changes to Nightwatch, newest first. This history was reconstructed
 from the repository's commits and release tags. Release dates follow the tags;
 changes without a release tag are marked unreleased.
 
+## v1.1.1 — Unreleased
+
+### Added
+
+- F2, R toggles remembering the last display mode in `NIGHT.CFG`. Successful
+  mode selections are saved automatically, while Ctrl-W continues to save pane
+  paths and sorting. Existing configuration files remain compatible; explicit
+  startup mode arguments still take precedence.
+
 ## v1.1.0 — Unreleased
 
 ### Added

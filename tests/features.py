@@ -136,6 +136,30 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     cells = (work/'F000.BIN').read_bytes()[3:4003]
     paths = cells[320:480:2].decode('cp437')
     assert r'D:\RIGHT' in paths[:40] and r'D:\LEFT' in paths[40:]
+    # Opt in without Ctrl-W; automatic mode saves retain manually saved panes.
+    saved = (work/'NIGHT.CFG').read_text().splitlines()
+    script(work, [0x3c00, ord('r'), 0x3c00, ord(mode[0]), 0x4400])
+    dos(work, r'UITEST /text D:\RIGHT D:\LEFT', machine)
+    remembered = (work/'NIGHT.CFG').read_text().splitlines()
+    assert remembered[-1] == 'REMEMBER 1'
+    assert remembered[1].split()[0] == str(['text','cga','ega','vga'].index(mode))
+    assert remembered[1].split()[1:] == saved[1].split()[1:]
+    assert remembered[2:4] == saved[2:4]
+    script(work, [0x4400]); dos(work, 'UITEST', machine)
+    assert state(0)[0] == ['text','cga','ega','vga'].index(mode)
+    # A command-line mode override also becomes the remembered mode.
+    script(work, [0x4400]); dos(work, 'UITEST /text', machine)
+    assert (work/'NIGHT.CFG').read_text().splitlines()[1].split()[0] == '0'
+    script(work, [0x3c00, ord(mode[0]), 0x4400]); dos(work, 'UITEST', machine)
+    # Turning remembering off preserves the startup mode across later changes.
+    script(work, [0x3c00, ord('r'), 0x3c00, ord('t'), 0x4400])
+    dos(work, 'UITEST', machine)
+    frozen = (work/'NIGHT.CFG').read_bytes()
+    assert b'REMEMBER' not in frozen
+    script(work, [0x4400]); dos(work, 'UITEST /text', machine)
+    assert (work/'NIGHT.CFG').read_bytes() == frozen
+    script(work, [0x4400]); dos(work, 'UITEST', machine)
+    assert state(0)[0] == ['text','cga','ega','vga'].index(mode)
     if machine != 'vgaonly':
         changed = (work/'NIGHT.CFG').read_text().splitlines()
         fields = changed[1].split(); fields[0] = '3'; changed[1] = ' '.join(fields)
@@ -143,6 +167,30 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
         script(work, [0x4400]); dos(work, 'UITEST', machine)
         assert state(0)[0] == 0, 'Unavailable saved VGA mode must fall back to text'
     print('PASS:',mode,'find, mark/unmark patterns, sort, offset, binary search, parent selection, recursive copy/delete, overwrite/skip, settings save/reload',flush=True)
+
+# A blocked temporary file reports failure and leaves remembering disabled.
+work = base/'features-remember-failure'
+if work.exists(): shutil.rmtree(work)
+work.mkdir()
+shutil.copy2(base/'UITEST.EXE', work/'UITEST.EXE')
+(work/'NIGHT.NEW').write_bytes(b'keep temporary')
+script(work, [0x3c00, ord('r'), 13, 0x3c00, ord('c'), 0x4400])
+dos(work, 'UITEST /text', 'cga')
+assert not (work/'NIGHT.CFG').exists()
+assert (work/'NIGHT.NEW').read_bytes() == b'keep temporary'
+print('PASS: failed remember toggle preserves temporary file and remains disabled', flush=True)
+original = 'NIGHTWATCH1\n1 0 0 0 0\nD:\\\nD:\\\nREMEMBER 1\n'
+(work/'NIGHT.CFG').write_text(original)
+script(work, [13, 0x4400]); dos(work, 'UITEST /text', 'cga')
+assert (work/'NIGHT.CFG').read_text() == original
+(work/'NIGHT.NEW').unlink()
+script(work, [0x4400]); dos(work, 'UITEST /text', 'cga')
+assert (work/'NIGHT.CFG').read_text().splitlines()[1].split()[0] == '0'
+original = (work/'NIGHT.CFG').read_bytes()
+script(work, [0x3c00, ord('v'), 13, 0x4400]); dos(work, 'UITEST', 'cga')
+assert (work/'NIGHT.CFG').read_bytes() == original
+print('PASS: blocked automatic saves preserve CFG, retry succeeds, unsupported mode is not saved', flush=True)
+
 
 # Cross the old 128-page boundary in the actual text viewer, then search and End.
 work = base/'features-history'
@@ -238,6 +286,7 @@ cases = [
     ('NIGHTWATCH1\n65536 3 1 2 1\nD:\\LEFT\nD:\\RIGHT\n', '0 0 0 0 0', ['D:'+chr(92),'D:'+chr(92)]),
     ('NIGHTWATCH1\n0 3 1 2 1 junk\nD:\\LEFT\nD:\\RIGHT\n', '0 0 0 0 0', ['D:'+chr(92),'D:'+chr(92)]),
     ('NIGHTWATCH1\n0 3 1 2 1\nD:\\LEFT\n', '0 0 0 0 0', ['D:'+chr(92),'D:'+chr(92)]),
+    ('NIGHTWATCH1\n0 3 1 2 1\nD:\\LEFT\nD:\\RIGHT\nREMEMBER 999\n', '0 0 0 0 0', ['D:'+chr(92),'D:'+chr(92)]),
     ('NIGHTWATCH1\n0 1 0 3 1\nD:\\MISSING\nD:\\RIGHT\n', '0 1 0 3 1', ['D:'+chr(92),r'D:\RIGHT']),
 ]
 for content, fields, paths in cases:
