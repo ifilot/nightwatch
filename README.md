@@ -136,7 +136,9 @@ The [source comment style](docs/commenting.md) describes the C89/TASM convention
 ## Continuous integration and releases
 
 Every branch/tag push and pull request runs host regression tests. Branch/tag
-pushes also build and test the DOS program in the repository's Docker environment.
+pushes also build and test the DOS program in the repository's cached Docker
+environment. Seven independent DOS suites run in parallel against a shared
+build; packaging waits for every suite to pass.
 Tag pushes publish the validated `NW.EXE`, GPL/font/icon licenses, version
 information, DOS ZIP package and checksums as a GitHub release. The executable
 includes all four display modes.

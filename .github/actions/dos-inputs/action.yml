@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Built DOS inputs
+description: Restore this workflow's executable, scripted navigator and checked objects
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: nightwatch-built-${{ github.sha }}
+        path: ${{ runner.temp }}/nightwatch-input
+    - name: Restore compiled DOS inputs
+      shell: bash
+      run: tar -xf "$RUNNER_TEMP/nightwatch-input/nightwatch-built.tar" -C "$GITHUB_WORKSPACE"
+    - name: Verify shared scripted navigator
+      shell: bash
+      run: python3 tests/ui_build.py --verify

@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: DOS environment
+description: Restore or build the DOSBox and Turbo C Docker image
+runs:
+  using: composite
+  steps:
+    - name: Cache DOS environment image
+      id: image
+      uses: actions/cache@v5
+      with:
+        path: ${{ runner.temp }}/nightwatch-build-image.tar
+        key: ${{ runner.os }}-${{ runner.arch }}-dosenv-v1-${{ hashFiles('buildenv/**') }}
+    - name: Load cached DOS environment
+      if: steps.image.outputs.cache-hit == 'true'
+      shell: bash
+      run: docker load --input "$RUNNER_TEMP/nightwatch-build-image.tar"
+    - name: Build DOS environment on cache miss
+      if: steps.image.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        docker build --tag nightwatch-build buildenv
+        docker save --output "$RUNNER_TEMP/nightwatch-build-image.tar" nightwatch-build

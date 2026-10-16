@@ -11,6 +11,11 @@ on:
 permissions:
   contents: read
 
+# A newer branch/PR revision replaces its older run. Release tags finish fully.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
 jobs:
   host-tests:
     name: Host regression tests
@@ -24,30 +29,111 @@ jobs:
         run: make test
 
   dos-build:
-    name: DOS build and integration tests
+    name: Build shared DOS executables
     # Pull requests receive host tests; pushes and manual runs test DOS.
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - name: Build the repository's DOS environment
-        run: docker build --tag nightwatch-build buildenv
+      - uses: ./.github/actions/dos-environment
       - name: Clean and compile the 8088 executable
         run: |
           docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build bash -c 'make clean && make build'
+      - name: Compile shared scripted navigator and test objects
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/ui_build.py
+      - name: Bundle compiled DOS inputs
+        run: tar -cf "$RUNNER_TEMP/nightwatch-built.tar" build src/BUILD.H
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightwatch-built-${{ github.sha }}
+          path: ${{ runner.temp }}/nightwatch-built.tar
+          if-no-files-found: error
+          retention-days: 2
+      - name: Keep build failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dos-build-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build/**/*.LOG
+            build/**/*.log
+            build/**/*.MAP
+          if-no-files-found: ignore
+          retention-days: 7
+
+  dos-tests:
+    name: DOS tests (${{ matrix.suite }})
+    needs: dos-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [filesystem, zip, progress, video, features, storage, benchmark]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/dos-environment
+      - uses: ./.github/actions/dos-inputs
       - name: Test real DOS filesystem calls
-        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make test-dos
+        if: matrix.suite == 'filesystem'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build bash tests/dos.sh
       - name: Test ZIP inflation on the 8086 with Windows and Linux archives
-        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make test-zip-dos
+        if: matrix.suite == 'zip'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/zip_dos.py
+      - name: Test ZIP staging and timestamps on FAT12
+        if: matrix.suite == 'zip'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/zip_fat12.py
+      - name: Test differential progress dialogs
+        if: matrix.suite == 'progress'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/progress.py
       - name: Test all displays and production BIOS input
-        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make test-video
+        if: matrix.suite == 'video'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" --env NW_UI_PREBUILT=1 nightwatch-build python3 tests/video.py
+      - name: Test Help in every display mode
+        if: matrix.suite == 'features'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/help.py
+      - name: Test navigator features and saved settings
+        if: matrix.suite == 'features'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/features.py
+      - name: Test storage dialogs and recursive folder creation
+        if: matrix.suite == 'storage'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/storage_ui.py
+      - name: Test storage integrity on DOS and the 8086
+        if: matrix.suite == 'storage'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/storage_dos.py
       - name: Check rendering work on the 8086 core
-        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make benchmark
-      - name: Package executable, version and licenses
-        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build make package
+        if: matrix.suite == 'benchmark'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/benchmark.py new
+      - name: Keep suite failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dos-${{ matrix.suite }}-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build/**/*.LOG
+            build/**/*.log
+            build/**/*.MAP
+            build/**/*.POS
+          if-no-files-found: ignore
+          retention-days: 7
+
+  dos-package:
+    name: Package tested DOS build
+    needs: [host-tests, dos-build, dos-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/dos-inputs
+      - name: Package tested executable, Quick Menu icon and licenses
+        run: python3 tools/package.py
       - name: Upload tested DOS package
         uses: actions/upload-artifact@v4
         with:
@@ -56,22 +142,11 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 14
-      - name: Keep failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dos-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            build/**/*.LOG
-            build/**/*.log
-            build/**/*.POS
-          if-no-files-found: ignore
-          retention-days: 7
 
   release:
     name: Publish tag release
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: [host-tests, dos-build]
+    needs: [host-tests, dos-package]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

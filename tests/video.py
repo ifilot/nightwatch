@@ -13,48 +13,13 @@ import sys
 from PIL import Image
 from dosbuild import compile_dos
 from doszip import compile_app
-root = Path(__file__).resolve().parents[1]
+from ui_build import root, base, toolchain, env, dos, build_ui, require_prebuilt
 sys.path.insert(0, str(root / 'tools'))
 from vram import decode, palette
-base = root / 'build/video'
-base.mkdir(exist_ok=True)
-(base / 'FAST.CONF').write_text('[cpu]\ncycles=100000\n')
-toolchain = Path(os.environ.get('DOS_TOOLCHAIN', str(root / 'buildenv')))
-env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
-
-def dos(directory, commands, machine='svga_s3'):
-    args = ['dosbox', '-conf', str(root / 'tools/dosbox.conf'), '-conf', str(base / 'FAST.CONF'), '-machine', machine]
-    for cmd in [f'mount c "{toolchain}"', f'mount d "{directory}"', 'd:'] + commands + ['exit']:
-        args += ['-c', cmd]
-    with (directory / 'DOSBOX.LOG').open('w') as f:
-        sp.run(args, env=env, stdout=f, stderr=f, check=True, timeout=45)
-
-for src in (root / 'src').iterdir():
-    if src.suffix in {'.C', '.H', '.ASM'}:
-        text = src.read_text()
-        if src.name == 'MAIN.C':
-            begin = text.index('static int key_read(void)')
-            end = text.index('static int pane_rows', begin)
-            text = text[:begin] + ('#include "UITEST.H"\n'
-                                  'static int key_read(void) { return test_key_read(); }\n'
-                                  'static int modal_key_read(void) { return test_key_read(); }\n') + text[end:]
-            # Capture copy dialogs separately so ordinary scripted-key frame
-            # numbers remain stable. Production source has no capture calls.
-            text = text.replace('        paint_tick = now;',
-                                '        test_progress_capture(done, total); paint_tick = now;')
-        if src.name == 'CORE.C':
-            # Test-only pacing makes BIOS-timed copy snapshots deterministic,
-            # even when the mounted host filesystem transfers a MB instantly.
-            text = '#include <dos.h>\n' + text
-            text = text.replace('        operation_current_bytes = copied;',
-                                '        delay(5); operation_current_bytes = copied;')
-        (base / src.name).write_bytes(text.replace('\n', '\r\n').encode('ascii'))
-(base / 'UITEST.H').write_bytes((root / 'tests/UITEST.H').read_text().replace('\n', '\r\n').encode('ascii'))
-compile_app(base, dos, 'UIBUILD',
-    [r'set PATH=C:\TC;C:\TASM', 'tasm /mx FONT.ASM > ASSEMBLE.LOG',
-     r'set INCLUDE=C:\TC\INCLUDE', r'set LIB=C:\TC\LIB',
-     r'tcc -DNW_DIAGNOSTICS -1- -mm -O -Z -eUITEST.EXE MAIN.C CORE.C FSDOS.C VIDEO.C GRAPH.C HEX.C VIEW.C FONT.OBJ > COMPILE.LOG'],
-    ['UITEST.EXE','FONT.OBJ'], ['ASSEMBLE.LOG','COMPILE.LOG'])
+if os.environ.get('NW_UI_PREBUILT') == '1':
+    require_prebuilt()
+else:
+    build_ui()
 
 def baseline_compare(work):
     if not os.environ.get('NW_COMPARE_OLD_VRAM'): return
