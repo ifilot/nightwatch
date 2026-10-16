@@ -64,6 +64,10 @@ NW /vga C:\FILES D:\BACKUP
 Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C/E/V**.
 **Alt-F1** opens About (also **F1**, then **A**).
 **Ctrl-W** saves the mode, pane paths and sorting for the next launch.
+**Ctrl-T** opens storage integrity tests: quick, long, verify saved test or clean
+up. Seeded data, file/directory mutations and exact readback exercise cards such
+as Slot-otter through DOS. Keep manifests/logs on another drive; see the
+[storage test guide](docs/storage-test.md).
 
 | Keys | Action |
 | --- | --- |
@@ -73,6 +77,7 @@ Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C
 | F4, F5, F6, F7, F8 | Editor, copy, move, mkdir, delete |
 | Ctrl-F, Ctrl-P / Ctrl-N, Ctrl-S | Find filename, mark / unmark patterns, sort |
 | Ctrl-U | Unpack selected ZIP into the other pane |
+| Ctrl-T | Storage integrity tests: quick / long / verify / cleanup |
 | F9, Ctrl-R, Ctrl-O | Change drive/path, refresh, DOS shell |
 | F1, F10 | Help, quit |
 
@@ -107,6 +112,7 @@ make run MODE=vga                        # open a DOSBox window
 make test                               # host regression tests + sanitizers
 make test-dos                           # DOS filesystem tests on FAT12
 make test-video                         # all display modes + BIOS/8086 checks
+make test-storage-dos                   # storage test + restart/verify in DOS
 make screenshots                        # test and refresh README captures
 make benchmark-copy                     # compare copy buffer sizes on 8086
 make package                            # build/dist/ release files

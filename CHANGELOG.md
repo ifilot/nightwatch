@@ -8,6 +8,14 @@ changes without a release tag are marked unreleased.
 
 ### Added
 
+- Ctrl-T storage integrity tests with quick/long profiles, recorded 32-bit seeds,
+  exact file verification, directory growth, append/overwrite/truncate/zero-gap
+  checks, moves and allocation reuse. Separate local manifests/logs support
+  verification after reboot and cleanup of recorded files, including partial runs.
+- Native storage-test dashboard with phase checkmarks, per-file and overall
+  progress, live counters and a retained PASS/failure/cancellation summary.
+- Storage test regression coverage for independent expected data, long directory
+  enumeration, corruption, cancellation, failed writes and cleanup ownership.
 - Built-in ZIP extraction using the vendored zlib 1.3.2 raw-inflate subset:
   Ctrl-U unpacks into the inactive pane; `/unzip` supports unattended extraction.
   Stored/DEFLATE entries, subfolders, data descriptors, overwrite/skip/cancel,

@@ -115,6 +115,12 @@ int fs_rename(const char *a, const char *b)
     return rename(a, b) == 0;
 }
 int fs_read_open(const char *p) { return open(p, O_RDONLY); }
+int fs_update_open(const char *p) { return open(p, O_RDWR); }
+int fs_resize(int fd, unsigned long length)
+{
+    if (fault("resize", NULL)) return 0;
+    return !ftruncate(fd, (off_t)length) && lseek(fd, (off_t)length, SEEK_SET) == (off_t)length;
+}
 long fs_seek(int fd, long offset, int origin)
 {
     if (fault("seek", NULL)) return -1;

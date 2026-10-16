@@ -45,3 +45,10 @@ python3 tests/test_version.py
 python3 tests/test_build_metadata.py
 python3 tests/test_assets.py
 python3 tests/zip.py
+
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -fsyntax-only src/STORUI.C
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc \
+    -ffunction-sections -fdata-sections -Wl,--gc-sections \
+    src/STORUI.C src/STORTEST.C tests/test_storage_ui.c -o build/test_storage_ui
+build/test_storage_ui
+python3 tests/storage.py

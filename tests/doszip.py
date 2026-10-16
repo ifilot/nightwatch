@@ -35,6 +35,12 @@ def compile_app(work, run, name, commands, outputs, logs):
     if not any('tasm' in c and 'FONT.ASM' in c for c in commands):
         changed += [r'set PATH=C:\TC;C:\TASM', 'tasm /mx FONT.ASM > ZFONT.LOG']
         logs.append('ZFONT.LOG')
+    if '"STORTEST.H"' in (work/'MAIN.C').read_text():
+        for asset_name in ('STORTEST.C', 'STORTEST.H', 'STORMSG.H', 'STORUI.C', 'STORUI.H'):
+            (work/asset_name).write_bytes((ROOT/'src'/asset_name).read_text().replace('\n','\r\n').encode('ascii'))
+        changed += [r'set PATH=C:\TC;C:\TASM', r'set INCLUDE=C:\TC\INCLUDE',
+                    r'tcc -1- -mm -O -Z -c STORTEST.C STORUI.C > STCOMP.LOG']
+        logs.append('STCOMP.LOG')
     for command in commands:
         exe = re.search(r'-e(\w+\.EXE)', command)
         if exe and command.startswith('tcc '):

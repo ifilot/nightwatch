@@ -92,6 +92,7 @@ external font or icon files.
 | Ctrl-F | Find the next filename matching a pattern (`*`, `?`), wrapping within the pane |
 | Ctrl-P / Ctrl-N | Mark / unmark entries matching a filename pattern |
 | Ctrl-S | Sort active pane: name, size, date/time, extension, or reverse |
+| Ctrl-T | Storage integrity tests: quick / long / verify / cleanup |
 | Ctrl-W | Save display mode, pane paths and sorting in the startup directory’s `NIGHT.CFG` |
 | Ctrl-O | Open DOS shell; `EXIT` returns to the navigator |
 | Esc | Clear command line / cancel dialog |
@@ -182,6 +183,12 @@ mode restored. After a command, press a key to return. An interactive shell
 returns on `EXIT`. The editor executable must be on DOS's PATH; `EDITOR` may
 contain a command with options. A DOS `COMMAND.COM` must be available through
 `COMSPEC`.
+
+Storage integrity testing is available through **Ctrl-T**. Quick and long
+profiles write deterministic data in an exclusive test folder, exercise file
+and directory changes, and verify every byte. Local manifests and logs must be
+on another drive. See the [storage test guide](storage-test.md) for profiles,
+verification after reboot, cleanup rules and the OTTERSD zero-gap requirement.
 
 ### Current boundaries
 

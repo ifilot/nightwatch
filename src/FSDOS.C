@@ -122,6 +122,18 @@ int fs_delete(const char *path, int directory) { return (directory ? rmdir(path)
 int fs_rename(const char *src, const char *dst) { return rename(src, dst) == 0; }
 /* Open a binary read handle.  Negative handles report failure via errno. */
 int fs_read_open(const char *path) { return open(path, O_RDONLY | O_BINARY); }
+int fs_update_open(const char *path) { return open(path, O_RDWR | O_BINARY); }
+/* DOS zero-byte writes set EOF at the current position. */
+int fs_resize(int fd, unsigned long length)
+{
+    union REGS r;
+    if (lseek(fd, (long)length, SEEK_SET) != (long)length) return 0;
+    /* Turbo C write() returns early for zero bytes. Call DOS to change EOF. */
+    memset(&r, 0, sizeof(r)); r.h.ah = 0x40; r.x.bx = fd;
+    intdos(&r, &r);
+    if (r.x.cflag) { errno = EIO; return 0; }
+    return 1;
+}
 /* Create exclusively: existing data must never be truncated by staging I/O. */
 int fs_create(const char *path) { return open(path, O_WRONLY | O_CREAT | O_EXCL | O_BINARY, 0666); }
 /* Read up to count bytes: zero is EOF, negative is an I/O error. */

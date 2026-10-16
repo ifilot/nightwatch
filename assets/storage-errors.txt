@@ -1,0 +1,101 @@
+ST_CANCEL|Storage test cancelled; test files and local evidence retained
+ST_LOGWRITE|Storage test local log write failed
+ST_SHORTREAD|Storage test short read or I/O failure
+ST_EOF|Storage test EOF mismatch/read error
+ST_DELETED|Deleted storage test entry is still present
+ST_READPLAN|Cannot read storage manifest
+ST_PLANLENGTH|Invalid storage manifest length
+ST_PLANVERSION|Invalid storage manifest version
+ST_PROFILE|Invalid storage test profile
+ST_SEED|Invalid storage test seed
+ST_SEEDRANGE|Storage seed exceeds 32 bits
+ST_TARGET|Invalid storage target path
+ST_ABSOLUTE|Storage target must be absolute
+ST_OTHERDRIVE|Keep the storage manifest and logs on another drive
+ST_PLANPATH|Storage manifest path is too long
+ST_LOGFULL|All numbered local storage logs already exist
+ST_MARKER|Missing or invalid storage ownership/completion marker
+ST_MARKERMATCH|Storage marker does not match the local manifest
+ST_DIRMISSING|Storage test directory is missing
+ST_DIRTYPE|Storage test expected a directory
+ST_DIRCOUNT|Storage test directory entry count mismatch
+ST_ARGUMENTS|Invalid storage test profile or seed
+ST_RUNFULL|No unused storage test run name
+ST_TARGETLONG|Storage target path is too long
+ST_CLOSE|Close storage test file
+ST_WRITE|Write storage test file (short write or disk full)
+ST_MKDIR|Create storage test directory
+ST_REMOVE|Remove storage test entry
+ST_OPENPLAN|Open storage manifest
+ST_OPENLOG|Create local storage log
+ST_CLOSELOG|Close local storage log
+ST_OPENMARK|Open storage test marker
+ST_ENUM|Enumerate storage test directory
+ST_MUTOPEN|Open mutation file
+ST_MUTSEEK|Seek mutation file
+ST_RESIZEOPEN|Open resize file
+ST_TRUNCATE|Truncate storage file
+ST_EXTENDOPEN|Open extension file
+ST_EXTEND|Extend storage file
+ST_MOVEFILE|Move storage test file
+ST_MOVEDIR|Move storage test directory
+ST_CANONICAL|Resolve storage test paths
+ST_CREATEPLAN|Create local storage manifest
+ST_CLEANENUM|Enumerate cleanup files
+ST_CREATEFILE|Create storage test file
+ST_OPENFILE|Open storage test file
+ST_UITITLE|Storage integrity test
+ST_UIMENU|Q quick | L long | V verify saved test | C clean up
+ST_UITARGET|Target directory (a fresh test folder will be created)
+ST_UILOCAL|Local manifest/log directory ON ANOTHER DRIVE
+ST_UISEED|Random seed (decimal, 0 to 4294967295)
+ST_UIBADSEED|Enter a decimal seed from 0 to 4294967295
+ST_UILONG|Long test: 16 MiB stream, 2200 entries, three cycles?
+ST_UIQUICK|Quick test: 1 MiB stream, boundary files, 40 entries?
+ST_UIPLAN|Saved local storage manifest (full path)
+ST_UICLEAN|Remove only this recorded test's files and folders?
+ST_UISTOP|Storage test stopped - files retained
+ST_UIERROR|Inspect the local test log. Press any key.
+ST_UICLEANED|PASS - test removed; local evidence retained
+ST_UIPASS|PASS - local manifest:
+ST_UIPRESS|Press any key
+ST_UIREBOOT|Unmount safely, reboot, then Ctrl-T, V to verify again.
+ST_SHORTWRITE|Storage test short write (disk full or incomplete transfer)
+ST_DASHTITLE|STORAGE INTEGRITY
+ST_DASHQUICK|QUICK TEST
+ST_DASHLONG|LONG TEST
+ST_DASHVERIFY|SAVED VERIFICATION
+ST_DASHCLEAN|RECORDED CLEANUP
+ST_DASHPREPARE|Prepare workspace
+ST_DASHWRITE|Write test files
+ST_DASHREAD|Verify every byte
+ST_DASHREUSE|Delete and recreate files
+ST_DASHMUTATE|File and folder changes
+ST_DASHAUDIT|Final integrity audit
+ST_DASHOWNER|Check ownership markers
+ST_DASHDIRS|Inspect directory structure
+ST_DASHREMOVE|Remove recorded test files
+ST_DASHCHECKLIST|CHECKLIST
+ST_DASHCURRENT|CURRENT OPERATION
+ST_DASHRESULT|RESULT
+ST_DASHPASS|ALL CHECKS PASSED
+ST_DASHFAIL|TEST FAILED
+ST_DASHSTOP|TEST CANCELLED
+ST_DASHREADONLY|Verification reads target data only.
+ST_DASHKEEP|Test files and local evidence retained.
+ST_DASHREMOVED|Recorded files removed. Logs retained.
+ST_DASHRUNFOOT|Esc cancels safely. Test files are kept for later verification.
+ST_DASHREADY|Unmount safely, reboot, then Ctrl-T and V to verify again.
+ST_DASHLOGFOOT|Local manifest: %s
+ST_DASHSUB|%s / SEED %lu / %s
+ST_DASHOVERALL|Overall checks: %u / %u passed
+ST_DASHBYTES|%lu / %lu bytes
+ST_DASHPERCENT|Current file: %u%%
+ST_DASHRATE|%lu.%lu KiB/s
+ST_DASHWRITTEN|Written: %lu KiB
+ST_DASHVERIFIED|Verified: %lu KiB
+ST_DASHFILES|File checks: %lu
+ST_DASHTIME|Elapsed: %lu:%02lu
+ST_DASHCYCLE|Cycle %u / %u
+ST_DASHENTRIES|%lu directory entries
+ST_DASHOPEN|Opening file...

@@ -67,6 +67,10 @@ F2                  Choose text, CGA, EGA or VGA display mode.
 Ctrl-S              Choose the panel's sorting order.
 Ctrl-O              Open a DOS shell; EXIT returns to Nightwatch.
 Ctrl-W              Save mode, paths and sorting to NIGHT.CFG.
+Ctrl-T              Storage tests: quick, long, verify, cleanup.
+Storage tests keep manifests and logs on another drive.
+After a safe unmount/reboot, verify the saved manifest.
+Failed/cancelled test files remain available for inspection.
 F1 / Alt-F1         Open Help / About.
 F10                 Quit Nightwatch.
 Type a command and press Enter to run it in DOS.

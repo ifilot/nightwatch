@@ -155,6 +155,9 @@ int fs_rename(const char *src, const char *dst);
  * Callers must check short writes and close errors before committing a copy.
  */
 int fs_read_open(const char *path);
+/* Existing-file binary read/write, and resize with the final position at EOF. */
+int fs_update_open(const char *path);
+int fs_resize(int fd, unsigned long length);
 int fs_create(const char *path);
 int fs_read(int fd, void *data, unsigned count);
 /* Absolute/relative/end seek; -1 on error. ZIP offsets fit signed DOS long. */

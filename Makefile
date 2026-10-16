@@ -6,7 +6,7 @@ MODE ?= text
 DOSBOX ?= dosbox
 DOS_TOOLCHAIN ?= $(CURDIR)/buildenv
 export DOS_TOOLCHAIN
-.PHONY: all build run test test-dos test-zip-dos test-video assets icons-overview benchmark benchmark-speed benchmark-copy package screenshots clean
+.PHONY: all build run test test-dos test-zip-dos test-video test-storage-dos assets icons-overview benchmark benchmark-speed benchmark-copy package screenshots clean
 all: build
 .PHONY: build-metadata
 build-metadata:
@@ -31,6 +31,10 @@ test-video: build
 	python3 tests/video.py
 	python3 tests/help.py
 	python3 tests/features.py
+	python3 tests/storage_ui.py
+	python3 tests/storage_dos.py
+test-storage-dos:
+	python3 tests/storage_dos.py
 screenshots: test-video
 	python3 tools/screenshots.py
 assets:

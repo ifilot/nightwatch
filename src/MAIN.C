@@ -11,11 +11,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include <dos.h>
 #include <dir.h>
 #include <bios.h>
 #include "NW.H"
 #include "ZIP.H"
+#include "STORTEST.H"
+#include "STORUI.H"
+#include "STORMSG.H"
 #include "VIDEO.H"
 #include "GRAPH.H"
 #include "HELP.H"
@@ -49,6 +53,8 @@ static int copy_dialog;
 static unsigned copy_generation, file_percent, overall_percent;
 static unsigned long total_files, total_bytes;
 static unsigned long sample_tick, paint_tick, sample_bytes, transfer_rate;
+static unsigned long storage_started;
+static unsigned storage_paint_stage;
 static unsigned long shown_files, shown_skipped, last_total;
 static char progress_path[NW_PATH];
 /* Turbo C startup reserves this stack inside DGROUP. Recursive operations
@@ -995,6 +1001,92 @@ static void settings_save(void)
     if (existed && !fs_delete(backup, 0)) { notice("Settings saved; NIGHT.BAK could not be removed"); return; }
     strcpy(status, "Saved display mode, paths and sorting to NIGHT.CFG (startup directory)");
 }
+/* Storage tests share the ordinary DOS filesystem path with file operations.
+ * Poll every block; repaint/rate samples use BIOS ticks to stay usable on 8088.
+ */
+static int storage_ui(const char *phase, const char *path,
+                      unsigned long done, unsigned long total)
+{
+    unsigned long now = (unsigned long)biostime(0, 0L), elapsed;
+    unsigned key;
+    while (bioskey(1)) {
+        key = bioskey(0);
+        if ((key & 255) == 27) return 0;
+        if (pending_count < 16) {
+            pending_keys[(pending_head + pending_count) & 15] = key;
+            ++pending_count;
+        }
+    }
+    if (!done || strcmp(progress_path, path)) {
+        sample_tick = now; sample_bytes = done; transfer_rate = 0;
+        strcpy(progress_path, path);
+    }
+    elapsed = tick_elapsed(now, sample_tick);
+    if (total && elapsed >= 9 && done >= sample_bytes) {
+        transfer_rate = (done - sample_bytes) * 182UL / (elapsed * 10UL);
+        sample_tick = now; sample_bytes = done;
+    }
+    if (force_progress || storage_paint_stage != storage_report.stage || tick_elapsed(now, paint_tick) >= 4) {
+        storage_screen(phase, path, done, total, transfer_rate,
+                       tick_elapsed(now, storage_started), NULL);
+        storage_paint_stage = storage_report.stage;
+        paint_tick = now; force_progress = 0;
+    }
+    return 1;
+}
+/* Decimal seeds have a fixed 32-bit contract, including on host builds. */
+static int storage_seed(const char *text, unsigned long *seed)
+{
+    unsigned long value = 0;
+    unsigned digit;
+    if (!*text) return 0;
+    while (*text) {
+        if (*text < '0' || *text > '9') return 0;
+        digit = *text++ - '0';
+        if (value > (0xffffffffUL - digit) / 10UL) return 0;
+        value = value * 10UL + digit;
+    }
+    *seed = value; return 1;
+}
+/* Keep run creation, saved verification and recorded-file cleanup distinct.
+ * Never unmount a user's DOS drive implicitly; persistence verification follows
+ * the card driver's successful unmount and a subsequent reboot by the user.
+ */
+static void storage_menu(void)
+{
+    char target[NW_PATH], local[NW_PATH], manifest[NW_PATH], seed_text[16], line[80], title[80];
+    unsigned long seed;
+    int k, ok, extended;
+    dialog(storage_label(title, ST_UITITLE), storage_label(line, ST_UIMENU));
+    video_flush(); k = key_read();
+    if (k >= 'A' && k <= 'Z') k += 'a' - 'A';
+    if (k != 'q' && k != 'l' && k != 'v' && k != 'c') return;
+    if (k == 'q' || k == 'l') {
+        extended = k == 'l'; strcpy(target, panes[active].path); strcpy(local, startup);
+        if (!prompt(storage_label(line, ST_UITARGET), target, sizeof(target)) ||
+            !prompt(storage_label(line, ST_UILOCAL), local, sizeof(local))) return;
+        sprintf(seed_text, "%lu", (unsigned long)time(NULL) & 0xffffffffUL);
+        if (!prompt(storage_label(line, ST_UISEED), seed_text, sizeof(seed_text))) return;
+        if (!storage_seed(seed_text, &seed)) { notice(storage_label(line, ST_UIBADSEED)); return; }
+        if (!confirm(storage_label(line, extended ? ST_UILONG : ST_UIQUICK))) return;
+    } else {
+        if (current() && name_match("NWT????.DAT", current()->name)) {
+            if (!current_path(manifest)) { notice(nw_error); return; }
+        } else if (!path_join(manifest, startup, "NWT0001.DAT")) { notice(nw_error); return; }
+        if (!prompt(storage_label(line, ST_UIPLAN), manifest, sizeof(manifest))) return;
+        if (k == 'c' && !confirm(storage_label(line, ST_UICLEAN))) return;
+    }
+    progress_path[0] = 0; force_progress = 1; storage_progress = storage_ui;
+    storage_started = (unsigned long)biostime(0, 0L); storage_paint_stage = 65535U;
+    if (k == 'q' || k == 'l') ok = storage_start(target, local, extended, seed, manifest);
+    else if (k == 'v') ok = storage_verify(manifest);
+    else ok = storage_cleanup(manifest);
+    storage_progress = NULL;
+    if (!ok && storage_report.state == STORAGE_RUNNING) storage_report.state = STORAGE_FAILED;
+    storage_screen("", progress_path, 0, 0, 0,
+                   tick_elapsed((unsigned long)biostime(0, 0L), storage_started), manifest);
+    video_flush(); key_read(); refresh();
+}
 /* Apply defaults, saved settings and command-line overrides in that order.
  * Load panes before changing the display, then run one blocking keyboard loop.
  * Each draw clamps navigation state and each modal action returns to this loop.
@@ -1062,6 +1154,7 @@ int main(int argc, char **argv)
         case 19: sort_menu(); break;
         case 23: settings_save(); break;
         case 21: extract_zip(); break;
+        case 20: storage_menu(); break;
         case 15: run_shell(NULL); break;
         case 27: command[0] = 0; break;
         case 8:
