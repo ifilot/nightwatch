@@ -1,7 +1,7 @@
 # Nightwatch
 
 [![GitHub Actions](https://github.com/ifilot/nightwatch/actions/workflows/build.yml/badge.svg)](https://github.com/ifilot/nightwatch/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-v1.1.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-v1.1.1-blue)](VERSION)
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
 A Midnight Commander style, two-pane file navigator for **MS-DOS on 8088/8086
@@ -63,6 +63,7 @@ NW /vga C:\FILES D:\BACKUP
 
 Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C/E/V**.
 **Alt-F1** opens About (also **F1**, then **A**).
+**F2**, then **R**, toggles automatic display mode saving in `NIGHT.CFG`.
 **Ctrl-W** saves the mode, pane paths and sorting for the next launch.
 
 | Keys | Action |

@@ -165,10 +165,17 @@ hexadecimal. Matches appear at the top of the view. Text supports Home/End and
 backward paging beyond its 128 cached offsets by rescanning earlier content when
 necessary.
 
-Settings are saved only on Ctrl-W. Subsequent launches from the same startup
-directory load `NIGHT.CFG`; explicit mode and pane arguments override saved
-values. Missing saved directories fall back to the startup directory, and an
-unavailable saved display mode falls back to text. Corrupt, oversized or
+Press **F2**, then **R**, to enable or disable remembering the display mode
+(default: off). The F2 title shows the current setting. Enabling this option
+writes the current mode to `NIGHT.CFG`; subsequent successful mode selections
+are saved immediately, including text mode. Pane paths and sorting are saved
+only on **Ctrl-W**. Disabling the option keeps the last saved startup mode.
+Subsequent launches from the same startup directory load `NIGHT.CFG`; explicit
+mode and pane arguments override saved values. When remembering is enabled,
+an explicit mode becomes the new saved mode. Existing configuration files
+remain compatible. Save failures are reported and leave existing settings intact
+when rollback succeeds. Missing saved directories fall back to the startup
+directory, and an unavailable saved display mode falls back to text. Corrupt, oversized or
 incomplete settings records are ignored as a whole.
 
 The shell and editor run in the active pane's directory, with the original text
