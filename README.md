@@ -63,6 +63,7 @@ NW /vga C:\FILES D:\BACKUP
 
 Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C/E/V**.
 **Alt-F1** opens About (also **F1**, then **A**).
+**F2**, then **R**, toggles automatic display mode saving in `NIGHT.CFG`.
 **Ctrl-W** saves the mode, pane paths and sorting for the next launch.
 **Ctrl-T** opens storage integrity tests: quick, long, verify saved test or clean
 up. Seeded data, file/directory mutations and exact readback exercise cards such

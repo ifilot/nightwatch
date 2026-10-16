@@ -8,6 +8,8 @@ changes without a release tag are marked unreleased.
 
 ### Added
 
+- Consolidated the v1.1.1 display-mode persistence option: F2, R toggles
+  automatic mode saving in `NIGHT.CFG`, while Ctrl-W saves pane paths and sorting.
 - Ctrl-T storage integrity tests with quick/long profiles, recorded 32-bit seeds,
   exact file verification, directory growth, append/overwrite/truncate/zero-gap
   checks, moves and allocation reuse. Separate local manifests/logs support
@@ -43,6 +45,15 @@ changes without a release tag are marked unreleased.
 - Directory refresh distinguishes DOS enumeration failures from normal
   completion and invalidates failed partial listings while preserving valid
   cached listings when a scan cannot start.
+
+## v1.1.1 — Unreleased
+
+### Added
+
+- F2, R toggles remembering the last display mode in `NIGHT.CFG`. Successful
+  mode selections are saved automatically, while Ctrl-W continues to save pane
+  paths and sorting. Existing configuration files remain compatible; explicit
+  startup mode arguments still take precedence.
 
 ## v1.1.0 — 2026-10-08
 
