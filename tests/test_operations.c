@@ -158,7 +158,11 @@ int main(void)
     }
     assert(path_join(path,a,"DATA.BIN")); put(path,replacement,9001);
     files = bytes = 0;
+    fs_test_info_calls = 0;
     assert(tree_measure(a,&files,&bytes)); assert(files == 521 && bytes == 9261);
+    /* One root query plus host enumeration's one metadata query per child;
+     * measurement must not query those children again. */
+    assert(fs_test_info_calls == 523);
     assert(tree_measure(src,&files,&bytes)); assert(files == 522 && bytes == 18262);
     operation_progress = cancel_scan; files = bytes = 0;
     assert(!tree_measure(a,&files,&bytes)); operation_progress = NULL;

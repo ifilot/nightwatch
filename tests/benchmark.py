@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess as sp
 import os, sys, shutil, re
 from dosbuild import compile_dos
+from doszip import compile_app
 root = Path(__file__).resolve().parents[1]
 label = sys.argv[1] if len(sys.argv) > 1 else 'new'
 work = root / 'build' / ('bench-' + label)
@@ -72,9 +73,9 @@ if (work/'VIEW.C').exists(): modules += ['VIEW']
 commands = [r'set PATH=C:\TC;C:\TASM', 'tasm /mx FONT.ASM > ASSEMBLE.LOG',
             r'set INCLUDE=C:\TC\INCLUDE', r'set LIB=C:\TC\LIB']
 for module in modules:
-    commands.append(f'tcc -DNW_DIAGNOSTICS -1- -ms -O -Z -c {module}.C > C{module}.LOG')
-commands.append('tcc -ms -eBENCH.EXE '+' '.join(m+'.OBJ' for m in modules)+' FONT.OBJ > LINK.LOG')
-compile_dos(work, lambda directory, cmds: execute('dosbox',cmds), 'BNBUILD', commands,
+    commands.append(f'tcc -DNW_DIAGNOSTICS -1- -mm -O -Z -c {module}.C > C{module}.LOG')
+commands.append('tcc -mm -eBENCH.EXE '+' '.join(m+'.OBJ' for m in modules)+' FONT.OBJ > LINK.LOG')
+compile_app(work, lambda directory, cmds: execute('dosbox',cmds), 'BNBUILD', commands,
             ['BENCH.EXE','FONT.OBJ'], ['ASSEMBLE.LOG','LINK.LOG']+[f'C{m}.LOG' for m in modules])
 (work/'CPU.CONF').write_text('[cpu]\ncputype=8086\ncore=normal\ncycles=3000\n')
 for mode in (1,2,3):

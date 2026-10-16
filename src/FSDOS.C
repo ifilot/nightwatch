@@ -65,8 +65,8 @@ static void entry_from_ff(Entry *e, const struct ffblk *f)
 /* Load a bounded panel listing including hidden/system entries, but not
  * volume labels.  Synthesize one parent entry away from drive roots; mark
  * truncation when capacity is reached rather than overrunning near data.
- * Any findnext termination ends this bounded scan successfully; only the initial
- * search distinguishes errors. Recursive fs_next separately checks exhaustion. */
+ * Only ENOENT denotes normal search exhaustion. A failed scan must not be
+ * mistaken for a complete listing; panel_load invalidates the partial cache. */
 int fs_list(Panel *p)
 {
     struct ffblk f;
@@ -94,6 +94,10 @@ int fs_list(Panel *p)
             entry_from_ff(&p->files[p->count++], &f);
         }
         done = findnext(&f);
+        if (done && errno != ENOENT) {
+            p->count = p->truncated = 0;
+            fs_error("Read directory"); return 0;
+        }
     }
     return 1;
 }
@@ -118,6 +122,18 @@ int fs_delete(const char *path, int directory) { return (directory ? rmdir(path)
 int fs_rename(const char *src, const char *dst) { return rename(src, dst) == 0; }
 /* Open a binary read handle.  Negative handles report failure via errno. */
 int fs_read_open(const char *path) { return open(path, O_RDONLY | O_BINARY); }
+int fs_update_open(const char *path) { return open(path, O_RDWR | O_BINARY); }
+/* DOS zero-byte writes set EOF at the current position. */
+int fs_resize(int fd, unsigned long length)
+{
+    union REGS r;
+    if (lseek(fd, (long)length, SEEK_SET) != (long)length) return 0;
+    /* Turbo C write() returns early for zero bytes. Call DOS to change EOF. */
+    memset(&r, 0, sizeof(r)); r.h.ah = 0x40; r.x.bx = fd;
+    intdos(&r, &r);
+    if (r.x.cflag) { errno = EIO; return 0; }
+    return 1;
+}
 /* Create exclusively: existing data must never be truncated by staging I/O. */
 int fs_create(const char *path) { return open(path, O_WRONLY | O_CREAT | O_EXCL | O_BINARY, 0666); }
 /* Read up to count bytes: zero is EOF, negative is an I/O error. */
@@ -176,6 +192,7 @@ int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count)
 }
 /* Close a DOS handle; preserve the C-library zero-success convention. */
 int fs_close(int fd) { return close(fd); }
+long fs_seek(int fd, long offset, int origin) { return lseek(fd, offset, origin); }
 /* Set the open file timestamp with INT 21h/AH=57h, AL=01h.  CX holds
  * packed time and DX packed date; DOS carry reports failure directly.
  * This wrapper does not update errno from the DOS error code in AX. */

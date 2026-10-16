@@ -126,9 +126,54 @@ viewer keeps its 432-byte page buffer on the stack; viewing and recursive
 transfers never nest. This leaves near-heap room for the v1.1.0 copy progress
 state and text.
 
+VGA/EGA icons now store one 32-byte ink mask rather than three 32-byte layers;
+CGA retains its native layered artwork. This removes 512 bytes of initialized
+near data and two empty mask traversals per VGA/EGA icon. Removing the unused
+foreground-only string renderer also drops its 81-byte scratch buffer, and
+the painted-row cache now reserves 22 rows rather than 24 (108 bytes saved).
+The row count is capped at that capacity to keep future layout changes safe.
+
+Copy progress paints at most once per four BIOS ticks during ordinary updates,
+including changes between tiny files. First/final paints and restoration after
+an overwrite prompt bypass the limit. Escape is still polled on every callback,
+and each paint uses one current snapshot for its path, counts, bars and ETA.
+Keys deferred during copying remain pane commands and cannot answer an overwrite
+prompt. Recursive counting queries the root once and reuses child metadata from
+enumeration; transfers still validate their source before copying and reject
+unexpected EOF or a changed byte count before committing the staged file.
+
+The existing 3000-cycle DOSBox-X 8086 rendering benchmark was run against the
+preserved pre-change sources and the updated build. EGA/VGA first draws measured
+10/12 ticks before and 9/11 after; ten cursor changes measured 5/6 before and
+4/5 after. CGA remained at 6 ticks for the first draw and 3 for ten cursor
+changes. VRAM write counts were identical, with zero writes for unchanged draws.
+These one-tick differences are directional evidence at BIOS-clock resolution,
+not precise physical-hardware speed claims. Before ZIP integration, the updated DOS executable was
+69,208 bytes, down from 69,726; near-heap headroom is 4,160 bytes, up from 3,536
+after accounting for the added validation code and messages.
+
 The byte-exact comparisons against the earlier speed-only build are optional
 (`NW_COMPARE_OLD_VRAM=1`), because help, operation dialogs and viewer footers
 now intentionally include new commands. Copy-versus-redraw comparisons and
 no-op viewer checks remain mandatory. `tests/features.py` exercises the new
 commands in text, CGA, EGA and VGA, including settings reload and recursive
 copy/delete.
+
+
+## ZIP integration memory model (2026-10-08)
+
+ZIP-enabled v1.2.0 uses `-1- -mm -O -Z`: separate far code segments and near
+ordinary data. Font/help accessors use far calls, and glyphs are read directly
+from immutable font data instead of copying them into a 4 KiB near cache.
+Zlib's fixed Huffman tables also live in a separate immutable segment.
+The 8086/3000-cycle benchmark measured CGA/EGA/VGA first draws at 6/9/11 ticks
+and ten cursor moves at 3/4/5 ticks, matching the preceding implementation.
+Unchanged draws still perform zero video-memory writes. BIOS-clock phase limits
+precision; this is an emulator measurement, not a physical-hardware claim.
+
+The ZIP-enabled executable is 104,008 bytes. Its rounded static near data is
+53,472 bytes, with an 8,192-byte stack and 3,872 bytes remaining for near heap.
+The 512-entry pane caches and 2 KiB copy fallback remain intact. ZIP inflation
+adds approximately 40 KiB of far allocations while active; allow 256 KiB free
+conventional RAM. The format/failure checks and OS fixtures are documented in
+[ZIP support](zip-support.md).

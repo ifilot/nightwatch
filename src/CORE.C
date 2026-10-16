@@ -68,7 +68,16 @@ int panel_load(Panel *p)
     selected[0] = 0;
     if (p->cursor >= 0 && p->cursor < p->count)
         strcpy(selected, p->files[p->cursor].name);
-    if (!fs_list(p)) return 0;
+    if (!fs_list(p)) {
+        /* The adapter empties a failed partial scan. Preserve a valid old
+         * cache if failure happened before scanning; otherwise clear its UI
+         * state and invalidate the renderer along with the emptied entries. */
+        if (!p->count) {
+            p->truncated = p->cursor = p->top = p->marks = 0;
+            ++p->revision;
+        }
+        return 0;
+    }
     sort_order = p->sort; sort_reverse = p->reverse;
     qsort(p->files, p->count, sizeof(Entry), compare);
     p->cursor = 0;
@@ -245,7 +254,7 @@ int valid_name(const char *name)
 }
 /* Remove a staging file even if copied attributes made it readonly.  A
  * cleanup failure replaces the prior error with its recoverable pathname. */
-static int discard_temporary(const char *path)
+int operation_discard(const char *path)
 {
     /* Staged files may already carry the source's readonly attribute. */
     fs_attr(path, 32);
@@ -311,22 +320,25 @@ int file_copy(const char *src, const char *dst)
         operation_transferred += n;
         if (operation_progress && !operation_progress(src, copied, source.size)) { ok = -1; break; }
     }
-    /* ok is 1 for success, 0 for I/O failure, -1 for user cancellation. */
+    /* ok: 1 success, 0 I/O failure, -1 cancellation, -2 length mismatch. */
     if (n < 0 && ok == 1) ok = 0;
+    if (ok == 1 && copied != source.size) ok = -2;
     fs_copy_buffer_free(&buffer);
     /* Stamp the still-open handle; closing can itself reveal a write error. */
     if (ok == 1 && !fs_stamp(out, &source)) ok = 0;
     if (fs_close(out) < 0 && ok == 1) ok = 0;
     fs_close(in);
     if (ok != 1) {
-        if (ok < 0) strcpy(nw_error, "Operation cancelled"); else fs_error("Copy failed");
-        discard_temporary(tmp); return 0;
+        if (ok == -1) strcpy(nw_error, "Operation cancelled");
+        else if (ok == -2) strcpy(nw_error, "Source size changed or unexpected end of file");
+        else fs_error("Copy failed");
+        operation_discard(tmp); return 0;
     }
     /* Do not propagate directory/volume flags; 32 is DOS archive. */
     if (!fs_attr(tmp, source.attr & (NW_READONLY | NW_HIDDEN | NW_SYSTEM | 32))) {
-        fs_error("Preserve attributes"); discard_temporary(tmp); return 0;
+        fs_error("Preserve attributes"); operation_discard(tmp); return 0;
     }
-    if (!fs_rename(tmp, dst)) { fs_error("Commit copy"); discard_temporary(tmp); return 0; }
+    if (!fs_rename(tmp, dst)) { fs_error("Commit copy"); operation_discard(tmp); return 0; }
     return 1;
 }
 /* Try a rename first, then copy/delete for moves DOS cannot rename.  If
@@ -351,7 +363,7 @@ static int progress(const char *path, unsigned long done, unsigned long total)
 }
 /* Find an unused sibling 8.3 name for a replacement or backup.  This is a
  * probe, not a reservation; the operation assumes no concurrent DOS writer. */
-static int unused_name(const char *dst, char *out, const char *extension)
+int operation_temp(const char *dst, char *out, const char *extension)
 {
     char dir[NW_PATH], name[13], *cut;
     Entry e;
@@ -366,6 +378,7 @@ static int unused_name(const char *dst, char *out, const char *extension)
     for (i = 0; i < 1000; ++i) {
         sprintf(name, "NW%04d.%s", i, extension);
         if (!path_join(out, dir, name)) return 0;
+        if (same_path(out, dst)) continue;
         if (!fs_info(out, &e)) return 1;
     }
     strcpy(nw_error, "No free temporary filename"); return 0;
@@ -376,19 +389,21 @@ static int unused_name(const char *dst, char *out, const char *extension)
  * If restoration or cleanup fails, report the retained recovery filename.
  * A committed replacement can still return failure if its backup remains.
  */
-static int replace_file(const char *src, const char *dst, const Entry *old)
+int operation_commit(const char *staged, const char *dst, const Entry *old)
 {
-    char staged[NW_PATH], backup[NW_PATH];
+    char backup[NW_PATH];
     int committed, restored, cleaned;
-    if (!unused_name(dst, staged, "NEW")) return 0;
-    if (!file_copy(src, staged)) return 0;
-    if (!unused_name(dst, backup, "BAK")) { discard_temporary(staged); return 0; }
+    if (!old) {
+        if (fs_rename(staged, dst)) return 1;
+        fs_error("Commit file"); operation_discard(staged); return 0;
+    }
+    if (!operation_temp(dst, backup, "BAK")) { operation_discard(staged); return 0; }
     if (!fs_rename(dst, backup)) {
-        fs_error("Preserve original"); discard_temporary(staged); return 0;
+        fs_error("Preserve original"); operation_discard(staged); return 0;
     }
     committed = fs_rename(staged, dst);
     if (!committed) {
-        restored = fs_rename(backup, dst); cleaned = discard_temporary(staged);
+        restored = fs_rename(backup, dst); cleaned = operation_discard(staged);
         if (!restored) {
             const char *name = strrchr(staged, '\\');
 #ifdef NW_HOST
@@ -405,27 +420,34 @@ static int replace_file(const char *src, const char *dst, const Entry *old)
     }
     return 1;
 }
+static int replace_file(const char *src, const char *dst, const Entry *old)
+{
+    char staged[NW_PATH];
+    if (!operation_temp(dst, staged, "NEW") || !file_copy(src, staged)) return 0;
+    return operation_commit(staged, dst, old);
+}
 /* Enumerate without the pane cache or destination changes. Reject totals that
  * do not fit DOS unsigned long rather than silently wrapping the progress bar. */
-static int measure_tree(char *path, unsigned depth, unsigned long *files,
+static int measure_tree(char *path, const Entry *info, unsigned depth, unsigned long *files,
                         unsigned long *bytes)
 {
     Entry e;
     FsSearch search;
     unsigned a = strlen(path);
     int result, ok = 1;
-    if (!fs_info(path, &e)) { fs_error("Read source"); return 0; }
-    if ((e.attr & NW_DIR) && depth > 32) {
+    /* Enumeration already supplies complete child metadata. Only the root
+     * needs a separate lookup; copying still validates sources at transfer. */
+    if ((info->attr & NW_DIR) && depth > 32) {
         strcpy(nw_error, "Directory nesting exceeds 32 levels"); return 0;
     }
-    if (!(e.attr & NW_DIR)) {
-        if (*files == 0xffffffffUL || e.size > 0xffffffffUL - *bytes) {
+    if (!(info->attr & NW_DIR)) {
+        if (*files == 0xffffffffUL || info->size > 0xffffffffUL - *bytes) {
             strcpy(nw_error, "Copy totals exceed 32-bit range"); return 0;
         }
-        ++*files; *bytes += e.size;
+        ++*files; *bytes += info->size;
     }
-    if (!progress(path, 0, e.size)) return 0;
-    if (!(e.attr & NW_DIR)) return 1;
+    if (!progress(path, 0, info->size)) return 0;
+    if (!(info->attr & NW_DIR)) return 1;
     result = fs_first(&search, path, &e);
     while (result > 0) {
         /* The append below checks the complete path, not just the member. */
@@ -438,7 +460,7 @@ static int measure_tree(char *path, unsigned depth, unsigned long *files,
         path[a] = '\\';
 #endif
         strcpy(path + a + 1, e.name);
-        ok = measure_tree(path, depth + 1, files, bytes);
+        ok = measure_tree(path, &e, depth + 1, files, bytes);
         path[a] = 0;
         if (!ok) break;
         result = fs_next(&search, &e);
@@ -451,9 +473,11 @@ static int measure_tree(char *path, unsigned depth, unsigned long *files,
 int tree_measure(const char *src, unsigned long *files, unsigned long *bytes)
 {
     char path[NW_PATH];
+    Entry info;
     if (strlen(src) >= NW_PATH) { strcpy(nw_error, "Path is too long"); return 0; }
     strcpy(path, src);
-    return measure_tree(path, 0, files, bytes);
+    if (!fs_info(path, &info)) { fs_error("Read source"); return 0; }
+    return measure_tree(path, &info, 0, files, bytes);
 }
 
 /*

@@ -29,3 +29,4 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy "$dosbox_test" -fastlaunch -nogui -c
 mcopy -o -i "$scratch/test.img" ::RESULT.LOG build/dostest/RESULT.LOG
 cat build/dostest/COMPILE.LOG build/dostest/RESULT.LOG
 rg -q '^PASS:' build/dostest/RESULT.LOG
+python3 tests/fsdos.py

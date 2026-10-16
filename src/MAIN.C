@@ -11,10 +11,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include <dos.h>
 #include <dir.h>
 #include <bios.h>
 #include "NW.H"
+#include "ZIP.H"
+#include "STORTEST.H"
+#include "STORUI.H"
+#include "STORMSG.H"
 #include "VIDEO.H"
 #include "GRAPH.H"
 #include "HELP.H"
@@ -55,6 +60,8 @@ static int copy_dialog;
 static unsigned copy_generation, file_percent, overall_percent;
 static unsigned long total_files, total_bytes;
 static unsigned long sample_tick, paint_tick, sample_bytes, transfer_rate;
+static unsigned long storage_started;
+static unsigned storage_paint_stage;
 static unsigned long shown_files, shown_skipped, last_total;
 static char progress_path[NW_PATH];
 /* Turbo C startup reserves this stack inside DGROUP. Recursive operations
@@ -68,6 +75,11 @@ static unsigned long viewer_pages;
 /* Read a queued or BIOS key using the common ASCII/scan-code convention.
  * Transfer progress can defer non-Escape keys in the bounded pending ring.
  */
+static int key_value(int k)
+{
+    if ((k & 255) == 0 || (k & 255) == 224) return k & 0xff00;
+    return k & 255;
+}
 static int key_read(void)
 {
     int k;
@@ -75,9 +87,11 @@ static int key_read(void)
         k = pending_keys[pending_head];
         pending_head = (pending_head + 1) & 15; --pending_count;
     } else k = bioskey(0);
-    if ((k & 255) == 0 || (k & 255) == 224) return k & 0xff00;
-    return k & 255;
+    return key_value(k);
 }
+/* Commands deferred by progress belong to the pane, never to an overwrite
+ * decision. Modal input reads the BIOS queue without consuming that ring. */
+static int modal_key_read(void) { return key_value(bioskey(0)); }
 /* Return visible entry rows, independent of the character grid used by dialogs.
  */
 static int pane_rows(void) { return video_mode == VIDEO_TEXT ? video_rows - 8 : graph_rows(); }
@@ -324,8 +338,12 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
         transfer_rate = transfer_rate ? transfer_rate / 2 + bytes / 2 : bytes;
         sample_tick = now; sample_bytes = operation_transferred;
     }
-    if (force_progress || (changed && !counting) || shown_files != operation_files ||
-        shown_skipped != operation_skipped || tick_elapsed(now, paint_tick) >= 4) {
+    /* Coalesce tiny-file copy updates across path/count changes. Escape is
+     * still checked on every callback; forced first/final/prompt paints bypass
+     * the timer. Labels, counters and bars always share this callback snapshot. */
+    if (force_progress || tick_elapsed(now, paint_tick) >= 4 ||
+        (!copy_progress && !counting && (changed || shown_files != operation_files ||
+                                       shown_skipped != operation_skipped))) {
         if (counting) {
             copy_dialog = 0;
             sprintf(line, "%.70s", path);
@@ -345,7 +363,7 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
             if (reset) {
                 for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
                 frame(3, y, 74, 11, COLOR_DIALOG);
-                video_text(5, y + 1, "Copying - Esc cancels", COLOR_DIALOG);
+                video_text(5, y + 1, copy_progress == 2 ? "Unpacking ZIP - Esc cancels" : "Copying - Esc cancels", COLOR_DIALOG);
             }
             copy_dialog = 1; copy_generation = video_generation();
             /* Keep long DOS paths inside the dialog border. */
@@ -398,7 +416,7 @@ static int conflict_ui(const char *src, const char *dst)
     copy_dialog = 0;
     dialog("Destination exists", dst);
     video_text(5, video_rows / 2 + 1, "O overwrite | S skip | Esc cancel", COLOR_DIALOG);
-    video_flush(); k = key_read();
+    video_flush(); k = modal_key_read();
     /* Exclude time spent answering the conflict prompt from transfer samples. */
     sample_tick = (unsigned long)biostime(0, 0L);
     sample_bytes = operation_transferred; transfer_rate = 0; force_progress = 1;
@@ -863,6 +881,26 @@ static void operate(int move)
 /* Confirm once, recursively delete the marked/current selection, and refresh
  * affected directories even when cancellation leaves earlier deletions committed.
  */
+static void extract_zip(void)
+{
+    char source[NW_PATH], target[NW_PATH];
+    int ok;
+    Entry *e = current();
+    if (!e || (e->attr & NW_DIR) || !current_path(source)) return;
+    strcpy(target, panes[1-active].path);
+    if (!prompt("Unpack ZIP into existing directory", target, sizeof(target))) return;
+    begin_operation(); counting = 1;
+    ok = zip_measure(source, target, &total_files, &total_bytes);
+    counting = 0; copy_progress = 2; progress_path[0] = 0; force_progress = 1;
+    if (ok) ok = zip_extract(source, target);
+    if (ok && progress_path[0]) {
+        force_progress = 1; operation_ui(progress_path, last_total, last_total);
+    }
+    end_operation();
+    if (!ok) notice(nw_error);
+    sprintf(status, "%lu unpacked, %lu skipped (ZIP)", operation_files, operation_skipped);
+    refresh();
+}
 static void delete_entries(void)
 {
     Panel *p = &panes[active];
@@ -1016,6 +1054,116 @@ static void settings_remember(void)
     settings_record[SETTINGS_MODE_AT] = '0' + video_mode;
     if (!settings_write(settings_record)) settings_record[SETTINGS_MODE_AT] = old;
 }
+/* Storage tests share the ordinary DOS filesystem path with file operations.
+ * Poll every block; repaint/rate samples use BIOS ticks to stay usable on 8088.
+ */
+static int storage_ui(const char *phase, const char *path,
+                      unsigned long done, unsigned long total)
+{
+    unsigned long now = (unsigned long)biostime(0, 0L), elapsed;
+    unsigned key;
+    while (bioskey(1)) {
+        key = bioskey(0);
+        if ((key & 255) == 27) return 0;
+        if (pending_count < 16) {
+            pending_keys[(pending_head + pending_count) & 15] = key;
+            ++pending_count;
+        }
+    }
+    if (!done || strcmp(progress_path, path)) {
+        sample_tick = now; sample_bytes = done; transfer_rate = 0;
+        strcpy(progress_path, path);
+    }
+    elapsed = tick_elapsed(now, sample_tick);
+    if (total && elapsed >= 9 && done >= sample_bytes) {
+        transfer_rate = (done - sample_bytes) * 182UL / (elapsed * 10UL);
+        sample_tick = now; sample_bytes = done;
+    }
+    if (force_progress || storage_paint_stage != storage_report.stage || tick_elapsed(now, paint_tick) >= 4) {
+        storage_screen(phase, path, done, total, transfer_rate,
+                       tick_elapsed(now, storage_started), NULL);
+        storage_paint_stage = storage_report.stage;
+        paint_tick = now; force_progress = 0;
+    }
+    return 1;
+}
+/* Decimal seeds have a fixed 32-bit contract, including on host builds. */
+static int storage_seed(const char *text, unsigned long *seed)
+{
+    unsigned long value = 0;
+    unsigned digit;
+    if (!*text) return 0;
+    while (*text) {
+        if (*text < '0' || *text > '9') return 0;
+        digit = *text++ - '0';
+        if (value > (0xffffffffUL - digit) / 10UL) return 0;
+        value = value * 10UL + digit;
+    }
+    *seed = value; return 1;
+}
+static int storage_create_confirm(const char *path)
+{
+    char title[80], line[80];
+    unsigned n = strlen(path);
+    int k, y = video_rows / 2 - 3;
+    strncpy(line, path, 70); line[70] = 0;
+    dialog(storage_label(title, ST_UICREATEDIR), line);
+    if (n > 70) video_text(5, y + 4, path + 70, COLOR_DIALOG);
+    video_text(5, y + 5, storage_label(line, ST_UICREATEKEY), COLOR_DIALOG);
+    video_flush(); k = key_read();
+    return k == 'y' || k == 'Y';
+}
+/* Keep run creation, saved verification and recorded-file cleanup distinct.
+ * Never unmount a user's DOS drive implicitly; persistence verification follows
+ * the card driver's successful unmount and a subsequent reboot by the user.
+ */
+static void storage_menu(void)
+{
+    char target[NW_PATH], local[NW_PATH], manifest[NW_PATH], seed_text[16], line[80], title[80];
+    unsigned long seed;
+    int k, ok, extended, target_missing, local_missing;
+    dialog(storage_label(title, ST_UITITLE), storage_label(line, ST_UIMENU));
+    video_flush(); k = key_read();
+    if (k >= 'A' && k <= 'Z') k += 'a' - 'A';
+    if (k != 'q' && k != 'l' && k != 'v' && k != 'c') return;
+    if (k == 'q' || k == 'l') {
+        extended = k == 'l'; strcpy(target, panes[active].path); strcpy(local, startup);
+        if (!prompt(storage_label(line, ST_UITARGET), target, sizeof(target)) ||
+            !prompt(storage_label(line, ST_UILOCAL), local, sizeof(local))) return;
+        sprintf(seed_text, "%lu", (unsigned long)time(NULL) & 0xffffffffUL);
+        if (!prompt(storage_label(line, ST_UISEED), seed_text, sizeof(seed_text))) return;
+        if (!storage_seed(seed_text, &seed)) { notice(storage_label(line, ST_UIBADSEED)); return; }
+        if (!storage_directory(target, target, 0, &target_missing) ||
+            !storage_directory(local, local, 0, &local_missing)) { notice(nw_error); return; }
+        if (toupper(target[0]) == toupper(local[0])) {
+            notice(storage_label(line, ST_OTHERDRIVE)); return;
+        }
+        if (!confirm(storage_label(line, extended ? ST_UILONG : ST_UIQUICK))) return;
+        /* Collect both approvals before creating either directory tree. */
+        if ((target_missing && !storage_create_confirm(target)) ||
+            (local_missing && !storage_create_confirm(local))) return;
+        if ((target_missing && !storage_directory(target, target, 1, &target_missing)) ||
+            (local_missing && !storage_directory(local, local, 1, &local_missing))) {
+            notice(nw_error); refresh(); return;
+        }
+    } else {
+        if (current() && name_match("NWT????.DAT", current()->name)) {
+            if (!current_path(manifest)) { notice(nw_error); return; }
+        } else if (!path_join(manifest, startup, "NWT0001.DAT")) { notice(nw_error); return; }
+        if (!prompt(storage_label(line, ST_UIPLAN), manifest, sizeof(manifest))) return;
+        if (k == 'c' && !confirm(storage_label(line, ST_UICLEAN))) return;
+    }
+    progress_path[0] = 0; force_progress = 1; storage_progress = storage_ui;
+    storage_started = (unsigned long)biostime(0, 0L); storage_paint_stage = 65535U;
+    if (k == 'q' || k == 'l') ok = storage_start(target, local, extended, seed, manifest);
+    else if (k == 'v') ok = storage_verify(manifest);
+    else ok = storage_cleanup(manifest);
+    storage_progress = NULL;
+    if (!ok && storage_report.state == STORAGE_RUNNING) storage_report.state = STORAGE_FAILED;
+    storage_screen("", progress_path, 0, 0, 0,
+                   tick_elapsed((unsigned long)biostime(0, 0L), storage_started), manifest);
+    video_flush(); key_read(); refresh();
+}
 /* Apply defaults, saved settings and command-line overrides in that order.
  * Load panes before changing the display, then run one blocking keyboard loop.
  * Each draw clamps navigation state and each modal action returns to this loop.
@@ -1023,6 +1171,12 @@ static void settings_remember(void)
 int main(int argc, char **argv)
 {
     int mode = VIDEO_TEXT, k, i, paths = 0, quit = 0, explicit_mode = 0;
+    if (argc > 1 && !stricmp(argv[1], "/unzip")) {
+        if (argc != 4) { puts("NW /unzip archive.zip existing-directory"); return 1; }
+        /* Command-line extraction never implicitly overwrites existing files. */
+        if (!zip_extract(argv[2], argv[3])) { puts(nw_error); return 1; }
+        printf("%lu files unpacked\n", operation_files); return 0;
+    }
     if (!getcwd(startup, sizeof(startup))) { puts("Cannot read current directory"); return 1; }
     strcpy(panes[0].path, startup); strcpy(panes[1].path, startup);
     settings_load(&mode);
@@ -1078,6 +1232,8 @@ int main(int argc, char **argv)
         case 14: find_name(2); break;
         case 19: sort_menu(); break;
         case 23: settings_save(); break;
+        case 21: extract_zip(); break;
+        case 20: storage_menu(); break;
         case 15: run_shell(NULL); break;
         case 27: command[0] = 0; break;
         case 8:

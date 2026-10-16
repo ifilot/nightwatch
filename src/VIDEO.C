@@ -7,20 +7,20 @@
 #include "VIDEO.H"
 #include "ASSETS.H"
 const unsigned char far *asset_font(int mode);
-/* All mutable buffers live in the small-model near data segment. Keeping
+/* All mutable buffers live in the near data segment. Keeping
  * full pixel frames here would exhaust its 64K budget; graphics instead go
  * directly to far VRAM. screen is desired cell state, previous is last sent
- * state. The font is copied from a separate far segment once per mode. */
+ * state. Glyphs are read directly from their immutable far segment. */
 static unsigned screen[NW_COLS * NW_ROWS];
 static unsigned previous[NW_COLS * NW_ROWS];
-static unsigned char font[4096];
+static const unsigned char far *font;
 /* Precompute multiplications and CGA bank selection outside hot loops.
  * CGA stores alternate scanlines in banks 8192 bytes apart; EGA/VGA use
  * linear 80-byte scanlines in each of four parallel color planes. */
 static unsigned glyph_offset[256], scan_offset[480];
 /* One 256-pixel label chunk, not a screen framebuffer. */
 static unsigned char raster[16][32];
-static unsigned char scanmask[81], inverse[81], solid[80];
+static unsigned char inverse[81], solid[80];
 static int reg_mask = -1, reg_color = -1, reg_enable = -1, reg_planes = -1;
 static int desktop, overlay_clear;
 static unsigned generation;
@@ -77,8 +77,6 @@ int video_supported(int mode)
 int video_set(int mode)
 {
     union REGS r;
-    struct SREGS s;
-    const unsigned char far *source;
     int i;
     if (!video_supported(mode)) return 0;
     video_mode = mode;
@@ -99,9 +97,7 @@ int video_set(int mode)
     } else {
         set_bios_mode(mode == VIDEO_CGA ? 6 : (mode == VIDEO_EGA ? 0x10 : 0x12));
         pixels = (unsigned char far *)MK_FP(mode == VIDEO_CGA ? 0xb800 : 0xa000, 0);
-        source = asset_font(mode);
-        segread(&s);
-        movedata(FP_SEG(source), FP_OFF(source), s.ds, FP_OFF(font), 256 * video_font_height);
+        font = asset_font(mode);
         for (i = 0; i < 256; ++i) glyph_offset[i] = i * video_font_height;
         for (i = 0; i < video_height; ++i)
             scan_offset[i] = mode == VIDEO_CGA ? (unsigned)(i >> 1) * 80 + ((i & 1) ? 8192 : 0) : (unsigned)i * 80;
@@ -241,28 +237,6 @@ void video_mask(int x, int y, const unsigned char *mask, int bytes, int height, 
         }
     }
 }
-void video_string(int x, int y, const char *s, unsigned color, int bold)
-{
-    int length, row, col, pos, byte, shift, width, count;
-    unsigned char bits;
-    if (x < 0 || x >= 640 || y < 0) return;
-    length = strlen(s); width = video_font_width;
-    if (length * width > 640 - x) length = (640 - x) / width;
-    count = ((x & 7) + length * width + 7) >> 3;
-    for (row = 0; row < video_font_height && y + row < video_height; ++row) {
-        memset(scanmask, 0, count + 1);
-        pos = x & 7;
-        for (col = 0; col < length; ++col) {
-            bits = font[glyph_offset[(unsigned char)s[col]] + row];
-            if (bold) bits |= bits >> 1;
-            byte = pos >> 3; shift = pos & 7;
-            scanmask[byte] |= bits >> shift;
-            if (shift) scanmask[byte + 1] |= bits << (8 - shift);
-            pos += width;
-        }
-        video_mask(x & ~7, y + row, scanmask, count, 1, color);
-    }
-}
 /* Edge writes retain pixels outside the span by loading VRAM latches (or
  * masking the original CGA byte). type is zero, one, glyph or inverted glyph;
  * unlike masked_byte(), planar set/reset is disabled by opaque_span(). */
@@ -358,9 +332,8 @@ void video_label(int x, int y, const char *text, unsigned fg, unsigned bg, int b
 {
     label_advance(x, y, text, fg, bg, bold, video_font_width);
 }
-/* Generated icons contain three stacked masks: outline, body, highlight.
- * Their zero bits are transparent. Draw layers in that order so later color
- * accents replace underlying pixels without clearing the row background. */
+/* VGA/EGA icons have one monochrome mask. CGA keeps its three native layers
+ * (outline, body, highlight), drawn in order over transparent zero bits. */
 void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigned highlight)
 {
     const unsigned char *mask;
@@ -369,8 +342,10 @@ void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigne
     height = video_mode == VIDEO_CGA ? 8 : 16;
     mask = video_mode == VIDEO_CGA ? cga_icon_masks[icon] : icon_masks[icon];
     video_mask(x, y, mask, 2, height, outline);
-    video_mask(x, y, mask + height * 2, 2, height, body);
-    video_mask(x, y, mask + height * 4, 2, height, highlight);
+    if (video_mode == VIDEO_CGA) {
+        video_mask(x, y, mask + height * 2, 2, height, body);
+        video_mask(x, y, mask + height * 4, 2, height, highlight);
+    }
 }
 /* Copy whole-byte listing interiors; callers repaint the scrollbar afterwards.
  * Gutters inside rounded edge bytes are constant throughout the listing. */

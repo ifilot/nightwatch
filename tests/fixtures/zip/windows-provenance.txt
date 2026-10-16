@@ -1,0 +1,5 @@
+Windows: Microsoft Windows NT 10.0.26300.0
+PowerShell: 5.1.26100.9444
+CLR: 4.0.30319.42000
+.NET ZipArchive: Fastest, Optimal, NoCompression
+PowerShell Compress-Archive: Optimal

@@ -1,0 +1,22 @@
+{
+  "HELLO.TXT": {
+    "size": 148000,
+    "sha256": "112d2e5c707c58a284e9e66a7a9f8b448feb9b558417fbd2eba8a42a8e2b7012"
+  },
+  "ZERO.BIN": {
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "SUB/BYTES.BIN": {
+    "size": 204800,
+    "sha256": "8c6627e25bfbdef2bba5abc03123ea8e9b60d892f7f180a8b9b5079fb3233c54"
+  },
+  "SUB/WINDOW.BIN": {
+    "size": 46003,
+    "sha256": "7723ad764cdf333ed350bba90828ec265ce3633038a128d9c51b317ff392c683"
+  },
+  "SUB/RANDOM.BIN": {
+    "size": 30000,
+    "sha256": "30b11706d723dba6c70fce56d712bebe7a83dda18a92f396c6ee4bdc8fd9e701"
+  }
+}

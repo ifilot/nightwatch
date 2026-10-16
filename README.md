@@ -1,7 +1,7 @@
 # Nightwatch
 
 [![GitHub Actions](https://github.com/ifilot/nightwatch/actions/workflows/build.yml/badge.svg)](https://github.com/ifilot/nightwatch/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-v1.1.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-v1.2.0-blue)](VERSION)
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
 A Midnight Commander style, two-pane file navigator for **MS-DOS on 8088/8086
@@ -56,6 +56,8 @@ jumps; an external editor and DOS shell are also available.
 
 Download the DOS package from this repository's **Releases** page. Extract it and
 keep `LICENSE.TXT`, `FONTLIC.TXT` and `ICONLIC.TXT` alongside `NW.EXE`.
+The package also includes `NIGHT.ICC`, a transparent 32x32 EGA icon to import
+into Quick Menu for its Nightwatch launcher entry.
 
 ```dos
 NW /vga C:\FILES D:\BACKUP
@@ -65,6 +67,10 @@ Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C
 **Alt-F1** opens About (also **F1**, then **A**).
 **F2**, then **R**, toggles automatic display mode saving in `NIGHT.CFG`.
 **Ctrl-W** saves the mode, pane paths and sorting for the next launch.
+**Ctrl-T** opens storage integrity tests: quick, long, verify saved test or clean
+up. Seeded data, file/directory mutations and exact readback exercise cards such
+as Slot-otter through DOS. Keep manifests/logs on another drive; see the
+[storage test guide](docs/storage-test.md).
 
 | Keys | Action |
 | --- | --- |
@@ -73,16 +79,19 @@ Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C
 | F3 / Shift-F3 | Text / hex viewer; F4 toggles inside the viewer |
 | F4, F5, F6, F7, F8 | Editor, copy, move, mkdir, delete |
 | Ctrl-F, Ctrl-P / Ctrl-N, Ctrl-S | Find filename, mark / unmark patterns, sort |
+| Ctrl-U | Unpack selected ZIP into the other pane |
+| Ctrl-T | Storage integrity tests: quick / long / verify / cleanup |
 | F9, Ctrl-R, Ctrl-O | Change drive/path, refresh, DOS shell |
 | F1, F10 | Help, quit |
 
 Inside either viewer: **F7** searches, **F8** finds the next match, and **Ctrl-G**
 jumps to an offset. Search accepts ASCII or bytes such as `hex:DE AD 00 BE EF`.
 
-Requires DOS 3.0+, DOS 8.3 filenames and about **128 KB free conventional RAM**.
+Requires DOS 3.0+, DOS 8.3 filenames and about **256 KB free conventional RAM**.
 EGA needs at least 128 KB video RAM. Each pane caches 512 entries; recursive
-operations traverse beyond that cache, up to 32 directory levels. Keyboard only;
-archive support is outside the current scope.
+operations traverse beyond that cache, up to 32 directory levels. Keyboard only. ZIP extraction supports stored and DEFLATE entries, including
+Windows and Linux archives. ZIP64, encryption and Deflate64 are unsupported.
+See [ZIP support](docs/zip-support.md) for filename and format limits.
 
 ## Build and test
 
@@ -106,6 +115,7 @@ make run MODE=vga                        # open a DOSBox window
 make test                               # host regression tests + sanitizers
 make test-dos                           # DOS filesystem tests on FAT12
 make test-video                         # all display modes + BIOS/8086 checks
+make test-storage-dos                   # storage test + restart/verify in DOS
 make screenshots                        # test and refresh README captures
 make benchmark-copy                     # compare copy buffer sizes on 8086
 make package                            # build/dist/ release files
@@ -126,7 +136,9 @@ The [source comment style](docs/commenting.md) describes the C89/TASM convention
 ## Continuous integration and releases
 
 Every branch/tag push and pull request runs host regression tests. Branch/tag
-pushes also build and test the DOS program in the repository's Docker environment.
+pushes also build and test the DOS program in the repository's cached Docker
+environment. Seven independent DOS suites run in parallel against a shared
+build; packaging waits for every suite to pass.
 Tag pushes publish the validated `NW.EXE`, GPL/font/icon licenses, version
 information, DOS ZIP package and checksums as a GitHub release. The executable
 includes all four display modes.
