@@ -99,3 +99,8 @@ ST_DASHTIME|Elapsed: %lu:%02lu
 ST_DASHCYCLE|Cycle %u / %u
 ST_DASHENTRIES|%lu directory entries
 ST_DASHOPEN|Opening file...
+ST_DIRPATH|Invalid folder path or missing folder name (use DOS 8.3 names)
+ST_DIRFILE|A file already occupies part of the folder path
+ST_CREATEDIR|Create folder
+ST_UICREATEDIR|Create this folder and any missing parents?
+ST_UICREATEKEY|Y = create folders; any other key = cancel

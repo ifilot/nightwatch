@@ -49,6 +49,12 @@ int main(int argc, char **argv)
         if (!strcmp(fault, "root-delete")) fs_test_fail("delete", "NWT0001", 1);
     }
 #endif
+    if (argc == 3 && (!strcmp(argv[1], "plan") || !strcmp(argv[1], "mkdir"))) {
+        int missing;
+        ok = storage_directory(argv[2], manifest, !strcmp(argv[1], "mkdir"), &missing);
+        printf("%s %s missing=%d %s\n", ok ? "PASS" : "FAIL", manifest, missing, nw_error);
+        return ok ? 0 : 1;
+    }
     storage_progress = progress;
     if (argc == 6 && !strcmp(argv[1], "start"))
         ok = storage_start(argv[2], argv[3], atoi(argv[4]), strtoul(argv[5], NULL, 10), manifest);

@@ -40,6 +40,8 @@ changes without a release tag are marked unreleased.
 
 ### Fixed
 
+- Storage tests offer to create missing target/log folders and their parents
+  after confirmation, instead of failing when a chosen folder is absent.
 - Hardened copy/move staging against premature EOF and source-size changes,
   and isolated deferred pane keys from overwrite decisions.
 - Directory refresh distinguishes DOS enumeration failures from normal

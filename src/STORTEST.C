@@ -73,6 +73,56 @@ static void io_error(unsigned which)
     storage_label(action, which); fs_error(action);
     if (storage_report.state != STORAGE_CANCELLED) storage_report.state = STORAGE_FAILED;
 }
+/* Resolve the nearest existing ancestor without writing. Only missing DOS 8.3
+ * components are accepted; unavailable roots and file/dir conflicts fail before
+ * any mkdir. The UI calls again with create=1 only after explicit approval.
+ * out may alias path. Parent folders are user-owned, outside run cleanup.
+ */
+int storage_directory(const char *path, char *out, int create, int *missing)
+{
+    char parent[NW_PATH], suffix[NW_PATH], joined[NW_PATH], *part, *end;
+    unsigned n, cut, length;
+    Entry entry;
+    *missing = 0;
+    n = strlen(path);
+    if (!n || n >= NW_PATH) return fail(ST_DIRPATH);
+    strcpy(parent, path); suffix[0] = 0;
+    for (;;) {
+        n = strlen(parent);
+        while (n > 1 && (parent[n-1] == '/' || parent[n-1] == '\\') &&
+               !(n == 3 && parent[1] == ':')) parent[--n] = 0;
+        if (fs_info(parent, &entry) && !(entry.attr & NW_DIR)) return fail(ST_DIRFILE);
+        if (fs_canonical(parent, out)) break;
+        cut = n;
+        while (cut && parent[cut-1] != '/' && parent[cut-1] != '\\' &&
+               parent[cut-1] != ':') --cut;
+        if (!valid_name(parent + cut)) return fail(ST_DIRPATH);
+        length = n - cut;
+        if (length + 1 + strlen(suffix) >= NW_PATH) return fail(ST_DIRPATH);
+        memmove(suffix + length + 1, suffix, strlen(suffix) + 1);
+        memcpy(suffix, parent + cut, length); suffix[length] = '/';
+        if (!cut) strcpy(parent, ".");
+        else if (parent[cut-1] == ':') { parent[cut] = '.'; parent[cut+1] = 0; }
+        else if (cut == 1 || (cut == 3 && parent[1] == ':')) parent[cut] = 0;
+        else parent[cut-1] = 0;
+        /* A root/current directory that cannot resolve must not loop forever. */
+        if (!strcmp(parent, ".") || (strlen(parent) == 3 && parent[1] == ':') ||
+            !strcmp(parent, "/") || !strcmp(parent, "\\")) {
+            if (!fs_canonical(parent, out)) { io_error(ST_CANONICAL); return 0; }
+            break;
+        }
+    }
+    *missing = suffix[0] != 0;
+    part = suffix;
+    while (*part) {
+        end = strchr(part, '/'); *end = 0;
+        if (!path_join(joined, out, part)) return 0;
+        if (create && !fs_mkdir(joined)) { io_error(ST_CREATEDIR); return 0; }
+        strcpy(out, joined); part = end + 1;
+    }
+    nw_error[0] = 0;
+    return 1;
+}
 static int poll(const char *phase, const char *path, unsigned long done, unsigned long total)
 {
     if (storage_progress && !storage_progress(phase, path, done, total))

@@ -49,3 +49,25 @@ for machine,mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga'
     run(work,local,mode,machine,keys)
     assert not root.exists() and not (local/'NWT0002.DAT').exists()
     print('PASS:',mode,'Ctrl-T quick, saved verification, cleanup and cancelled long test',flush=True)
+    # Missing folders: declining either prompt creates neither tree.
+    setup = [20,ord('q')]+text(r'D:\CARD\NEW\NEST')+text(r'E:\NEW\LOG')+text('42')
+    for replies in ([27], [ord('y'),27], [ord('y'),ord('y'),27]):
+        run(work,local,mode,machine,setup+replies+[0x4400])
+        assert not (work/'CARD/NEW').exists() and not (local/'NEW').exists()
+    # Invalid drive pairing and file conflicts are rejected before mkdir.
+    keys = [20,ord('q')]+text(r'D:\CARD\NEW\NEST')+text(r'D:\LOCAL')+text('42')+[13,0x4400]
+    run(work,local,mode,machine,keys)
+    assert not (work/'CARD/NEW').exists() and not (work/'LOCAL').exists()
+    (work/'CARD/FILE').write_bytes(b'keep')
+    keys = [20,ord('q')]+text(r'D:\CARD\FILE\CHILD')+text(r'E:\NEW\LOG')+text('42')+[13,0x4400]
+    run(work,local,mode,machine,keys)
+    assert (work/'CARD/FILE').read_bytes() == b'keep' and not (local/'NEW').exists()
+    # Approve profile, target tree and log tree, then complete a real quick test.
+    run(work,local,mode,machine,setup+[ord('y')]*3+[13,0x4400])
+    assert (work/'CARD/NEW/NEST/NWT0001/DONE.ID').exists()
+    assert (local/'NEW/LOG/NWT0001.DAT').exists()
+    keys = [20,ord('c')]+text(r'E:\NEW\LOG\NWT0001.DAT')+[ord('y'),13,0x4400]
+    run(work,local,mode,machine,keys)
+    assert not (work/'CARD/NEW/NEST/NWT0001').exists()
+    assert (work/'CARD/NEW/NEST').is_dir() and (local/'NEW/LOG').is_dir()
+    print('PASS:',mode,'recursive folder approvals, cancellation, conflicts and retained parents',flush=True)

@@ -58,6 +58,24 @@ class StorageTests(unittest.TestCase):
         self.run_engine('start',self.target,self.local,profile,seed,**kw)
         self.manifest = next(self.local.glob('*.DAT'))
         self.root = self.target/self.manifest.stem
+    def test_missing_directory_planning_and_creation(self):
+        path = self.target/'PARENT/CHILD'
+        def directory(command, path, success=True):
+            p = sp.run([str(EXE),command,str(path)],env=ENV,text=True,capture_output=True)
+            self.assertEqual(p.returncode, 0 if success else 1, p.stdout+p.stderr)
+            return p.stdout
+        self.assertIn('missing=1',directory('plan',path))
+        self.assertFalse((self.target/'PARENT').exists())
+        self.assertIn('missing=1',directory('mkdir',path))
+        self.assertTrue(path.is_dir())
+        self.assertIn('missing=0',directory('mkdir',path))
+        directory('plan',self.target/'KEEP.TXT/CHILD',False)
+        directory('mkdir',self.target/'NEW/BAD*NAME',False)
+        self.assertFalse((self.target/'NEW').exists())
+        directory('mkdir',self.target/'NEW/TOOLONGNAME',False)
+        self.assertFalse((self.target/'NEW').exists())
+        directory('mkdir',self.target/('A'*128),False)
+        self.assertEqual((self.target/'KEEP.TXT').read_bytes(),b'existing user file')
     def test_quick_oracle_relaunch_verify_cleanup(self):
         output = self.run_engine('start',self.target,self.local,0,4294967295)
         self.manifest = next(self.local.glob('*.DAT')); self.root = self.target/self.manifest.stem

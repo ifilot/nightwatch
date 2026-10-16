@@ -37,11 +37,20 @@ for reproducible testing, not cryptographic use.
 
 1. Install OTTERSD with writable access and open its drive in Nightwatch.
 2. Press Ctrl-T and Q or L, then confirm the target directory.
-3. Choose an existing **local manifest/log directory on another drive**. For
+3. Choose a **local manifest/log directory on another drive**. For
    example, target `S:\` and logs in `C:\TESTLOG`. The default local directory
-   is Nightwatch's startup directory. Create a log directory beforehand if needed. The guard compares DOS drive letters; choose
+   is Nightwatch's startup directory. The guard compares DOS drive letters; choose
    a different physical disk for the evidence, rather than an alias of the card.
-4. Accept or enter the seed, then confirm the profile.
+4. Accept or enter the seed, then confirm the profile. If either folder is
+   missing, Nightwatch shows its full path and asks whether to create it and
+   all missing parent folders. Press **Y** to approve each path; any other key
+   cancels without creating folders or starting the test. Missing folder names
+   must use DOS 8.3 format. Both paths are checked before creation.
+
+Folders created by these prompts remain after test cleanup; cleanup removes
+only the recorded `NWTxxxx` test folder. If folder creation fails (for example,
+with a full or write-protected disk), the error is shown and the test does not
+start. Any parent folders already created remain.
 
 The program chooses an unused `NWT0001` through `NWT9999` directory on the
 target and an equally named `.DAT` manifest locally. Existing directories,

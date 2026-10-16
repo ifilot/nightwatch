@@ -1189,6 +1189,11 @@ storage_offsets label word
     dw offset storage_98
     dw offset storage_99
     dw offset storage_100
+    dw offset storage_101
+    dw offset storage_102
+    dw offset storage_103
+    dw offset storage_104
+    dw offset storage_105
 storage_0 label byte
     db 053h,074h,06fh,072h,061h,067h,065h,020h,074h,065h,073h,074h,020h,063h,061h,06eh
     db 063h,065h,06ch,06ch,065h,064h,03bh,020h,074h,065h,073h,074h,020h,066h,069h,06ch
@@ -1531,6 +1536,25 @@ storage_99 label byte
     db 074h,072h,069h,065h,073h,000h
 storage_100 label byte
     db 04fh,070h,065h,06eh,069h,06eh,067h,020h,066h,069h,06ch,065h,02eh,02eh,02eh,000h
+storage_101 label byte
+    db 049h,06eh,076h,061h,06ch,069h,064h,020h,066h,06fh,06ch,064h,065h,072h,020h,070h
+    db 061h,074h,068h,020h,06fh,072h,020h,06dh,069h,073h,073h,069h,06eh,067h,020h,066h
+    db 06fh,06ch,064h,065h,072h,020h,06eh,061h,06dh,065h,020h,028h,075h,073h,065h,020h
+    db 044h,04fh,053h,020h,038h,02eh,033h,020h,06eh,061h,06dh,065h,073h,029h,000h
+storage_102 label byte
+    db 041h,020h,066h,069h,06ch,065h,020h,061h,06ch,072h,065h,061h,064h,079h,020h,06fh
+    db 063h,063h,075h,070h,069h,065h,073h,020h,070h,061h,072h,074h,020h,06fh,066h,020h
+    db 074h,068h,065h,020h,066h,06fh,06ch,064h,065h,072h,020h,070h,061h,074h,068h,000h
+storage_103 label byte
+    db 043h,072h,065h,061h,074h,065h,020h,066h,06fh,06ch,064h,065h,072h,000h
+storage_104 label byte
+    db 043h,072h,065h,061h,074h,065h,020h,074h,068h,069h,073h,020h,066h,06fh,06ch,064h
+    db 065h,072h,020h,061h,06eh,064h,020h,061h,06eh,079h,020h,06dh,069h,073h,073h,069h
+    db 06eh,067h,020h,070h,061h,072h,065h,06eh,074h,073h,03fh,000h
+storage_105 label byte
+    db 059h,020h,03dh,020h,063h,072h,065h,061h,074h,065h,020h,066h,06fh,06ch,064h,065h
+    db 072h,073h,03bh,020h,061h,06eh,079h,020h,06fh,074h,068h,065h,072h,020h,06bh,065h
+    db 079h,020h,03dh,020h,063h,061h,06eh,063h,065h,06ch,000h
 FONTDATA ends
 _TEXT segment byte public 'CODE'
 assume cs:_TEXT

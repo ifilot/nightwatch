@@ -21,6 +21,10 @@ extern StorageReport storage_report;
 /* Return zero to cancel. Polled between blocks and metadata operations. */
 extern int (*storage_progress)(const char *phase, const char *path,
                               unsigned long done, unsigned long total);
+/* Plan a possibly missing directory; create only after user confirmation.
+ * missing reports whether any component was absent. out may alias path.
+ */
+int storage_directory(const char *path, char *out, int create, int *missing);
 /* Quick: boundary files + 1 MiB + 40 directory entries, one mutation cycle.
  * Long: boundary files + 16 MiB + 2200 entries, three mutation cycles.
  * seed is an explicit 32-bit value, including on wider host platforms.

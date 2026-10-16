@@ -104,7 +104,12 @@ enum {
     ST_DASHTIME,
     ST_DASHCYCLE,
     ST_DASHENTRIES,
-    ST_DASHOPEN
+    ST_DASHOPEN,
+    ST_DIRPATH,
+    ST_DIRFILE,
+    ST_CREATEDIR,
+    ST_UICREATEDIR,
+    ST_UICREATEKEY
 };
 char *storage_label(char *out, unsigned index);
 #ifdef NW_HOST
@@ -211,6 +216,11 @@ static const char *storage_messages[] = {
     "Cycle %u / %u",
     "%lu directory entries",
     "Opening file...",
+    "Invalid folder path or missing folder name (use DOS 8.3 names)",
+    "A file already occupies part of the folder path",
+    "Create folder",
+    "Create this folder and any missing parents?",
+    "Y = create folders; any other key = cancel",
 };
 #endif
 #else

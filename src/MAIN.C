@@ -1101,6 +1101,18 @@ static int storage_seed(const char *text, unsigned long *seed)
     }
     *seed = value; return 1;
 }
+static int storage_create_confirm(const char *path)
+{
+    char title[80], line[80];
+    unsigned n = strlen(path);
+    int k, y = video_rows / 2 - 3;
+    strncpy(line, path, 70); line[70] = 0;
+    dialog(storage_label(title, ST_UICREATEDIR), line);
+    if (n > 70) video_text(5, y + 4, path + 70, COLOR_DIALOG);
+    video_text(5, y + 5, storage_label(line, ST_UICREATEKEY), COLOR_DIALOG);
+    video_flush(); k = key_read();
+    return k == 'y' || k == 'Y';
+}
 /* Keep run creation, saved verification and recorded-file cleanup distinct.
  * Never unmount a user's DOS drive implicitly; persistence verification follows
  * the card driver's successful unmount and a subsequent reboot by the user.
@@ -1109,7 +1121,7 @@ static void storage_menu(void)
 {
     char target[NW_PATH], local[NW_PATH], manifest[NW_PATH], seed_text[16], line[80], title[80];
     unsigned long seed;
-    int k, ok, extended;
+    int k, ok, extended, target_missing, local_missing;
     dialog(storage_label(title, ST_UITITLE), storage_label(line, ST_UIMENU));
     video_flush(); k = key_read();
     if (k >= 'A' && k <= 'Z') k += 'a' - 'A';
@@ -1121,7 +1133,19 @@ static void storage_menu(void)
         sprintf(seed_text, "%lu", (unsigned long)time(NULL) & 0xffffffffUL);
         if (!prompt(storage_label(line, ST_UISEED), seed_text, sizeof(seed_text))) return;
         if (!storage_seed(seed_text, &seed)) { notice(storage_label(line, ST_UIBADSEED)); return; }
+        if (!storage_directory(target, target, 0, &target_missing) ||
+            !storage_directory(local, local, 0, &local_missing)) { notice(nw_error); return; }
+        if (toupper(target[0]) == toupper(local[0])) {
+            notice(storage_label(line, ST_OTHERDRIVE)); return;
+        }
         if (!confirm(storage_label(line, extended ? ST_UILONG : ST_UIQUICK))) return;
+        /* Collect both approvals before creating either directory tree. */
+        if ((target_missing && !storage_create_confirm(target)) ||
+            (local_missing && !storage_create_confirm(local))) return;
+        if ((target_missing && !storage_directory(target, target, 1, &target_missing)) ||
+            (local_missing && !storage_directory(local, local, 1, &local_missing))) {
+            notice(nw_error); refresh(); return;
+        }
     } else {
         if (current() && name_match("NWT????.DAT", current()->name)) {
             if (!current_path(manifest)) { notice(nw_error); return; }
