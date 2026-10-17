@@ -1,0 +1,18 @@
+{
+  "HELLO.TXT": {
+    "size": 113400,
+    "sha256": "022ca2fa3b9a59250e0deded0db93806a4c36307d979d7f0dee2d5bdf2c41414"
+  },
+  "SUB/DATA.BIN": {
+    "size": 84000,
+    "sha256": "c7f4cbaf2a017fe3bd670c910fa4e44c6811eb5b5486a68c40dd004ce19b088a"
+  },
+  "SUB/EMPTY.DAT": {
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "SUB/SMALL.TXT": {
+    "size": 6,
+    "sha256": "58055bdcc73787eb88c78d36f0b4939e9c5dc1c3ad17e25cc85a6833cf1a0cab"
+  }
+}

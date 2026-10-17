@@ -35,6 +35,15 @@ def icon(name, mode, selected=False, help_icon=False):
         bg = 1 if selected else 15
         body, edge, light = bg, 15 if selected else 0, 15 if selected else 0
     bitmap = Image.new('RGB',(width,height),palette[bg])
+    if mode == 'VGA':
+        sprite = tables['vga_'+name]
+        for y in range(16):
+            for x in range(16):
+                at, bit = y*2+x//8, 128>>(x%8)
+                if sprite[at] & bit:
+                    color = sum(1<<p for p in range(4) if sprite[32+p*32+at] & bit)
+                    bitmap.putpixel((x,y),palette[color])
+        return bitmap,bg
     # VGA/EGA draw one ink mask; CGA draws outline/body/highlight layers.
     for layer, color in enumerate((edge,body,light) if mode == 'CGA' else (edge,)):
         for y in range(height):

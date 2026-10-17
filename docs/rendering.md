@@ -47,8 +47,8 @@ These checks cover interface output and instruction compatibility, not physical
 ## Compact layout
 
 The current default layout displays 18 CGA, 15 EGA and 22 VGA entries per pane,
-versus 17 in text. Fonts retain their original sizes; EGA and VGA share 16x16
-monochrome 16pxls icons. VGA/EGA rows are 17 pixels high, including a one-pixel white separator;
+versus 17 in text. Fonts retain their original sizes; VGA uses original 16x16 color icons inspired by Quick Menu; EGA retains
+monochrome 16x16 16pxls icons. VGA/EGA rows are 17 pixels high, including a one-pixel white separator;
 EGA has taller path captions. The title and permanent help strips were removed, the footer uses one
 line, and operation status shares the command field when no command is typed.
 
@@ -177,3 +177,16 @@ The 512-entry pane caches and 2 KiB copy fallback remain intact. ZIP inflation
 adds approximately 40 KiB of far allocations while active; allow 256 KiB free
 conventional RAM. The format/failure checks and OS fixtures are documented in
 [ZIP support](zip-support.md).
+
+
+## VGA color icon integration
+
+The Quick Menu inspired set uses 16×16 sprites, each with a 32-byte opacity
+mask and four 32-byte color planes. VGA reads and writes one selected hardware
+plane at a time, preserving the row background under transparent pixels. EGA
+and CGA retain their previous rendering paths. File-list dimensions are unchanged.
+
+The 8086 benchmark at 3,000 cycles (`python3 tests/benchmark.py icons-v130`)
+measured VGA first paint at 13 ticks, ten selection moves at 7 ticks and ten
+unchanged redraws at 0 ticks / 0 stores. These are emulator measurements for
+its fourteen-entry fixture, with the same timer quantization limits as above.

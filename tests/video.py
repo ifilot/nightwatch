@@ -81,6 +81,9 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     images = [decode(f) for f in frames]
     if mode == 'vga': images[checks['binary_start']].save(base/'hex.png')
     if mode == 'text':
+        for index, expected in [(8, 'Line 1 / 70'), (9, 'Line 24 / 70'), (10, 'Line 1 / 70')]:
+            header = frames[index].read_bytes()[3:163:2].decode('ascii')
+            assert expected in header, (machine, index, header)
         cells = frames[0].read_bytes()[3:4003]
         for x, y, code in [(0,1,201),(39,1,187),(40,1,201),(79,1,187),(0,21,200),(79,21,188)]:
             assert cells[(y*80+x)*2] == code, (machine, 'CP437 frame', x, y)
@@ -95,6 +98,14 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
         if mode == 'cga':
             black = sum(n for n, color in colors if color == (0,0,0))
             assert 8 < black < 100, 'CGA folder must not be a solid block'
+        if mode == 'vga':
+            # Check actual VRAM, including transparent pixels on a selected row.
+            for row,name in enumerate(('parent','folder','document','binary','program','image','archive')):
+                sprite=Image.open(root/'assets/icons-v130'/('quickmenu-'+name+'.png')).convert('RGBA')
+                expected=Image.new('RGBA',(16,16),(*palette[1 if row==0 else 15],255))
+                expected.alpha_composite(sprite)
+                actual=image.crop((22,37+row*17,38,53+row*17))
+                assert actual.tobytes()==expected.convert('RGB').tobytes(),('VGA icon pixels',name)
 
     for index in [0, 1, 8]:
         colors = images[index].getcolors(640 * 480)
@@ -252,6 +263,9 @@ for machine, mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga
             assert (work/f'F{index:03d}.BIN').read_bytes() == initial,(mode,'no-op changed screen',index)
             assert info(index)[7:9] == info(first)[7:9],(mode,'no-op wrote VRAM or reread',index)
     assert info(7)[8] == info(2)[8]+1 and info(22)[8] == info(16)[8]+1
+    if mode == 'text':
+        header = (work/'F022.BIN').read_bytes()[3:163:2].decode('ascii')
+        assert 'Line 0 / 0' in header, header
     print('PASS:',mode,'viewer no-op keys, EOF, empty file, tabs/wrapping, text/hex toggles: zero rereads and VRAM writes',flush=True)
 
 # Matching paths share enumeration, and mkdir/delete reload affected panes only.
@@ -385,3 +399,21 @@ for machine,mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga'
     assert not list((work/'RIGHT').rglob('*.TMP')) and not list((work/'RIGHT').rglob('*.BAK'))
     assert list(work.glob('P*.BIN')),(mode,'no extraction progress captured')
     print('PASS:',mode,'Ctrl-U ZIP extraction, Windows separator paths, skip prompts and progress',flush=True)
+
+# ARJ uses the same Ctrl-U modal/progress path; validate format detection by
+# content using a neutral .BIN filename rather than relying on its extension.
+arj_manifest=json.loads((root/'tests/fixtures/arj/manifest.json').read_text())
+work=base/'arj-vga'
+if work.exists(): shutil.rmtree(work)
+work.mkdir(); (work/'LEFT').mkdir(); (work/'RIGHT').mkdir()
+shutil.copy2(base/'UITEST.EXE',work/'UITEST.EXE')
+shutil.copy2(root/'tests/fixtures/arj/METHOD1.ARJ',work/'LEFT/PACK.BIN')
+keys=[0x5000,21,13,21,13]+[ord('S')]*len(arj_manifest)+[0x4400]
+(work/'KEYS.TXT').write_text('\n'.join(f'{k:x}' for k in keys))
+dos(work,[r'UITEST /vga D:\LEFT D:\RIGHT'],'vgaonly')
+for name,info in arj_manifest.items():
+    assert hashlib.sha256((work/'RIGHT'/name).read_bytes()).hexdigest()==info['sha256'],name
+assert (work/'RIGHT/SUB/EMPTY').is_dir()
+assert not list((work/'RIGHT').rglob('*.TMP')) and not list((work/'RIGHT').rglob('*.BAK'))
+assert list(work.glob('P*.BIN')),'no ARJ progress captured'
+print('PASS: VGA Ctrl-U ARJ format detection, inactive pane, skip prompts and progress',flush=True)

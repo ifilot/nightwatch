@@ -3,7 +3,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef NW_ARJ_TEST
+#include "ARJ.H"
+#include "ARJDEC.H"
+#define zip_measure arj_measure
+#define zip_extract arj_extract
+#define zip_fail_allocation arj_fail_allocation
+#define zip_live_allocations arj_live_allocations
+#define NW_ZIP_TEST
+#else
 #include "ZIP.H"
+#endif
 #ifdef NW_HOST
 #include "fs_faults.h"
 extern int test_short_write;

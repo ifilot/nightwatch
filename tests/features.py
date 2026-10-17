@@ -203,12 +203,16 @@ keys = [0x5000,0x3d00] + [0x5100]*150 + [0x4900]*131
 previous = len(keys)
 keys += [0x4f00]; last = len(keys)
 keys += [0x4700,0x4100] + text('l05999'); found = len(keys)
+keys += [7] + text('17'); jumped = len(keys)
 keys += [27,0x4400]; script(work,keys)
 dos(work,r'UITEST /text D:\LEFT D:\RIGHT','cga')
 def first_line(index): return (work/f'F{index:03d}.BIN').read_bytes()[163:323:2].decode('ascii')
 assert first_line(previous).startswith('L00437')
 assert first_line(last).startswith('L05980')
 assert first_line(found).startswith('L05999')
+for index, line in [(previous, 438), (last, 5981), (found, 6000), (jumped, 3)]:
+    header = (work/f'F{index:03d}.BIN').read_bytes()[3:163:2].decode('ascii')
+    assert f'Line {line} / 6000' in header, (index, header)
 print('PASS: actual DOS text viewer paging backward beyond 128 cached pages, End and case-insensitive search',flush=True)
 
 # Full 63-byte patterns, no-match retention and invalid/cancelled byte jumps.

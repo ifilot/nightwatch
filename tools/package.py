@@ -14,15 +14,22 @@ Optional pane paths: NW /vga C:\\FILES D:\\BACKUP
 F1: help (A: About). Alt-F1: About. NW /version prints the version.
 F2: display mode. F3: text viewer. Shift-F3: hex viewer.
 F5: copy. F6: move. F7: mkdir. F8: delete. F10: quit.
-Ctrl-U unpacks the selected ZIP into the other panel (store/DEFLATE, DOS 8.3).
+Enter on ZIP/ARJ opens a read-only folder view. F3 views a member; F5 extracts.
+Backspace leaves the archive. Extract nested archives before opening them.
+Ctrl-U unpacks ZIP (store/DEFLATE) or ARJ (methods 0-4) into the other panel.
+Archive names must use ASCII DOS 8.3 paths.
 NW /unzip D:\\PACK.ZIP D:\\OUT extracts without overwriting existing files.
+NW /unarj D:\\PACK.ARJ D:\\OUT does the same for ARJ.
+ARJ text mode, encryption, split volumes, chapters, extended headers and SFX
+are unsupported.
 Ctrl-W saves mode, pane paths and sorting in NIGHT.CFG.
 Import NIGHT.ICC in Quick Menu to use the supplied launcher icon (32x32, 16 colors).
 
 Allow 256 KB free conventional RAM, including ZIP inflation. EGA needs 128 KB video RAM.
 All runtime fonts/icons are embedded. NIGHT.ICC is an optional Quick Menu icon
 under the same GPL license as Nightwatch. Keep FONTLIC.TXT and ICONLIC.TXT with the
-executable. Spleen fonts use BSD-2-Clause. The VGA/EGA icons are 16pxls by
+executable. Spleen fonts use BSD-2-Clause. VGA icons are original GPL artwork.
+The EGA icons are 16pxls by
 Paul Mackenzie (https://16pxls.com/), adapted under CC-BY-SA-4.0.
 The embedded zlib 1.3.2 inflate subset uses the zlib license (ZLIBLIC.TXT).
 

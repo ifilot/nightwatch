@@ -33,7 +33,8 @@ copied into this repository. Set `DOS_TOOLCHAIN` to their installation directory
 ```sh
 export DOS_TOOLCHAIN=/path/to/toolchain
 make
-make run                 # launches a DOSBox window in text mode
+make run                 # VGA with fictional DOS work and backup drives
+make run MODE=text
 make run MODE=cga
 make run MODE=ega
 make run MODE=vga
@@ -51,8 +52,16 @@ appear in `build/`. Sources are staged there with DOS line endings and DOS
 filenames. The source directory and toolchain are not modified by
 compilation. `make clean` removes generated build artifacts.
 
-`make run` mounts only `build/` as the DOS C: drive; to work with other files,
-mount their directory in DOSBox and invoke the executable manually. For example:
+`make run` mounts `build/` as DOS C:, plus generated demo directories
+`build/demo/D/` as D: and `build/demo/E/` as E:. It starts VGA with the work
+drive and backup/transfer drive in the two panes. The samples include nested
+application and project folders, documents, binary data, real PCX/BMP images,
+ZIP and ARJ archives, and runnable batch files. Existing demo files are preserved
+on later launches; missing samples are recreated. `make demo` populates the
+drives without launching DOSBox. Everything is generated under `build/`.
+
+To work with other files, mount their directory in DOSBox and invoke the
+executable manually. For example:
 
 ```dos
 mount c /path/to/nightwatch/build
@@ -172,6 +181,12 @@ hexadecimal. Matches appear at the top of the view. Text supports Home/End and
 backward paging beyond its 128 cached offsets by rescanning earlier content when
 necessary.
 
+The text viewer header shows **Line X / Y**, where X is the first displayed
+file line and Y is the total. Wrapped rows still belong to the same file line;
+an empty file shows 0 / 0. The initial count scans the file, so opening large
+files on slow disks can take time. Hex mode shows the byte offset and file size
+in its footer.
+
 Press **F2**, then **R**, to enable or disable remembering the display mode
 (default: off). The F2 title shows the current setting. Enabling this option
 writes the current mode to `NIGHT.CFG`; subsequent successful mode selections
@@ -205,7 +220,7 @@ verification after reboot, cleanup rules and the OTTERSD zero-gap requirement.
   included.
 - Recursive directory copy/move/delete; same-drive moves prefer DOS rename.
   Existing directories merge, and files require an overwrite/skip decision.
-- Keyboard operation; no mouse, archives or network protocols. Filename
+- Keyboard operation; no mouse or network protocols. Filename
   patterns, sorting and viewer search are available through keyboard commands.
 - Native text retains the DOS character map. Graphics fonts map CP437 bytes to
   embedded Spleen glyphs, with explicit fallback for glyphs missing in small
@@ -234,7 +249,8 @@ bars and proportional scroll indicators. A single-line numbered function-key
 strip replaces large buttons. The command field also shows operation status when
 empty; the permanent title and instructional strips have been removed. CGA uses
 high-contrast monochrome and 16 x 8 icons adjusted for its pixel aspect ratio.
-EGA and VGA share monochrome 16 x 16 icons from the 16pxls set. The existing
+VGA uses original Quick Menu inspired 16 x 16 color icons. EGA retains
+monochrome 16 x 16 icons from the 16pxls set. The existing
 font sizes remain readable. A single white scanline separates VGA/EGA file
 entries, including the selected entry.
 
@@ -305,9 +321,39 @@ CGA/EGA/VGA screens and 23/49/55 ticks for ten moves. See
 These compare the old and new interfaces, rather than claiming physical hardware
 timing.
 
-## ZIP extraction
+## Browsing ZIP and ARJ archives
 
-Select a ZIP file and press **Ctrl-U**. The destination defaults to the inactive
+Press **Enter** on a `.ZIP` or `.ARJ` file to open its contents in the active
+pane. The path caption includes the archive filename and current member folder.
+Archive browsing uses the same DOS 8.3 and format limits as extraction. Listing
+validates archive headers and names without decompressing payloads or creating
+files. Implicit directories are included, and the normal 512-entry pane limit,
+sorting, marking, scrolling and filename search apply.
+
+**Enter** opens a member folder. **Backspace** or **Enter** on `..` goes up;
+at the archive root it returns to the containing disk directory and reselects
+the archive. F9 can switch directly to an existing disk directory. Ctrl-R
+refreshes the archive listing; Ctrl-W saves the containing disk paths.
+
+**F3 / Shift-F3** views the cursor member as text/hex. Only that member is
+streamed into an exclusively created temporary file in the launch directory,
+with size/CRC checks before opening the viewer; the temporary is removed when
+the viewer closes. The launch directory must therefore be writable for viewing.
+The viewer caption retains the virtual archive/member path.
+
+**F5** (or Ctrl-U inside an archive) extracts the cursor entry or marked entries
+into an existing disk directory, defaulting to the inactive pane. A selected
+folder includes all its descendants, including entries beyond the pane cache.
+The existing overwrite/skip/cancel controls and staged replacement apply.
+
+Archive panes are read-only: editor, move, mkdir, delete, shell and storage-test
+commands are blocked there, as are transfers into a virtual archive pane. Source
+archives are never rewritten. Extract a nested archive with F5 before opening it;
+nested archive browsing and writing archive contents are not supported.
+
+## ZIP and ARJ extraction
+
+Select a ZIP or ARJ file and press **Ctrl-U**. The destination defaults to the inactive
 pane and must be an existing directory. The operation validates the complete
 archive structure and paths before creating files. Existing files offer
 **O** overwrite, **S** skip or **Esc** cancel. The transfer dialog shows the
@@ -323,6 +369,12 @@ ZIP64, encryption, split archives, Deflate64 and filesystem links are rejected.
 Paths must fit the existing 127-byte program limit. Total uncompressed size and
 archive offsets are limited to 2,147,483,647 bytes.
 
+For ARJ, use `NW /unarj D:\PACK.ARJ D:\OUT` for unattended extraction.
+Built-in decoding supports stored files and methods 1–4, directories and empty
+files. ARJ text-mode entries, encryption, split volumes, chapters, extended
+headers and self-extracting executables are rejected. Unix producer timestamps
+are converted to DOS UTC. See [ARJ support](arj-support.md) for details.
+
 ## Validation
 
 ZIP extraction is tested with retained archives actually produced by Windows
@@ -332,6 +384,8 @@ compression details, fixture provenance and recovery behavior.
 
 ```sh
 make test         # strict C89 host backend tests with address/undefined sanitizers
+make test-browse-dos # archive browser and navigator integration on DOS/8086
+make test-arj-dos # ARJ methods 0–4 on the 8086 and FAT12
 make test-zip-dos # ZIP extraction on the 8086 and FAT12, Windows/Linux archives
 make test-dos     # real DOS calls on a FAT12 image (DOSBox-X + mtools required)
 make test-video   # adapter + BIOS input + 8086 checks; Pillow and DOSBox-X required

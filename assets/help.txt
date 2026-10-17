@@ -24,7 +24,7 @@ F5                  Copy files and directories.
 F6                  Move or rename files and directories.
 F7                  Create a directory.
 F8                  Delete recursively, after confirmation.
-Ctrl-U              Unpack the selected ZIP into the other pane.
+Ctrl-U              Unpack selected ZIP/ARJ into the other pane.
 Copy and move destinations must be absolute DOS paths.
 For several marked entries, choose an existing directory.
 Existing directories merge; existing files ask what to do.
@@ -42,13 +42,23 @@ Esc cancels between transfer blocks or directory entries.
 The unfinished copy is removed; completed files remain.
 Timestamps and file attributes are preserved.
 
-#ZIP EXTRACTION
+#ARCHIVE BROWSING
+Enter on ZIP/ARJ opens a read-only folder view without unpacking.
+Enter opens subfolders; Backspace or .. returns to the parent.
+F3/Shift-F3 views one member; F5 extracts selected/marked entries.
+Archive panes cannot be edited, deleted, moved or copied into.
+Extract nested archives with F5 before opening them.
+
+#ZIP AND ARJ EXTRACTION
 Choose an existing destination directory. O overwrites, S skips.
 Stored and DEFLATE ZIP entries work at all compression levels.
+ARJ supports stored and methods 1-4; binary files only.
 Names must fit ASCII DOS 8.3; unsafe paths are rejected.
 CRC and sizes are checked before a file replaces the original.
 ZIP64, encryption, split archives and Deflate64 are unsupported.
 NW /unzip D:\PACK.ZIP D:\OUT extracts without overwriting.
+NW /unarj D:\PACK.ARJ D:\OUT does the same for ARJ.
+ARJ text mode, chapters, extended headers and SFX are excluded.
 
 #VIEWING AND EDITING
 F3                  Open the text viewer.

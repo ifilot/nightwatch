@@ -72,6 +72,27 @@ long view_last(FILE *f, int rows)
         previous = at; at = next;
     }
 }
+int view_position(FILE *f, long offset, ViewPosition *position)
+{
+    long saved = ftell(f), at;
+    unsigned long breaks, total = 0;
+    int ch, last = EOF, initial = position->offset < 0;
+    if (saved < 0 || offset < 0) return 0;
+    at = initial || offset < position->offset ? 0 : position->offset;
+    breaks = at ? position->breaks : 0;
+    if (fseek(f, at, SEEK_SET)) return 0;
+    while ((initial || at < offset) && (ch = getc(f)) != EOF) {
+        if (ch == '\n') {
+            if (at < offset) ++breaks;
+            ++total;
+        }
+        last = ch; ++at;
+    }
+    if (ferror(f) || fseek(f, saved, SEEK_SET)) return 0;
+    if (initial) position->total = total + (last != EOF && last != '\n');
+    position->breaks = breaks; position->offset = offset;
+    return 1;
+}
 /* Decode one ASCII hexadecimal digit without relying on locale digit ranges. */
 static int digit(int ch)
 {

@@ -25,6 +25,8 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+      - name: Install host test dependencies
+        run: python3 -m pip install Pillow
       - name: Run strict C89 and sanitizer tests
         run: make test
 
@@ -88,6 +90,12 @@ jobs:
       - name: Test ZIP staging and timestamps on FAT12
         if: matrix.suite == 'zip'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/zip_fat12.py
+      - name: Test ARJ methods and staging on the 8086 and FAT12
+        if: matrix.suite == 'zip'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/arj_dos.py
+      - name: Test archive browsing and member extraction on DOS and 8086
+        if: matrix.suite == 'zip'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/browse_dos.py
       - name: Test differential progress dialogs
         if: matrix.suite == 'progress'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/progress.py
@@ -142,6 +150,66 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 14
+
+  pages:
+    name: Build and deploy browser emulator
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: dos-package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nightwatch-dos-${{ github.sha }}
+          path: build/dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Cache pinned emulator downloads
+        uses: actions/cache@v4
+        with:
+          path: build/site-cache
+          key: nightwatch-wasm-8.5.2-v1
+      - name: Build static website from tested DOS package
+        run: |
+          python3 -m pip install Pillow
+          python3 tools/build_site.py
+      - name: Install browser test dependencies
+        run: |
+          npm install --prefix build/browser-tools --no-audit --no-fund playwright@1.64.0
+          build/browser-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Test emulator and screenshot gallery
+        env:
+          NODE_PATH: ${{ github.workspace }}/build/browser-tools/node_modules
+        run: node tests/check_site.cjs
+      - name: Upload browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-diagnostics-${{ github.sha }}
+          path: build/site-check
+          if-no-files-found: ignore
+          retention-days: 7
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   release:
     name: Publish tag release
