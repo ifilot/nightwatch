@@ -4,164 +4,273 @@
 [![Version](https://img.shields.io/badge/version-v1.3.0-blue)](VERSION)
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
-A Midnight Commander style, two-pane file navigator for **MS-DOS on 8088/8086
-PCs**, including the IBM 5150. One standalone executable supports text, CGA,
-EGA and VGA, with embedded fonts and icons.
+**Browse, copy and organise your files on MS-DOS.** Nightwatch puts two folders
+side by side, so you can work with your files in one pane and keep a destination
+open in the other. It is inspired by Midnight Commander and works entirely
+from the keyboard.
 
-| Text · 80×25 | CGA monochrome · 640×200 |
-| --- | --- |
-| <img src="docs/screenshots/text.png" width="400" alt="Nightwatch text interface with two file panes and function keys"> | <img src="docs/screenshots/cga.png" width="400" alt="Nightwatch CGA monochrome interface with compact file icons"> |
-| **EGA · 640×350, 16 colors** | **VGA · 640×480, 16 colors** |
-| <img src="docs/screenshots/ega.png" width="400" alt="Nightwatch EGA file browser"> | <img src="docs/screenshots/vga.png" width="400" alt="Nightwatch VGA file browser"> |
+Use it on a DOS PC, including an 8088/8086 machine, or in DOSBox. One small
+program supports text, CGA, EGA and VGA displays.
 
-A larger [VGA screenshot gallery](screenshots/README.md) covers browsing, viewers,
-file operations, archives and storage diagnostics.
+[**Download Nightwatch**](https://github.com/ifilot/nightwatch/releases/latest) ·
+[See all screenshots](screenshots/README.md) ·
+[Read the full manual](docs/manual.md)
 
-Browse drives and directories, mark files with patterns, sort entries, and
-recursively copy, move or delete. Transfers offer overwrite/skip and Escape cancellation. Copies count files
-recursively before starting and show file/overall progress bars, transfer speed
-and estimated time remaining for the current file. Built-in text and hex viewers support search and byte-offset
-jumps; an external editor and DOS shell are also available.
+![Nightwatch in VGA mode, with a work drive on the left, a backup drive on the right, and keyboard shortcuts along the bottom](screenshots/01-work-and-backup-drives.png)
 
-<details>
-<summary>Built-in hex viewer</summary>
+*Two folders stay visible while you browse. The blue heading shows which pane
+is active; press Tab to switch sides.*
 
-![Hex viewer with byte offsets, hexadecimal bytes and ASCII](docs/screenshots/hex.png)
+## Contents
 
-</details>
+- [Download and install](#download-and-install)
+- [Your first few minutes](#your-first-few-minutes)
+- [Features in pictures](#features-in-pictures)
+- [Keyboard shortcuts](#keyboard-shortcuts)
+- [Choose a display mode](#choose-a-display-mode)
+- [What you need](#what-you-need)
+- [Browser version](#browser-version)
+- [Help and further reading](#help-and-further-reading)
+- [For developers](#for-developers)
+- [License and credits](#license-and-credits)
 
-<details>
-<summary>About Nightwatch</summary>
+## Download and install
 
-![About window showing the version and license notices](docs/screenshots/about.png)
+### 1. Get the DOS package
 
-</details>
+Open the [latest release](https://github.com/ifilot/nightwatch/releases/latest).
+Under **Assets**, download **`NIGHTWATCH-DOS.zip`**. This contains the ready-to-run
+program; you do not need to compile anything. The **Source code** downloads are
+for building Nightwatch yourself.
 
-<details>
-<summary>Keyboard help with version and build details</summary>
+This guide describes **v1.3.0**. If the latest published release is older, check
+its release notes: ARJ extraction, archive browsing and the new VGA icons require
+v1.3.0 or newer. [All releases are listed here.](https://github.com/ifilot/nightwatch/releases)
 
-| CGA | VGA |
-| --- | --- |
-| <img src="docs/screenshots/help-cga.png" width="400" alt="CGA scrollable documentation with regular headings"> | <img src="docs/screenshots/help-vga.png" width="400" alt="VGA scrollable Help with fixed repository, version and build commit"> |
+### 2. Extract the files
 
-</details>
+Unzip the package into its own folder. For example, on Windows you could use
+`C:\DOS\NW`. Keep all the included license files with `NW.EXE`.
 
-<details>
-<summary>Copy progress</summary>
+`NW.EXE` is a DOS program. Run it inside DOSBox or on a DOS PC.
 
-| CGA | VGA |
-| --- | --- |
-| <img src="docs/screenshots/copy-cga.png" width="400" alt="CGA copy dialog with solid file and overall progress bars"> | <img src="docs/screenshots/copy-vga.png" width="400" alt="VGA copy dialog with shaded progress bars, speed and remaining time"> |
+### 3. Start Nightwatch
 
-</details>
-
-## Run
-
-Download the DOS package from this repository's **Releases** page. Extract it and
-keep `LICENSE.TXT`, `FONTLIC.TXT` and `ICONLIC.TXT` alongside `NW.EXE`.
-The package also includes `NIGHT.ICC`, a transparent 32x32 EGA icon to import
-into Quick Menu for its Nightwatch launcher entry.
+**In DOSBox:** start DOSBox and enter these commands at its DOS prompt:
 
 ```dos
-NW /vga C:\FILES D:\BACKUP
+mount c "C:\DOS"
+c:
+cd \NW
+NW /vga
 ```
 
-Use `/text`, `/cga`, `/ega` or `/vga`; switch during use with **F2**, then **T/C/E/V**.
-**Alt-F1** opens About (also **F1**, then **A**).
-**F2**, then **R**, toggles automatic display mode saving in `NIGHT.CFG`.
-**Ctrl-W** saves the mode, pane paths and sorting for the next launch.
-**Ctrl-T** opens storage integrity tests: quick, long, verify saved test or clean
-up. Seeded data, file/directory mutations and exact readback exercise cards such
-as Slot-otter through DOS. Keep manifests/logs on another drive; see the
-[storage test guide](docs/storage-test.md).
+Replace `C:\DOS` with the folder on your computer that contains the extracted
+`NW` folder. DOSBox sees that mounted folder as drive C:. Mount other folders or
+drives in DOSBox if you want to use them too.
 
-| Keys | Action |
+**On a DOS PC:** copy the extracted folder to your DOS disk, change into that
+folder and run:
+
+```dos
+NW
+```
+
+This starts in text mode. If you have a VGA card, use `NW /vga` for the colour
+interface shown above. Press **F10** to quit.
+
+The optional `NIGHT.ICC` file is a launcher icon for Quick Menu. Import it there
+if you use Quick Menu; Nightwatch itself does not need it.
+
+## Your first few minutes
+
+1. **Choose a folder.** Use the arrow keys to select a folder and press
+   **Enter** to open it. **Backspace** goes up one folder when the command line
+   is empty. **F9** lets you type a different drive or folder path.
+2. **Open your destination.** Press **Tab** to switch to the other pane, then
+   navigate to the folder where you want to put files. Press Tab to return.
+3. **Look inside a file.** Select it and press **F3**. Use **PgUp/PgDn** to read
+   more, then **Esc** to return to the file list.
+4. **Copy a file.** Select it, press **F5**, check the destination and press
+   **Enter**. The other pane's folder is the suggested destination.
+5. **Work with several files.** Press **Insert** to mark each one, then **F5**
+   to copy the marked selection. You can mark folders too.
+
+To start with two particular folders already open, give their paths after the
+program name. For example, if both folders exist:
+
+```dos
+NW /vga C:\WORK C:\BACKUP
+```
+
+## Features in pictures
+
+### Copy files with a clear view of progress
+
+Nightwatch shows progress for the current file and the whole selection, along
+with transfer speed and an estimate of the time left for the current file.
+Press **Esc** to cancel a transfer. If a destination file already exists, you
+can choose whether to overwrite it or skip it.
+
+![A copy in progress, showing file and overall progress bars, 22.3 KiB/s transfer speed, and time remaining](screenshots/copy-progress.png)
+
+*Here, a 1 MB file is being copied from the left pane's DATA folder to drive E:.*
+
+### Read text and inspect other files
+
+Press **F3** to read a file without changing it. The text viewer shows the
+current line and total line count. **Shift-F3** opens a hex view, which shows
+individual bytes and their text equivalents. Inside either viewer, **F4**
+switches between text and hex, **F7** searches and **F8** finds the next match.
+
+| Read text | Inspect bytes |
 | --- | --- |
-| Tab, arrows, PgUp/PgDn, Enter, Backspace | Switch panes, select, enter, go back |
-| Insert / Space, + / - | Mark an entry, mark all / clear marks |
-| F3 / Shift-F3 | Text / hex viewer; F4 toggles inside the viewer |
-| F4, F5, F6, F7, F8 | Editor, copy, move, mkdir, delete |
-| Ctrl-F, Ctrl-P / Ctrl-N, Ctrl-S | Find filename, mark / unmark patterns, sort |
-| Enter on ZIP / ARJ | Browse archive contents as a read-only folder |
-| Ctrl-U | Unpack archive, or extract selected entries while browsing |
-| Ctrl-T | Storage integrity tests: quick / long / verify / cleanup |
-| F9, Ctrl-R, Ctrl-O | Change drive/path, refresh, DOS shell |
-| F1, F10 | Help, quit |
+| <img src="docs/screenshots/text-viewer.png" width="360" alt="Text viewer with a Line 1 / 70 indicator in the top right"> | <img src="screenshots/34-binary-hex-viewer.png" width="360" alt="Hex viewer showing byte offsets, hexadecimal values and readable text"> |
 
-Inside either viewer: **F7** searches, **F8** finds the next match, and **Ctrl-G**
-jumps to an offset. Search accepts ASCII or bytes such as `hex:DE AD 00 BE EF`.
-The text viewer header shows the current line and total line count.
+### Open ZIP and ARJ files like folders
 
-Requires DOS 3.0+, DOS 8.3 filenames and about **256 KB free conventional RAM**.
-EGA needs at least 128 KB video RAM. Each pane caches 512 entries; recursive
-operations traverse beyond that cache, up to 32 directory levels. Keyboard only. ZIP extraction supports stored and DEFLATE entries, including
-Windows and Linux archives. ZIP64, encryption and Deflate64 are unsupported.
-Enter opens ZIP/ARJ archives as read-only folders: navigate subfolders, view
-individual members with F3/Shift-F3, and extract selections with F5. Listing
-reads headers without unpacking the archive.
-Built-in ARJ extraction supports stored files and methods 1–4.
-See [ZIP support](docs/zip-support.md) and [ARJ support](docs/arj-support.md)
-for filename and format limits.
+Select a `.ZIP` or `.ARJ` file and press **Enter**. Browse its folders, view a
+file with **F3**, or select files and press **F5** to extract them into the other
+pane. At the archive's top level, **Backspace** returns to the containing folder.
 
-## Build and test
+To unpack a whole archive directly from the normal file list, select it and
+press **Ctrl-U**.
 
-The [1.3.0 exploration notes](docs/v1.3.0.md) cover proposed ARJ extraction
-and original Quick Menu / Windows 3.x inspired file-browser icon studies.
+| Browse an archive | Extract its files |
+| --- | --- |
+| <img src="docs/screenshots/archive-browser.png" width="360" alt="The PACK.ZIP archive open as a folder, with a subfolder and two files"> | <img src="screenshots/arj-extraction-progress.png" width="360" alt="ARJ extraction in progress with file and overall progress indicators"> |
 
-The complete DOS toolchain and a Debian Trixie Docker build recipe live in
-[`buildenv/`](buildenv/README.md). The image installs DOSBox and DOSBox-X from
-Debian's binary packages. Build from this checkout with Docker:
+*Archive contents are read-only. Extract files before editing them, and extract
+an archive stored inside another archive before opening it.*
+
+### Find, mark and sort your files
+
+Use **Ctrl-F** to find a filename. **Ctrl-P** marks files matching a pattern,
+such as `*.TXT`; **Ctrl-N** clears marks matching a pattern. Press **Ctrl-S**
+to sort by name, size, date or extension, or to reverse the order.
+
+| Mark files by name | Sort the file list |
+| --- | --- |
+| <img src="screenshots/04-mark-pattern-dialog.png" width="360" alt="File selection dialog with a filename pattern for marking matching files"> | <img src="screenshots/16-sort-menu.png" width="360" alt="Sort menu offering name, size, date, extension and reverse order"> |
+
+There is also a built-in storage test for checking a writable DOS drive with
+sample files. Press **Ctrl-T** to open it. See the [storage test guide](docs/storage-test.md)
+for how to run a test, verify its results and remove its test files.
+
+[Explore the complete VGA screenshot gallery →](screenshots/README.md)
+
+## Keyboard shortcuts
+
+The function-key labels at the bottom of the screen are always there as a
+reminder. Press **F1** for help inside Nightwatch.
+
+| Key | What it does |
+| --- | --- |
+| **↑ / ↓**, **PgUp / PgDn** | Move through the file list |
+| **Tab** | Switch between the two panes |
+| **Enter / Backspace** | Open a folder or archive / go up a folder |
+| **Insert / Space** | Mark or unmark the selected entry |
+| **+ / -** | Mark all entries / clear all marks, with an empty command line |
+| **F1 / F2** | Open help / choose a display mode |
+| **F3 / Shift-F3** | View a file as text / hex |
+| **F4** | Open the file in an external editor, such as DOS EDIT |
+| **F5 / F6** | Copy / move or rename the selection |
+| **F7 / F8** | Create a folder / delete the selection after confirmation |
+| **F9 / F10** | Change drive or folder / quit Nightwatch |
+| **Ctrl-U** | Unpack an archive, or extract selected entries while browsing one |
+| **Ctrl-F / Ctrl-S** | Find a filename / sort the file list |
+| **Ctrl-P / Ctrl-N** | Mark / unmark files using a filename pattern |
+| **Ctrl-R** | Refresh the file lists |
+| **Ctrl-W** | Save the current display mode, folder paths and sorting |
+| **Ctrl-O** | Open a DOS shell; type `EXIT` to return |
+| **Esc** | Cancel a dialog or clear the command line |
+
+**F4** needs a separate editor installed. Nightwatch uses the `EDITOR`
+environment variable, or tries `EDIT` if it is unset.
+
+## Choose a display mode
+
+Use the mode that suits your computer. You can choose it when starting
+Nightwatch, or press **F2** during use and then **T**, **C**, **E** or **V**.
+
+| Text · `NW /text` | CGA · `NW /cga` |
+| --- | --- |
+| <img src="docs/screenshots/text.png" width="360" alt="Text mode with two file panes and a coloured function-key bar"> | <img src="docs/screenshots/cga.png" width="360" alt="Monochrome CGA mode with file and folder icons"> |
+| **EGA · `NW /ega`** | **VGA · `NW /vga`** |
+| <img src="docs/screenshots/ega.png" width="360" alt="EGA colour interface at 640 by 350 pixels"> | <img src="screenshots/01-work-and-backup-drives.png" width="360" alt="VGA colour interface at 640 by 480 pixels"> |
+
+Press **Ctrl-W** to save your display choice, open folders and sorting in
+`NIGHT.CFG`. To remember later display changes automatically, press **F2**,
+then **R** to turn that option on.
+
+## What you need
+
+- **MS-DOS 3.0 or later**, or DOSBox/DOSBox-X on a modern computer.
+- An **8088/8086 or newer** processor and about **256 KB of free conventional memory**.
+- A compatible text, CGA, EGA or VGA display. EGA mode needs at least 128 KB of
+  video memory.
+- A keyboard. The DOS application does not use a mouse.
+
+Files and folders must use **DOS 8.3 names**: up to eight characters before the
+extension and three after it, such as `REPORT.TXT`. Each pane displays up to
+512 entries; folder copying and other recursive operations can process more.
+
+ZIP extraction supports stored and DEFLATE-compressed files. ARJ extraction
+supports stored files and methods 1–4. Encrypted or split archives are not
+supported. See the [ZIP](docs/zip-support.md) and [ARJ](docs/arj-support.md)
+guides for the full format limits.
+
+## Browser version
+
+The project also includes a web version that runs the real DOS program in
+DOSBox inside your browser. It comes with fictional D: work and E: backup drives,
+so you can try browsing, copying and unpacking sample files. Changes are cleared
+when you reset or reload the page; your computer's files are not mounted.
+
+The web interface includes on-screen keys, pause, fullscreen, reset and a
+filterable screenshot gallery. See [For developers](#for-developers) below to
+build and serve it locally. [Website deployment instructions](docs/ci.md)
+explain how to publish it with GitHub Pages.
+
+## Help and further reading
+
+- **[Full manual](docs/manual.md):** controls, settings and detailed behaviour.
+- **[Screenshot gallery](screenshots/README.md):** 61 VGA captures showing the interface in use.
+- **[Storage test guide](docs/storage-test.md):** testing drives and checking results.
+- **[Changelog](CHANGELOG.md):** what changed in each version.
+- **[Report a problem](https://github.com/ifilot/nightwatch/issues):** include your
+  Nightwatch version, DOS or emulator version, display mode, and what happened.
+
+## For developers
+
+You only need the download above to use Nightwatch. If you want to build it
+or explore the code, start with the [build environment guide](buildenv/README.md).
+The repository includes the DOS compiler environment and a Docker build recipe.
+
+With the [native build requirements](buildenv/README.md) installed:
 
 ```sh
-docker build -t nightwatch-build buildenv
-docker run --rm --user "$(id -u):$(id -g)" \
-  --volume "$PWD:/workspace" nightwatch-build make build
+make build          # Build build/NW.EXE
+make run            # Run VGA mode with fictional work and backup drives
+make test           # Run host tests
+make package        # Create the downloadable DOS package
+make site           # Build the self-contained browser version
+make serve-site     # Serve it at http://localhost:8000
 ```
 
-For native Linux builds, install GNU Make, Bash, a C compiler, Python 3 with
-Pillow, DOSBox, DOSBox-X and mtools. The default compiler directory is `buildenv/`;
-no sibling repository is needed.
+`make run` preserves changes to its local demo files between launches. The
+browser demo resets its drives on reload. Building the website downloads
+checksum-verified emulator files on the first run and caches them for later builds.
 
-```sh
-make                                    # build/NW.EXE
-make run                                 # VGA with populated demo drives D: and E:
-make run MODE=text                       # use another display mode
-make test                               # host regression tests + sanitizers
-make test-dos                           # DOS filesystem tests on FAT12
-make test-arj-dos                       # ARJ methods on 8086 and FAT12
-make test-video                         # all display modes + BIOS/8086 checks
-make test-storage-dos                   # storage test + restart/verify in DOS
-make screenshots                        # test and refresh README captures
-make benchmark-copy                     # compare copy buffer sizes on 8086
-make package                            # build/dist/ release files
-```
+See [CI and deployment](docs/ci.md), [rendering notes](docs/rendering.md),
+[asset credits](assets/README.md) and [source comment style](docs/commenting.md)
+for more technical detail.
 
-The included Borland tools retain their original proprietary notices; see
-[build environment provenance](buildenv/BORLAND-NOTICE.md). Bundled DOSBox-X
-sources retain their GPLv2 and component notices.
-Nightwatch code and original CGA icons are **GPLv3** ([license](LICENSE)).
-VGA icons are original Quick Menu inspired color artwork.
-EGA icons use [16pxls](https://16pxls.com/) by Paul Mackenzie under
-CC-BY-SA-4.0 ([attribution and license](assets/ICON-LICENSE.txt)). Fonts use
-[Spleen](https://github.com/fcambus/spleen) under its BSD license. See the
-[manual](docs/manual.md), [rendering notes](docs/rendering.md) and
-[asset credits](assets/README.md) for more detail. Release history is recorded in
-the [changelog](CHANGELOG.md).
-The [source comment style](docs/commenting.md) describes the C89/TASM conventions.
+## License and credits
 
-## Continuous integration and releases
-
-Every branch/tag push and pull request runs host regression tests. Branch/tag
-pushes also build and test the DOS program in the repository's cached Docker
-environment. Seven independent DOS suites run in parallel against a shared
-build; packaging waits for every suite to pass.
-Tag pushes publish the validated `NW.EXE`, GPL/font/icon licenses, version
-information, DOS ZIP package and checksums as a GitHub release. The executable
-includes all four display modes.
-
-All jobs use GitHub-hosted Ubuntu runners. DOS CI builds its environment from
-`buildenv/`; it requires no self-hosted runner, compiler secret, Actions variable
-or separate source repository. See [CI setup](docs/ci.md).
-
-To bump the version, run `python3 tools/version.py --set v1.0.1`, commit the
-updated version/header/badge, then push the matching tag.
+Nightwatch is free software under the [GNU GPLv3](LICENSE). Spleen fonts use a
+BSD license. The VGA icons are original Quick Menu inspired artwork; EGA icons
+are adapted from Paul Mackenzie's [16pxls](https://16pxls.com/) under CC-BY-SA-4.0.
+See the [font license](assets/FONT-LICENSE.txt), [icon credits](assets/ICON-LICENSE.txt)
+and [zlib license](vendor/zlib/LICENSE). The included Borland development tools
+have their own [proprietary notices](buildenv/BORLAND-NOTICE.md).
