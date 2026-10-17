@@ -9,7 +9,7 @@
  X(FM_SOURCE,"Source") \
  X(FM_DEST,"Target") \
  X(FM_FREE,"Free %c:%s %c:%s | Selected %lu B%s") \
- X(FM_UNKNOWN,"unknown") \
+ X(FM_SELECTED,"Selected %lu B%s") \
  X(FM_DIRS," + folders (Ctrl-L totals)") \
  X(FM_PAGING,"Change directory page? Marks on this page will be cleared.") \
  X(FM_ARCHPAGE,"Directory paging is unavailable inside archives") \

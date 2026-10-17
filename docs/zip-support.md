@@ -83,7 +83,12 @@ Only inflate/inffast/inftrees/zutil/adler32/crc32 are built, with `Z_SOLO` and
 `NO_GZIP`; compression and gzip APIs are excluded. Turbo C 2.0 adaptations are
 marked in source and documented in `vendor/zlib/README.md`. They address
 unsupported far scalar typedefs/#warning, far decoder and zmemcmp pointers,
-and CRC table declarations. The fixed Huffman tables are generated into
+and CRC table declarations. Explicit unsigned-long CRC constants and bounded
+unsigned table indices avoid implicit 32-to-16-bit pointer arithmetic. Turbo C's
+opaque-state compatibility tag preserves the public FAR pointer ABI. Bit priming
+masks its input before shifting, including negative 16-bit values; host and 8086
+regressions cover priming and relocation of copied decode tables.
+The fixed Huffman tables are generated into
 `FIXED.ASM`, outside DGROUP. The zlib license accompanies the source and DOS
 package as `ZLIBLIC.TXT`.
 

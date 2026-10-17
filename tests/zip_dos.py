@@ -24,7 +24,7 @@ for name in ('CORE.C','FSDOS.C'):
 (WORK/'ZIPTEST.C').write_bytes((ROOT/'tests/ZIPTEST.C').read_text().replace('\n','\r\n').encode('ascii'))
 compile_dos(WORK,execute,'ZTEST',
             [r'set PATH=C:\TC',r'set INCLUDE=C:\TC\INCLUDE',r'set LIB=C:\TC\LIB',
-             'tcc -1- -mm -O -Z -DNW_ZIP_TEST -c ZIPTEST.C CORE.C FSDOS.C > TEST.LOG',
+             'tcc -1- -mm -O -Z -DNW_ZIP_TEST -DZ_SOLO -DNO_GZIP -c ZIPTEST.C CORE.C FSDOS.C > TEST.LOG',
              'tcc -1- -mm -M -eZIPTEST.EXE *.OBJ > LINK.LOG'],
             ['ZIPTEST.EXE'],['TEST.LOG','LINK.LOG'])
 manifest=json.loads((FIX/'manifest.json').read_text())

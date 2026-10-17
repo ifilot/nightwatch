@@ -18,6 +18,59 @@
 #include "fs_faults.h"
 extern int test_short_write;
 #endif
+#ifndef NW_ARJ_TEST
+#include <assert.h>
+#include "zutil.h"
+#include "inftrees.h"
+#include "inflate.h"
+#ifndef NW_HOST
+#include <alloc.h>
+#endif
+static voidpf prime_alloc(voidpf opaque, uInt items, uInt size)
+{
+    (void)opaque;
+#ifdef NW_HOST
+    return malloc((size_t)items * size);
+#else
+    return farmalloc((unsigned long)items * size);
+#endif
+}
+static void prime_free(voidpf opaque, voidpf memory)
+{
+    (void)opaque;
+#ifdef NW_HOST
+    free(memory);
+#else
+    farfree(memory);
+#endif
+}
+/* Exercise the 16-bit conversion boundaries and relocation of copied tables
+ * using the same vendored inflater on both the host and real 8086 tests. */
+static void check_inflater(void)
+{
+    z_stream stream, copy;
+    struct inflate_state FAR *state, FAR *copied;
+    memset(&stream,0,sizeof(stream)); memset(&copy,0,sizeof(copy));
+    stream.zalloc=prime_alloc; stream.zfree=prime_free;
+    assert(inflateInit2(&stream,-15)==Z_OK);
+    state=(struct inflate_state FAR *)stream.state;
+    assert(inflatePrime(&stream,16,-1)==Z_OK);
+    assert(state->hold==65535UL && state->bits==16);
+    assert(inflatePrime(&stream,16,0x1234)==Z_OK);
+    assert(state->hold==0x1234ffffUL && state->bits==32);
+    assert(inflatePrime(&stream,1,1)==Z_STREAM_ERROR);
+    assert(inflatePrime(&stream,-1,0)==Z_OK && !state->hold && !state->bits);
+    state->lencode=state->codes+511;
+    state->distcode=state->codes+1000;
+    state->next=state->codes+1440;
+    assert(inflateCopy(&copy,&stream)==Z_OK);
+    copied=(struct inflate_state FAR *)copy.state;
+    assert(copied->lencode==copied->codes+511);
+    assert(copied->distcode==copied->codes+1000);
+    assert(copied->next==copied->codes+1440);
+    assert(inflateEnd(&copy)==Z_OK && inflateEnd(&stream)==Z_OK);
+}
+#endif
 unsigned _stklen = 8192;
 static int cancel, conflict = 1;
 static unsigned long polls;
@@ -40,6 +93,9 @@ int main(int argc, char **argv)
     unsigned long files = 0, bytes = 0;
     int ok;
     if (argc < 3) return 2;
+#ifndef NW_ARJ_TEST
+    check_inflater();
+#endif
     if (argc > 3) {
         if (!strcmp(argv[3], "skip")) conflict = 2;
         if (!strcmp(argv[3], "refuse")) conflict = 0;

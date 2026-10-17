@@ -1,6 +1,6 @@
 {
   "mode": "VGA 640x480, 16 colors",
-  "renderer_source_key": "89749285cb2d3dfe24eeba8ca37a0e46ba67789852e5ac51b615cab6603b6a2a",
+  "renderer_source_key": "bffa62c5af39f63064f5e496323e075e5e004c6ba4157a44d1f83e06362d923e",
   "method": "DOSBox VRAM captures; scripted input with the production renderer",
   "screenshots": [
     {
@@ -141,35 +141,35 @@
       "title": "20 Help First Page",
       "scenario": "help-and-menus",
       "capture": "build/vga-screenshots/help-and-menus/F001.BIN",
-      "sha256": "88ce46464ef3121b99faa0c33db4b3379a9e45ff8c268200bdeb2f56d6a315bc"
+      "sha256": "f0493e5fc4b631d5f8f7b0d0fedd22c1cec2c851eedf20eb19395b8ef46a84fc"
     },
     {
       "file": "21-help-second-page.png",
       "title": "21 Help Second Page",
       "scenario": "help-and-menus",
       "capture": "build/vga-screenshots/help-and-menus/F002.BIN",
-      "sha256": "e50e940b31189bb88b6c569ae1f01fc50b85280979474333083a52a441e9a59e"
+      "sha256": "5a701a19bd92707f1cf6fc9feb0ab81c4efce79e3f7d41559f06f239b6a16ef3"
     },
     {
       "file": "22-help-third-page.png",
       "title": "22 Help Third Page",
       "scenario": "help-and-menus",
       "capture": "build/vga-screenshots/help-and-menus/F003.BIN",
-      "sha256": "49d2c1494af8b17c8af7383d9bb640cb37f3c6aff41273cc2c0fbf057cb3d9d4"
+      "sha256": "15422893a051f86092abd192155492362d5b413956edf6d0edf365890a9065cd"
     },
     {
       "file": "23-help-last-page.png",
       "title": "23 Help Last Page",
       "scenario": "help-and-menus",
       "capture": "build/vga-screenshots/help-and-menus/F004.BIN",
-      "sha256": "b731dd371a673cccffb4730e6055e4f1b64fb5cf0f8eb2c30fa7b42220542ebb"
+      "sha256": "ae08f83941960f820786e415e426e2f2bce209318aced89cfc5ce86704081a53"
     },
     {
       "file": "24-about.png",
       "title": "24 About",
       "scenario": "help-and-menus",
       "capture": "build/vga-screenshots/help-and-menus/F006.BIN",
-      "sha256": "03db1b49d8a70c5052828ddb69226ced6d811a8c6a85b05f36ccdae25da6139b"
+      "sha256": "f76f640898bed041026c5d8de463b9ee93f13c57b791c345e81a6462f782ced7"
     },
     {
       "file": "25-display-mode-dialog.png",
@@ -287,22 +287,22 @@
       "file": "copy-progress.png",
       "title": "Copy Progress",
       "scenario": "copy",
-      "capture": "build/vga-screenshots/copy/P006.BIN",
-      "sha256": "8b6de713635fd45e6d253e29d4e95bf6a4c395d535507552855768990182cc18"
+      "capture": "build/vga-screenshots/copy/P005.BIN",
+      "sha256": "cc245ad553029366753602d015352258466f357063cede461d77db4384b042cd"
     },
     {
       "file": "copy-finished.png",
       "title": "Copy Finished",
       "scenario": "copy",
-      "capture": "build/vga-screenshots/copy/P008.BIN",
-      "sha256": "f5ae8f8c91b3e1f5dd3f8411afc1de2fbe451fcca9bbb05925811624dc7ed250"
+      "capture": "build/vga-screenshots/copy/P007.BIN",
+      "sha256": "89fef866efdada9bb118e8acf7a1fdb7324927498f4b412e1468a3532067dafd"
     },
     {
       "file": "40-overwrite-or-skip-dialog.png",
       "title": "40 Overwrite Or Skip Dialog",
       "scenario": "overwrite",
       "capture": "build/vga-screenshots/overwrite/F015.BIN",
-      "sha256": "974c68fa0af81d424c5bfde4f43dfe96320d4cdc883437d69a0c333a525c9bb1"
+      "sha256": "c6d6eea415e7be4191f71e7fcf6f19a1e4380857b426215bfadeba63acf528b3"
     },
     {
       "file": "41-existing-file-skipped.png",
@@ -358,7 +358,7 @@
       "title": "48 Zip Existing File Dialog",
       "scenario": "zip-extraction",
       "capture": "build/vga-screenshots/zip-extraction/F013.BIN",
-      "sha256": "90cbdf309382dec021950131b8a9563e45034719d5cbb544f0b01da4030966c7"
+      "sha256": "e41124f364d7aafcba1d180cdbc91a2cb2345d24e6bb9f1aceeb100f1743b5cf"
     },
     {
       "file": "49-zip-extracted.png",
@@ -386,14 +386,14 @@
       "title": "Arj Extraction Progress",
       "scenario": "arj-extraction",
       "capture": "build/vga-screenshots/arj-extraction/P001.BIN",
-      "sha256": "0a1e1f89606e05060dbefcab67fb63307099b95c897e06ef5ff3bc693f840d4e"
+      "sha256": "cae24bda4d710b06a24616e061638e73e04b4b21e1b9322320f6109c3711aa2f"
     },
     {
       "file": "arj-extraction-finished.png",
       "title": "Arj Extraction Finished",
       "scenario": "arj-extraction",
       "capture": "build/vga-screenshots/arj-extraction/P002.BIN",
-      "sha256": "1098312619c27e70ba8100f64f7fe8e060f45b8343221a98bf12734f3f5ae8da"
+      "sha256": "b8c4aecea520a26483ee6685f77a0fafd0f5ba293d08e9358849286c6ed06bb4"
     },
     {
       "file": "52-storage-test-target.png",
@@ -414,7 +414,7 @@
       "title": "54 Storage Test Seed",
       "scenario": "storage-test",
       "capture": "build/vga-screenshots/storage-test/F015.BIN",
-      "sha256": "7e9a7dd2e0db9e91878e0a7971e557741ce7e84117ba42b5c4ce02587e909b99"
+      "sha256": "cdadfbea2c1c22db9d5d110027c043ecceb34f0b2d4ccf38aab5db90040ee28c"
     },
     {
       "file": "55-storage-test-confirmation.png",

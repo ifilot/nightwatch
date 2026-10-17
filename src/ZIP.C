@@ -163,8 +163,8 @@ static int open_archive(Archive *a, const char *source, const char *target)
 static int preflight(Archive *a, unsigned long *files, unsigned long *bytes)
 {
     Member m, old;
-    unsigned i, j;
-    unsigned long at = a->start, before, n;
+    unsigned i, j, n;
+    unsigned long at = a->start, before;
     *files = *bytes = 0;
     for (i = 0; i < a->count; ++i) {
         if (!member(a, at, &m) || (a->target[0] && !archive_directories(a, &m, 0)) || !archive_poll(m.name, 0, 0)) return 0;
@@ -175,7 +175,7 @@ static int preflight(Archive *a, unsigned long *files, unsigned long *bytes)
         before = a->start;
         for (j = 0; j < i; ++j) {
             if (!member(a, before, &old)) return 0;
-            n = (unsigned long)strlen(m.name);
+            n = (unsigned)strlen(m.name);
             if (!strcmp(m.name, old.name) ||
                 (!m.directory && !strncmp(m.name, old.name, (unsigned)n) && old.name[n] == SEP) ||
                 (!old.directory && !strncmp(old.name, m.name, strlen(old.name)) && m.name[strlen(old.name)] == SEP))

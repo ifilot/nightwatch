@@ -105,7 +105,7 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start) {
             hold += (unsigned long)(*in++) << bits;
             bits += 8;
         }
-        here = lcode + (hold & lmask);
+        here = lcode + (unsigned)(hold & lmask);
       dolen:
         op = (unsigned)(here->bits);
         hold >>= op;
@@ -136,7 +136,7 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start) {
                 hold += (unsigned long)(*in++) << bits;
                 bits += 8;
             }
-            here = dcode + (hold & dmask);
+            here = dcode + (unsigned)(hold & dmask);
           dodist:
             op = (unsigned)(here->bits);
             hold >>= op;
@@ -263,7 +263,7 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start) {
                 }
             }
             else if ((op & 64) == 0) {          /* 2nd level distance code */
-                here = dcode + here->val + (hold & ((1U << op) - 1));
+                here = dcode + here->val + (unsigned)(hold & ((1U << op) - 1));
                 goto dodist;
             }
             else {
@@ -273,7 +273,7 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start) {
             }
         }
         else if ((op & 64) == 0) {              /* 2nd level length code */
-            here = lcode + here->val + (hold & ((1U << op) - 1));
+            here = lcode + here->val + (unsigned)(hold & ((1U << op) - 1));
             goto dolen;
         }
         else if (op & 32) {                     /* end-of-block */

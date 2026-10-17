@@ -70,11 +70,38 @@ static int compare(const void *a, const void *b)
         return sort_reverse ? -value : value;
     }
 }
+/* One session-wide sample per DOS drive, shared by both panels. Failed queries
+ * are remembered too, so a slow/unavailable volume is not retried on browsing. */
+static unsigned long space_seen;
+#ifdef NW_HOST
+static unsigned long space_cache[27]; /* Extra slot for the POSIX test volume. */
+#else
+static unsigned long space_cache[26];
+#endif
+void panel_space(Panel *p, int refresh)
+{
+    int drive = toupper((unsigned char)p->path[0]) - 'A';
+    unsigned long bit;
+    if (p->path[1] != ':' || drive < 0 || drive >= 26) {
+#ifdef NW_HOST
+        drive = 26;
+#else
+        p->free_kib = 0xffffffffUL; return;
+#endif
+    }
+    bit = 1UL << drive;
+    if (refresh || !(space_seen & bit)) {
+        space_seen |= bit;
+        space_cache[drive] = fs_space(p->path);
+    }
+    p->free_kib = space_cache[drive];
+}
 /* Reload and sort one panel, preserving the cursor by filename when possible.
  * A successful reload clears marks and scrolling and invalidates render caches. */
 int panel_load(Panel *p)
 {
     char selected[13];
+    p->free_kib=0xffffffffUL;
     selected[0] = 0;
     if (p->cursor >= 0 && p->cursor < p->count)
         strcpy(selected, p->files[p->cursor].name);
@@ -88,7 +115,7 @@ int panel_load(Panel *p)
         }
         return 0;
     }
-    p->free_kib=fs_space(p->path);
+    panel_space(p, 0);
     sort_order = p->sort; sort_reverse = p->reverse;
     qsort(p->files, p->count, sizeof(Entry), compare);
     p->cursor = 0;

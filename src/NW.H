@@ -47,7 +47,7 @@ typedef struct {
 extern Panel panes[2];
 extern char nw_error[160];
 #ifdef NW_DIAGNOSTICS
-extern unsigned fs_list_calls;
+extern unsigned fs_list_calls, fs_space_calls;
 #endif
 /* out must be a distinct NW_PATH-byte buffer; inputs are NUL-terminated.
  * Joining checks capacity but does not canonicalize or validate the component.
@@ -61,7 +61,10 @@ int path_join(char *out, const char *dir, const char *name);
 int panel_load(Panel *p);
 /* Page through directory enumeration using a bounded cache. Marks are page-local. */
 int panel_page(Panel *p, int forward);
-/* Free KiB, or FFFFFFFF when unavailable. This queries only the requested drive. */
+/* Shared session cache, sampled once per drive; nonzero refresh resamples it. */
+void panel_space(Panel *p, int refresh);
+/* Low-level query may scan the FAT. Call through panel_space, not on reloads.
+ * Free KiB, or FFFFFFFF when unavailable; queries only the requested drive. */
 unsigned long fs_space(const char *path);
 unsigned long panel_selected_bytes(const Panel *p, unsigned *directories);
 /* Streaming recursive filename search, independent of pane capacity.

@@ -14,7 +14,7 @@
 #include <string.h>
 #include "NW.H"
 #ifdef NW_DIAGNOSTICS
-unsigned fs_list_calls;
+unsigned fs_list_calls, fs_space_calls;
 #endif
 
 /* Format the current C-library errno within the fixed shared error buffer.
@@ -113,6 +113,9 @@ unsigned long fs_space(const char *path)
     union REGS r;
     unsigned long clusters, bytes;
     unsigned drive=(unsigned char)path[0];
+#ifdef NW_DIAGNOSTICS
+    ++fs_space_calls;
+#endif
     if (drive>='a' && drive<='z') drive-='a'-'A';
     if (path[1]!=':' || drive<'A' || drive>'Z') return 0xffffffffUL;
     memset(&r,0,sizeof(r)); r.h.ah=0x36; r.h.dl=(unsigned char)(drive-'A'+1);

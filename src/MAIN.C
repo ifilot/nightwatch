@@ -197,10 +197,11 @@ static void disk_status(char *out)
     if (p->measured_revision==p->revision && p->measured_cursor==p->cursor) { selected=p->measured_bytes; directories=0; }
     suffix[0]=0;
     if (directories) feature_label(suffix,FM_DIRS);
-    if (p->free_kib==0xffffffffUL) feature_label(left,FM_UNKNOWN);
-    else sprintf(left,"%luK",p->free_kib);
-    if (panes[1-active].free_kib==0xffffffffUL) feature_label(right,FM_UNKNOWN);
-    else sprintf(right,"%luK",panes[1-active].free_kib);
+    if (p->free_kib==0xffffffffUL || panes[1-active].free_kib==0xffffffffUL) {
+        feature_label(format,FM_SELECTED); sprintf(out,format,selected,suffix); return;
+    }
+    sprintf(left,"%luK",p->free_kib);
+    sprintf(right,"%luK",panes[1-active].free_kib);
     if (toupper(p->path[0])==toupper(panes[1-active].path[0])) {
         feature_label(format,FM_SAMEFREE); sprintf(out,format,p->path[0],left,selected,suffix);
     } else {
@@ -327,25 +328,31 @@ static unsigned fraction(unsigned long done, unsigned long total, unsigned scale
     }
     return low;
 }
-/* Lay out labels and percentages; graphics paint native tracks after flush. */
+/* Native graphics fields share the Help frame; text mode uses cell bars. */
 static void progress_bar(int row, const char *label, unsigned long done,
                          unsigned long total)
 {
     char line[76];
     unsigned i, filled = fraction(done, total, 40);
+    if (video_mode != VIDEO_TEXT) {
+        sprintf(line,"%3u%%",fraction(done,total,100));
+        graph_copy_text(row == video_rows / 2 - 1 ? 5 : 6,line); return;
+    }
     sprintf(line, "%-8s [", label);
-    for (i = 0; i < 40; ++i) line[10 + i] = video_mode == VIDEO_TEXT ? (i < filled ? '#' : '-') : ' ';
-    if (video_mode != VIDEO_TEXT) line[9] = ' ';
-    sprintf(line + 50, video_mode == VIDEO_TEXT ? "] %3u%%" : "  %3u%%",
-            fraction(done, total, 100));
+    for (i = 0; i < 40; ++i) line[10 + i] = i < filled ? '#' : '-';
+    sprintf(line + 50, "] %3u%%", fraction(done, total, 100));
     video_text(5, row, line, COLOR_DIALOG);
 }
-/* Pad changing fields in the cell buffer before its differential flush, so
- * shorter paths/rates do not leave old characters behind. Avoid the bar rows. */
-static void progress_text(int row, const char *text)
+/* Each renderer clears shortened fields without disturbing progress tracks. */
+static void progress_text(unsigned field, const char *text)
 {
-    video_fill(5, row, 70, ' ', COLOR_DIALOG);
-    video_text(5, row, text, COLOR_DIALOG);
+    int row = video_rows / 2 - 5 + (field == 0 ? 2 : (field == 1 ? 3 :
+              (field == 2 ? 6 : (field == 3 ? 8 : 7))));
+    char clipped[71];
+    if (video_mode != VIDEO_TEXT) { graph_copy_text(field,text); return; }
+    strncpy(clipped,text,70); clipped[70]=0;
+    video_fill(5,row,70,' ',COLOR_DIALOG);
+    video_text(5,row,clipped,COLOR_DIALOG);
 }
 /* Poll every transfer block, retaining unrelated keys. Painting and rate samples
  * use BIOS time so slow disks update without repeatedly repainting on an 8088. */
@@ -402,24 +409,28 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
         } else {
             y = video_rows / 2 - 5;
             reset = !copy_dialog || copy_generation != video_generation();
-            video_overlay_begin(0);
-            if (reset) {
-                for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
-                frame(3, y, 74, 11, COLOR_DIALOG);
-                video_text(5, y + 1, copy_progress == 2 ? "Unpacking archive - Esc cancels" : "Copying - Esc cancels", COLOR_DIALOG);
+            if (video_mode != VIDEO_TEXT) {
+                if (reset) graph_copy_begin(copy_progress == 2);
+            } else {
+                video_overlay_begin(0);
+                if (reset) {
+                    for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
+                    frame(3, y, 74, 11, COLOR_DIALOG);
+                    video_text(5, y + 1, copy_progress == 2 ? "Unpacking archive - Esc cancels" : "Copying - Esc cancels", COLOR_DIALOG);
+                }
             }
             copy_dialog = 1; copy_generation = video_generation();
             /* Keep long DOS paths inside the dialog border. */
-            sprintf(line, "%.70s", path); progress_text(y + 2, line);
+            progress_text(0,path);
             sprintf(line, "Files: %lu / %lu completed; %lu skipped",
                     operation_files, total_files, operation_skipped);
-            progress_text(y + 3, line);
+            progress_text(1,line);
             progress_bar(y + 4, "File", done, total);
             if (total_bytes)
                 progress_bar(y + 5, "Overall", operation_bytes + operation_current_bytes, total_bytes);
             else progress_bar(y + 5, "Overall", operation_files + operation_skipped, total_files);
             sprintf(line, "%lu / %lu bytes", done, total);
-            progress_text(y + 6, line);
+            progress_text(2,line);
             strcpy(eta, "--");
             if (transfer_rate) {
                 bytes = done < total ? total - done : 0;
@@ -428,18 +439,18 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
                 sprintf(line, "%lu.%lu KiB/s   Time left: %s", transfer_rate / 1024,
                         (transfer_rate % 1024) * 10 / 1024, eta);
             } else strcpy(line, "-- KiB/s   Time left: --");
-            progress_text(y + 7, line);
+            progress_text(4,line);
             sprintf(line, "Overall: %lu / %lu bytes processed", operation_bytes + operation_current_bytes, total_bytes);
-            progress_text(y + 8, line);
+            progress_text(3,line);
         }
-        video_flush();
+        if (video_mode == VIDEO_TEXT || !copy_progress || counting) video_flush();
         if (copy_progress && !counting && video_mode != VIDEO_TEXT) {
             current = fraction(done, total, 100);
             overall = total_bytes ?
                 fraction(operation_bytes + operation_current_bytes, total_bytes, 100) :
                 fraction(operation_files + operation_skipped, total_files, 100);
-            graph_progress(y + 4, current, file_percent, reset);
-            graph_progress(y + 5, overall, overall_percent, reset);
+            graph_progress(0, current, file_percent, reset);
+            graph_progress(1, overall, overall_percent, reset);
             file_percent = current; overall_percent = overall;
         }
         paint_tick = now;
@@ -528,6 +539,7 @@ static void begin_operation(void)
  */
 static void end_operation(void)
 {
+    graph_copy_end();
     operation_progress = NULL; operation_conflict = NULL; operation_error=NULL;
 }
 /* Reuse the last filename pattern: select=0 finds, 1 marks, and 2 unmarks.
@@ -581,8 +593,7 @@ static void refresh_mask(unsigned mask)
     if (mask && !stricmp(panes[0].path, panes[1].path)) mask = 3;
     /* Keep the established refresh behavior: marks clear in both panes. */
     for (i = 0; i < 2; ++i) {
-        if (!(mask & (1 << i))) { panel_mark_all(&panes[i], 0); panes[i].top = 0;
-            if (!browse_active(&panes[i])) panes[i].free_kib=fs_space(panes[i].path); }
+        if (!(mask & (1 << i))) { panel_mark_all(&panes[i], 0); panes[i].top = 0; }
         else if (i == 1 && mask == 3 && panes[0].offset==panes[1].offset && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
             panel_snapshot(&panes[1], &panes[0]);
         } else if (!browse_load(&panes[i])) {
@@ -595,7 +606,7 @@ static void refresh_mask(unsigned mask)
         }
     }
 }
-/* Explicit refresh reloads both pane directories.
+/* Reload both pane directories without querying capacity.
  */
 static void refresh(void) { refresh_mask(3); }
 /* Find panes displaying a destination directory, or the parent of a file target.
@@ -1579,7 +1590,12 @@ int main(int argc, char **argv)
         case 0x5100: p->cursor += pane_rows(); break;
         case 0x4700: p->cursor = 0; break;
         case 0x4f00: p->cursor = p->count - 1; break;
-        case 18: refresh(); break;
+        case 18:
+            refresh();
+            /* Refresh each distinct drive once; both panes share the cache. */
+            panel_space(&panes[0],1);
+            panel_space(&panes[1],toupper(panes[0].path[0])!=toupper(panes[1].path[0]));
+            break;
         case 6: find_name(0); break;
         case 16: find_name(1); break;
         case 14: find_name(2); break;

@@ -33,8 +33,15 @@ frames = {'initial': 0, 'picker': 1}
 for drive in 'abs':
     keys += [0x4300, ord(drive), 13]
     frames[drive] = len(keys)
+# Revisit A: after B: and S:; the first panel must reuse its earlier sample.
+keys += [0x4300, ord('a'), 13, 0x4300, ord('s'), 13]
+# Visit S: from the second panel as well, then return it to E:.
 keys += [9]
 frames['inactive-s'] = len(keys)
+keys += [0x4300, ord('s'), 13, 0x4300, ord('e'), 13]
+frames['revisited'] = len(keys)
+keys += [18]
+frames['space'] = len(keys)
 keys += [0x4400]
 (work / 'KEYS.TXT').write_text('\n'.join(f'{key:x}' for key in keys) + '\n')
 
@@ -59,6 +66,11 @@ for mode in ('text', 'vga'):
         sp.run(args, env=dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy'),
                stdout=log, stderr=log, check=True, timeout=90)
     assert len(list(work.glob('F*.BIN'))) == len(keys), 'Demo launcher or UI stopped early'
+    states = [list(map(int, path.read_text().split())) for path in sorted(work.glob('F*.POS'))]
+    assert states[0][12] == 2, 'Startup samples D: and E: once each'
+    assert [states[frames[d]][12] for d in 'abs'] == [3,4,5], 'Each new drive gets one sample'
+    assert states[frames['inactive-s']][12] == states[frames['revisited']][12] == 5, 'Returning to drives or using the other panel reuses samples'
+    assert states[-1][12] == 7, 'Ctrl-R resamples S: and E: once each'
     if mode == 'text':
         def screen(name):
             return (work / f'F{frames[name]:03}.BIN').read_bytes()[3:4003:2].decode('cp437')

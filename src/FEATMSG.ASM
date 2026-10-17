@@ -51,7 +51,8 @@ feature_5 label byte
     db 020h,07ch,020h,053h,065h,06ch,065h,063h,074h,065h,064h,020h,025h,06ch,075h,020h
     db 042h,025h,073h,000h
 feature_6 label byte
-    db 075h,06eh,06bh,06eh,06fh,077h,06eh,000h
+    db 053h,065h,06ch,065h,063h,074h,065h,064h,020h,025h,06ch,075h,020h,042h,025h,073h
+    db 000h
 feature_7 label byte
     db 020h,02bh,020h,066h,06fh,06ch,064h,065h,072h,073h,020h,028h,043h,074h,072h,06ch
     db 02dh,04ch,020h,074h,06fh,074h,061h,06ch,073h,029h,000h

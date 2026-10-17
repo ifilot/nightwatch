@@ -137,7 +137,7 @@ mount/unmount controls. An offline resident is labelled accordingly.
 | F8 | Confirm recursive deletion of files or directories |
 | F9 | Pick a drive for the active pane; choose "Enter a path..." or press `.` to type a folder path |
 | F10 | Quit and restore the original video mode, page and cursor |
-| Ctrl-R | Refresh both panes |
+| Ctrl-R | Refresh both panes and check free space |
 | Ctrl-F | Find the next filename matching a pattern (`*`, `?`), wrapping within the pane |
 | Ctrl-P / Ctrl-N | Mark / unmark entries matching a filename pattern |
 | Ctrl-S | Sort active pane: name, size, date/time, extension, or reverse |
@@ -178,7 +178,9 @@ files are copied until the scan succeeds. Directories do not count as files.
 Totals are limited to 4,294,967,295 bytes; larger selections report an error.
 The copy dialog shows completed/total files, skipped files, current-file bytes,
 and separate file and overall progress bars in every display mode. Graphics
-modes use solid pixel bars with inset tracks; text mode uses character bars.
+modes use the Help screen's window frame, blue title bar and white content
+area, with solid pixel bars and an Escape hint. The same layout is used when
+unpacking archives; text mode uses character bars.
 Graphical updates paint only the added fill, keeping the existing fill and
 frame in place. Tracks are rebuilt when the dialog opens or resumes after an
 overwrite prompt; the current-file fill resets when the next file starts. Overall
@@ -266,12 +268,17 @@ are refreshed. Press any key after the child finishes. Files in an archive must
 be extracted before execution. F3 still views executable bytes without running
 anything.
 
-The idle status shows free space on both pane drives (K means KiB) and selected
-file bytes. A shared drive is shown once.
+The idle status shows selected file bytes and cached free space (K means KiB).
+Capacity is sampled on the first successful visit to each drive during the
+session. Both panels share the sample, even when they show different folders.
+Folder changes, returning to a drive and automatic refreshes reuse that value.
+DOS can take time to scan a large FAT, so it is never repeated automatically.
+Ctrl-R refreshes both lists and explicitly resamples each displayed drive once.
+The cached figures can lag behind file operations until this manual refresh.
+Unsuccessful capacity queries are cached too, avoiding repeated slow attempts.
 Folder contents are not scanned on every cursor movement. Ctrl-L calculates a
 recursive selection total, with progress and Escape cancellation; the cached
-result is invalidated by selection changes and directory refreshes. Unknown
-free space is explicitly shown as unknown.
+result is invalidated by selection changes and directory refreshes.
 
 Ctrl-PgDn and Ctrl-PgUp page physical directory listings. Pages use DOS enumeration
 order and hold up to 512 entries including the parent. The chosen sort is applied

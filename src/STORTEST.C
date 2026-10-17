@@ -22,9 +22,9 @@ typedef struct {
     int extended, log;
 } Test;
 static const unsigned long lengths[BOUNDARIES] = {
-    0, 1, 511, 512, 513, 4095, 4096, 4097, 32767, 32768, 32769,
-    65535, 65536, 65537, 131071, 131072, 131073, 262143, 262144,
-    262145, 513, 65537
+    0UL, 1UL, 511UL, 512UL, 513UL, 4095UL, 4096UL, 4097UL, 32767UL, 32768UL, 32769UL,
+    65535UL, 65536UL, 65537UL, 131071UL, 131072UL, 131073UL, 262143UL, 262144UL,
+    262145UL, 513UL, 65537UL
 };
 /* Every block carries full seed/file/block identifiers, so repeated payloads or
  * aliased addresses cannot hide behind the short PRNG period. Zero/FF files
@@ -310,7 +310,9 @@ static int load_plan(Test *t, const char *manifest)
         if (seed > (MASK32 - digit) / 10UL) return fail(ST_SEEDRANGE);
         seed = seed * 10UL + digit;
     }
-    if (*p++ != '\n' || !(end = strchr(p, '\n')) || end[1] || end == p ||
+    if (*p++ != '\n') return fail(ST_TARGET);
+    end = strchr(p, '\n');
+    if (!end || end[1] || end == p ||
         (unsigned)(end - p) >= NW_PATH) return fail(ST_TARGET);
     strcpy(t->record, (char *)raw); *end = 0;
     /* Only absolute canonical paths from storage_start are accepted. */

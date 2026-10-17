@@ -93,6 +93,7 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     assert (work / 'LEFT/NEW').is_dir(), (machine, 'mkdir failed')
     assert not (work / 'RIGHT/ALPHA.TXT').exists(), (machine, 'delete failed')
     frames = sorted(work.glob('F*.BIN'))
+    assert all(int(f.read_text().split()[12])==1 for f in work.glob('F*.POS')), (mode,'capacity must be sampled once per drive')
     assert len(frames) >= 20, (machine, 'script stopped early', len(frames))
     images = [decode(f) for f in frames]
     if mode == 'vga': images[checks['binary_start']].save(base/'hex.png')
@@ -263,6 +264,10 @@ for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega
     print('PASS:',mode,capacity,'visible rows; scrolling, marking, pane focus, Home/End, scrollbar and command clipping',flush=True)
 
 # Compare viewport copies with an independent forced-redraw executable, both panes.
+# A prebuilt rerun can retain the standalone BIOS test entry points from a
+# previous run. They must not join the navigator's wildcard object link.
+for name in ('KEYTEST.OBJ', 'KEYCAN.OBJ', 'CANCEL.OBJ'):
+    (base/name).unlink(missing_ok=True)
 compile_dos(base, dos, 'REFBUILD',
     [r'set PATH=C:\TC;C:\TASM',
      r'tcc -DNW_DIAGNOSTICS -DNW_NO_SCROLL -1- -mm -IC:\TC\INCLUDE -c VIDEO.C > REFCOMP.LOG',
@@ -347,6 +352,8 @@ for same in (False,True):
     states=[list(map(int,f.read_text().split())) for f in sorted(work.glob('F*.POS'))]
     initial = 1 if same else 2
     assert states[0][9] == initial
+    assert all(state[12]==1 for state in states[:-1]), ('drive sample reused across panes and operations',same)
+    assert states[-1][12]==2, ('Ctrl-R resamples the shared drive once',same)
     assert states[3][10:12] == [2,0] and states[4][10:12] == [0,0]
     assert states[9][10:12] == [1,1],('independent pane marks',same)
     assert states[12][9] == initial+1 and states[12][10:12] == [0,0]

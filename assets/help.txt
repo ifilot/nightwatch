@@ -8,7 +8,7 @@ Home / End          Select the first / last entry.
 PgUp / PgDn         Move through the directory a page at a time.
 Enter               Open a directory or file; run a typed command.
 Backspace           Go to parent if the command line is empty.
-Ctrl-R              Refresh the current directory.
+Ctrl-R              Refresh both panes and check free space.
 F9                  Pick a drive for the active panel.
 Arrows or a letter select; Enter opens its root; Esc cancels.
 Choose "Enter a path..." or press . for a directory path.
@@ -103,8 +103,8 @@ Alt-F7 searches beneath a directory, beyond the visible page.
 Search: Enter opens a match's location; N continues; Esc stops.
 Ctrl-A (or Alt-Enter) inspects and changes R/H/S/A attributes.
 Ctrl-L calculates bytes in the selection, including folders.
-Free space on both drives and selected bytes appear when idle.
-K means KiB (1024 bytes). A shared drive is shown once.
+Free space is sampled once per drive, shared by both panes.
+Folder changes reuse it. Ctrl-R resamples (K = KiB).
 
 #Large folders and input
 Ctrl-PgDn / Ctrl-PgUp load the next / previous directory page.

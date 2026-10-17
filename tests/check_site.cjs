@@ -89,7 +89,7 @@ async function main(){
     // The Size button bypasses the browser-reserved Ctrl-L shortcut.
     await page.click('[data-combo="341,76"]');
     await until(page,s=>s.hash!==desktop.hash,'recursive folder byte total');
-    await key(page,'Control+r');await until(page,s=>s.hash===desktop.hash,'refresh clears measured selection');
+    await key(page,'Control+r');await until(page,s=>s.hash===desktop.hash,'refresh clears measured selection and resamples capacity');
     console.log('PASS: properties cancellation, Alt-F7 and recursive selection totals');
 
     if(await page.locator('#fullscreen').isVisible()){

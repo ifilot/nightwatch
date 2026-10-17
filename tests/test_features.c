@@ -53,7 +53,22 @@ int main(void)
     assert(panel_selected_bytes(p,&directories)==4 && !directories);
     panel_mark(p,p->cursor,1);
     assert(panel_selected_bytes(p,&directories)==4 && !directories);
-    assert(p->free_kib!=0xffffffffUL);
+    assert(p->free_kib!=0xffffffffUL && fs_test_space_calls==1);
+    strcpy(panes[1].path,root);
+    assert(panel_load(&panes[1]) && panes[1].free_kib==p->free_kib);
+    assert(fs_test_space_calls==1); /* Shared volume, independent pane loads. */
+    panel_space(p,1); panel_space(&panes[1],0);
+    assert(fs_test_space_calls==2 && panes[1].free_kib==p->free_kib);
+    assert(panel_load(p) && fs_test_space_calls==2);
+    { /* A failed sample is cached once per drive, including letter case. */
+        unsigned long sampled=p->free_kib;
+        strcpy(panes[1].path,"Q:\\"); panel_space(&panes[1],0);
+        assert(panes[1].free_kib==0xffffffffUL && fs_test_space_calls==3);
+        strcpy(panes[1].path,"q:\\OTHER"); panel_space(&panes[1],0);
+        assert(fs_test_space_calls==3);
+        strcpy(panes[1].path,root); panel_space(&panes[1],0);
+        assert(panes[1].free_kib==sampled && fs_test_space_calls==3);
+    }
 
     strcpy(text,"ABCD"); cursor=2;
     assert(input_key(text,sizeof(text),&cursor,'x') && !strcmp(text,"ABxCD"));

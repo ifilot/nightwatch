@@ -45,6 +45,8 @@ test-video: build
 test-storage-dos:
 	python3 tests/storage_dos.py
 screenshots: test-video
+	python3 tests/browse_dos.py
+	python3 tools/vga_screenshots.py
 	python3 tools/screenshots.py
 assets:
 	python3 tools/assets.py

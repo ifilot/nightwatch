@@ -21,7 +21,7 @@ changes without a release tag are marked unreleased.
   active-pane changes, cancellation, direct paths and critical-error handling.
 
 - Enter launches selected EXE/COM/BAT programs in the active directory.
-- Free-space and selected-byte information, with Ctrl-L recursive folder totals.
+- On-demand free-space and selected-byte information, with Ctrl-L folder totals.
 - Overwrite-all/skip-all choices and source/destination metadata in conflicts.
 - Bounded directory pages beyond 512 entries, using Ctrl-PgUp/Ctrl-PgDn.
 - Streaming recursive filename search through Alt-F7.
@@ -30,6 +30,20 @@ changes without a release tag are marked unreleased.
 - Per-file retry/skip/cancel recovery for copy/move and archive extraction errors.
 
 ### Changed
+
+- Copy and archive-unpacking progress share Help's graphical window frame,
+  blue title bar and white content area, with native labels, transfer speed,
+  time remaining and an Escape hint. Incremental updates preserve responsiveness.
+
+- Resolve Turbo C warnings with explicit constant widths, bounded ZIP/zlib
+  indices and far-pointer offsets, a compatible opaque state declaration,
+  and an explicit storage-manifest parser assignment.
+
+- Free space is sampled once per drive on its first successful visit, using
+  a session cache shared by both panels. Folder changes, return visits and
+  automatic refreshes reuse the sample; Ctrl-R explicitly updates each drive.
+- Release builds link after DOS Make exits, preserving conventional memory
+  for the linker as the application grows.
 
 - Graphics viewers and About now share Help's window frame, title bar and
   white document area. Viewers keep position information and controls visible;

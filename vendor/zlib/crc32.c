@@ -1,3 +1,4 @@
+/* Nightwatch: Turbo C 2.0 compatibility adaptation; see docs/zip-support.md. */
 /* crc32.c -- compute the CRC-32 of a data stream
  * Copyright (C) 1995-2026 Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
@@ -154,7 +155,7 @@ local z_word_t byte_swap(z_word_t word) {
 #endif
 
 /* CRC polynomial. */
-#define POLY 0xedb88320         /* p(x) reflected, with x^32 implied */
+#define POLY 0xedb88320UL         /* p(x) reflected, with x^32 implied */
 
 /*
   Return a(x) multiplied by b(x) modulo p(x), where p(x) is the CRC polynomial,
@@ -502,7 +503,7 @@ const z_crc_t FAR * ZEXPORT get_crc_table(void) {
    measurements on a Cortex-A57. Your mileage may vary.
  */
 #define Z_BATCH 3990                /* number of words in a batch */
-#define Z_BATCH_ZEROS 0xa10d3d0c    /* computed from Z_BATCH = 3990 */
+#define Z_BATCH_ZEROS 0xa10d3d0cUL    /* computed from Z_BATCH = 3990 */
 #define Z_BATCH_MIN 800             /* fewest words in a final batch */
 
 uLong ZEXPORT crc32_z(uLong crc, const unsigned char FAR *buf, z_size_t len) {
@@ -521,7 +522,7 @@ uLong ZEXPORT crc32_z(uLong crc, const unsigned char FAR *buf, z_size_t len) {
 #endif /* DYNAMIC_CRC_TABLE */
 
     /* Pre-condition the CRC */
-    crc = (~crc) & 0xffffffff;
+    crc = (~crc) & 0xffffffffUL;
 
     /* Compute the CRC up to a word boundary. */
     while (len && ((z_size_t)buf & 7) != 0) {
@@ -593,7 +594,7 @@ uLong ZEXPORT crc32_z(uLong crc, const unsigned char FAR *buf, z_size_t len) {
     }
 
     /* Return the CRC, post-conditioned. */
-    return crc ^ 0xffffffff;
+    return crc ^ 0xffffffffUL;
 }
 
 #else
@@ -632,7 +633,7 @@ uLong ZEXPORT crc32_z(uLong crc, const unsigned char FAR *buf, z_size_t len) {
 #endif /* DYNAMIC_CRC_TABLE */
 
     /* Pre-condition the CRC */
-    crc = (~crc) & 0xffffffff;
+    crc = (~crc) & 0xffffffffUL;
 
 #ifdef W
 
@@ -646,7 +647,7 @@ uLong ZEXPORT crc32_z(uLong crc, const unsigned char FAR *buf, z_size_t len) {
         /* Compute the CRC up to a z_word_t boundary. */
         while (len && ((z_size_t)buf & (W - 1)) != 0) {
             len--;
-            crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
+            crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
         }
 
         /* Compute the CRC on as many N z_word_t blocks as are available. */
@@ -922,22 +923,22 @@ uLong ZEXPORT crc32_z(uLong crc, const unsigned char FAR *buf, z_size_t len) {
     /* Complete the computation of the CRC on any remaining bytes. */
     while (len >= 8) {
         len -= 8;
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
     }
     while (len) {
         len--;
-        crc = (crc >> 8) ^ crc_table[(crc ^ *buf++) & 0xff];
+        crc = (crc >> 8) ^ crc_table[(unsigned)((crc ^ *buf++) & 0xff)];
     }
 
     /* Return the CRC, post-conditioned. */
-    return crc ^ 0xffffffff;
+    return crc ^ 0xffffffffUL;
 }
 
 #endif
@@ -969,7 +970,7 @@ uLong ZEXPORT crc32_combine_gen(z_off_t len2) {
 uLong ZEXPORT crc32_combine_op(uLong crc1, uLong crc2, uLong op) {
     if (op == 0)
         return 0;
-    return multmodp(op, crc1 & 0xffffffff) ^ (crc2 & 0xffffffff);
+    return multmodp(op, crc1 & 0xffffffffUL) ^ (crc2 & 0xffffffffUL);
 }
 
 /* ========================================================================= */

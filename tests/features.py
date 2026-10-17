@@ -108,11 +108,10 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     capture, copy_state = min(sampled or partial, key=lambda item: abs(item[1][5] / item[1][6] - 0.5))
     screenshot = decode(capture.with_suffix('.BIN'), base/('copy-'+mode+'.png'))
     if mode != 'text':
-        row_height = {'cga': 8, 'ega': 14, 'vga': 16}[mode]
-        row = (30 if mode == 'vga' else 25)//2 - 5 + 4
+        font_height = {'cga': 8, 'ega': 12, 'vga': 16}[mode]
         fill = 318 * (copy_state[5] * 100 // copy_state[6]) // 100
         assert fill > 0
-        y = row * row_height + 3
+        y = (screenshot.height-(9*font_height+58))//2 + font_height+23 + 2*(font_height+2)
         assert screenshot.getpixel((121, y)) == ((0,0,0) if mode == 'cga' else (0,0,170))
         assert screenshot.getpixel((121+fill, y)) == ((255,255,255) if mode == 'cga' else (170,170,170))
     if mode == 'text':

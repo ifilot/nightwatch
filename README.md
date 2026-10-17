@@ -126,7 +126,7 @@ with transfer speed and an estimate of the time left for the current file.
 Press **Esc** to cancel a transfer. If a destination file already exists, you
 can choose whether to overwrite it or skip it.
 
-![A copy in progress, showing file and overall progress bars, 22.3 KiB/s transfer speed, and time remaining](screenshots/copy-progress.png)
+![A copy in progress, showing file and overall progress bars, KiB/s transfer speed, and time remaining](screenshots/copy-progress.png)
 
 *Here, a 1 MB file is being copied from the left pane's DATA folder to drive E:.*
 
@@ -152,7 +152,7 @@ press **Ctrl-U**.
 
 | Browse an archive | Extract its files |
 | --- | --- |
-| <img src="docs/screenshots/archive-browser.png" width="360" alt="The PACK.ZIP archive open as a folder, with a subfolder and two files"> | <img src="screenshots/arj-extraction-progress.png" width="360" alt="ARJ extraction in progress with file and overall progress indicators"> |
+| <img src="docs/screenshots/archive-browser.png" width="360" alt="A ZIP archive opened as a folder, with files and subfolders"> | <img src="screenshots/arj-extraction-progress.png" width="360" alt="ARJ extraction in progress with file and overall progress indicators"> |
 
 *Archive contents are read-only. Extract files before editing them, and extract
 an archive stored inside another archive before opening it.*
@@ -177,9 +177,10 @@ for how to run a test, verify its results and remove its test files.
 
 - **Run a program:** select an `.EXE`, `.COM` or `.BAT` and press Enter.
   It runs in the active folder. Press a key when it finishes to return.
-- **Check capacity:** the idle status line shows free space on both pane drives (K means KiB)
-  and bytes in the selected files. **Ctrl-L** calculates a total including
-  selected folders; Escape cancels a long calculation.
+- **Check capacity:** free space is sampled on the first visit to each drive
+  and shared by both panels. Folder changes reuse the cached value. **Ctrl-R**
+  updates it explicitly (K means KiB). **Ctrl-L** totals selected folders;
+  Escape cancels a long calculation.
 - **Handle many conflicts:** copy prompts show both files' sizes and dates.
   Choose **O** to overwrite once, **A** to overwrite all conflicts in this
   operation, **S** to skip once or **K** to skip all. After a transfer error,
@@ -231,7 +232,7 @@ reminder. Press **F1** for help inside Nightwatch.
 | **Ctrl-A / Ctrl-L** | File attributes / calculate selection size including folders |
 | **Ctrl-PgUp / Ctrl-PgDn** | Previous / next directory page |
 | **Ctrl-E / Ctrl-X** | Previous / next command from session history |
-| **Ctrl-R** | Refresh the file lists |
+| **Ctrl-R** | Refresh file lists and check free space |
 | **Ctrl-W** | Save the current display mode, folder paths and sorting |
 | **Ctrl-O** | Open a DOS shell; type `EXIT` to return |
 | **Esc** | Cancel a dialog or clear the command line |

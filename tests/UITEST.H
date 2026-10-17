@@ -62,10 +62,10 @@ static void test_capture(void)
     fclose(f);
     sprintf(name, "F%03d.POS", test_frame - 1);
     f = test_open(name, "w"); assert(f);
-    fprintf(f, "%d %d %d %d %d %d %d %lu %lu %u %d %d\n", video_mode,
+    fprintf(f, "%d %d %d %d %d %d %d %lu %lu %u %d %d %u\n", video_mode,
             video_mode == VIDEO_TEXT ? video_rows - 8 : graph_rows(), active,
             panes[0].top, panes[0].cursor, panes[1].top, panes[1].cursor,
-            video_bytes, viewer_pages, fs_list_calls, panes[0].marks, panes[1].marks);
+            video_bytes, viewer_pages, fs_list_calls, panes[0].marks, panes[1].marks, fs_space_calls);
     fclose(f);
 }
 /* Preserve keyboard frame numbering while saving actual transfer dialogs and

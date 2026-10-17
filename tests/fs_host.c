@@ -22,6 +22,7 @@ typedef struct { const char *operation, *suffix; unsigned call; } Fault;
 static Fault faults[8];
 static unsigned fault_count;
 int fs_test_cross_drive;
+unsigned fs_test_space_calls;
 unsigned fs_test_info_calls;
 /* Clear scheduled boundary faults and cross-drive simulation, not legacy flags.
  */
@@ -103,6 +104,7 @@ int fs_list(Panel *p)
 unsigned long fs_space(const char *path)
 {
     struct statvfs s;
+    ++fs_test_space_calls;
     if (statvfs(path,&s)) return 0xffffffffUL;
     return (unsigned long)((double)s.f_bavail*(double)s.f_frsize/1024.0);
 }

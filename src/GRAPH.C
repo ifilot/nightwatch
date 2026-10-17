@@ -2,6 +2,10 @@
 /* Pixel-coordinate desktop. No file-operation logic or framebuffer here. */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#ifdef __TURBOC__
+#include <alloc.h>
+#endif
 #include "VIDEO.H"
 #include "GRAPH.H"
 #include "HELP.H"
@@ -36,12 +40,13 @@ static void outline(int x, int y, int width, int height, unsigned color)
     line(x, y, width, color); line(x, y + height - 1, width, color);
     video_rect(x, y, 1, height, color); video_rect(x + width - 1, y, 1, height, color);
 }
-/* Solid pixel tracks replace character bars only in graphics modes. Cell
- * overlay rows use BIOS spacing, independently of the desktop font metrics. */
+/* Native copy tracks share the document font and white-paper layout. */
 void graph_progress(int row, unsigned percent, unsigned previous, int reset)
 {
-    int h = video_height / video_rows - 2, x = 120;
-    int y = row * (video_height / video_rows) + 1, fill, old;
+    int f = video_font_height, h = f - 2, x = 120;
+    int height = 9 * f + 58;
+    int body = (video_height - height) / 2 + f + 16;
+    int y = body + 4 + (row ? 4 : 2) * (f + 2) + 1, fill, old;
     int black_white = video_mode == VIDEO_CGA;
     if (percent > 100) percent = 100;
     if (previous > 100) previous = 100;
@@ -80,19 +85,20 @@ int graph_help_rows(void)
 }
 /* Shared native window chrome: Help, documents and credits use the same
  * title strip, inset paper and shadow instead of BIOS-sized cell dialogs. */
-static int document_window(const char *title, const char *badge, int height, int icon)
+static int document_window(const char *title, const char *badge, int height, int icon,
+                           int width)
 {
-    int f = video_font_height, x = 18, y = (video_height - height) / 2;
+    int f = video_font_height, x = (640 - width) / 2, y = (video_height - height) / 2;
     unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
     unsigned bar = video_mode == VIDEO_CGA ? 0 : 1;
     video_native_overlay();
-    video_rect(x + 3, y + 3, 604, height, 0);
-    video_rect(x, y, 604, height, bg); outline(x, y, 604, height, 0);
-    line(x + 1, y + 1, 602, 15);
-    video_rect(x + 2, y + 2, 600, f + 6, bar);
+    video_rect(x + 3, y + 3, width, height, 0);
+    video_rect(x, y, width, height, bg); outline(x, y, width, height, 0);
+    line(x + 1, y + 1, width - 2, 15);
+    video_rect(x + 2, y + 2, width - 4, f + 6, bar);
     video_icon(x + 10, y + 3, icon, video_mode == VIDEO_CGA ? 0 : 7, 15, 15);
     video_label(x + 32, y + 4, title, 15, bar, 0);
-    video_label(x + 600 - strlen(badge) * video_font_width, y + 4, badge, 15, bar, 0);
+    video_label(x + width - 4 - strlen(badge) * video_font_width, y + 4, badge, 15, bar, 0);
     return y;
 }
 static void document_text(int x, int y, const char *text, int columns, unsigned fg, unsigned bg)
@@ -100,6 +106,87 @@ static void document_text(int x, int y, const char *text, int columns, unsigned 
     char clipped[128];
     strncpy(clipped, text, columns); clipped[columns] = 0;
     video_label(x, y, clipped, fg, bg, 0);
+}
+/* Transfer fields live outside DGROUP, leaving the small near heap for DOS
+ * stdio. Only changed character runs are painted during timed updates. */
+static char NW_FAR *copy_fields;
+void graph_copy_end(void)
+{
+    if (copy_fields) {
+#ifdef __TURBOC__
+        farfree(copy_fields);
+#else
+        free(copy_fields);
+#endif
+        copy_fields = NULL;
+    }
+}
+void graph_copy_begin(int unpacking)
+{
+    int f = video_font_height, height = 9 * f + 58, y, body, i;
+    unsigned muted = video_mode == VIDEO_CGA ? 0 : 8;
+    unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
+    y = document_window(unpacking ? "Unpacking archive" : "Copying files",
+                        unpacking ? "UNPACK" : "COPY", height,
+                        unpacking ? ICON_ARCHIVE : ICON_DOCUMENT, 604);
+    body = y + f + 16;
+    video_rect(32, body, 576, 7 * (f + 2) + 8, 15);
+    outline(32, body, 576, 7 * (f + 2) + 8, muted);
+    video_label(40, body + 4 + 2 * (f + 2), "File", 0, 15, 0);
+    video_label(40, body + 4 + 4 * (f + 2), "Overall", 0, 15, 0);
+    line(32, y + height - f - 15, 576, muted);
+    video_label(32, y + height - f - 8, "Esc cancels", 0, bg, 0);
+    if (!copy_fields) {
+#ifdef __TURBOC__
+        copy_fields = (char NW_FAR *)farmalloc(7UL * 80);
+#else
+        copy_fields = (char *)malloc(7 * 80);
+#endif
+    }
+    if (copy_fields) for (i = 0; i < 7; ++i) copy_fields[i * 80] = 0;
+}
+/* Fields: path, file count, current bytes, overall bytes, speed/ETA, and
+ * the two percentages. Paths keep their filename visible when clipped. */
+void graph_copy_text(unsigned field, const char *text)
+{
+    int f = video_font_height, width = video_font_width, row, x = 40, y;
+    int length, previous = 0, total, i, start;
+    char run[80];
+    char NW_FAR *old;
+    unsigned fg = (field == 4 || field >= 5) && video_mode != VIDEO_CGA ? 1 : 0;
+    if (field > 6) return;
+    old = copy_fields ? copy_fields + field * 80 : NULL;
+    row = field < 2 ? field : (field == 2 ? 3 : (field == 3 ? 5 :
+          (field == 4 ? 6 : (field == 5 ? 2 : 4))));
+    if (field >= 5) x = 456;
+    y = (video_height - (9 * f + 58)) / 2 + f + 20 + row * (f + 2);
+    length = strlen(text);
+    if (length > 70) {
+        if (!field) text += length - 70;
+        length = 70;
+    }
+    if (!old) {
+        video_rect(x, y, (field >= 5 ? 5 : 70) * width, f, 15);
+        memcpy(run, text, length); run[length] = 0;
+        video_label(x, y, run, fg, 15, 0); return;
+    }
+    while (old[previous]) ++previous;
+    total = length > previous ? length : previous;
+    i = 0;
+    while (i < total) {
+        char now = i < length ? text[i] : ' ';
+        char was = i < previous ? old[i] : ' ';
+        if (now == was) { ++i; continue; }
+        start = i;
+        do {
+            run[i - start] = i < length ? text[i] : ' '; ++i;
+        } while (i < total && (i < length ? text[i] : ' ') !=
+                 (i < previous ? old[i] : ' '));
+        run[i - start] = 0;
+        video_label(x + start * width, y, run, fg, 15, 0);
+    }
+    for (i = 0; i < length; ++i) old[i] = text[i];
+    old[length] = 0;
 }
 int graph_view_columns(void)
 {
@@ -117,7 +204,7 @@ void graph_view_begin(int hex, const char *path, int full)
     unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
     if (full) {
         document_window(hex ? "Hex viewer" : "Text viewer", hex ? "HEX" : "VIEW",
-                        video_height - 20, ICON_DOCUMENT);
+                        video_height - 20, ICON_DOCUMENT, 604);
         document_text(32, 10 + f + 14, path, 576 / video_font_width, 0, bg);
     }
     video_rect(32, body, 576, rows * (f + 2) + 8, 15);
@@ -160,22 +247,39 @@ void graph_view_footer(const char *position, const char *controls)
 void graph_about(const char *version, const char *commit, const char *repository,
                  const char **credits)
 {
-    int f = video_font_height, height = 11 * f + 78, y, i, body;
+    int f = video_font_height, paper_height = 6 * (f + 2) + 8;
+    int height = 2 * f + 24 + paper_height + f + 22, x, y, i, body, width, needed;
     unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
     char text[80];
     sprintf(text, "Nightwatch %s", version);
-    y = document_window(text, "ABOUT", height, ICON_DRIVE);
-    document_text(32, y + f + 14, repository, 576 / video_font_width, 0, bg);
+    /* Fit the longest field, allowing for the icon, badge and paper margins. */
+    width = (strlen(text) + 5) * video_font_width + 52;
+    needed = strlen(repository) * video_font_width + 28;
+    if (needed > width) width = needed;
+    needed = strlen("Press any key to return") * video_font_width + 28;
+    if (needed > width) width = needed;
+    for (i = 0; i < 5; ++i) {
+        needed = strlen(credits[i]) * video_font_width + 44;
+        if (needed > width) width = needed;
+    }
+    sprintf(text, "Commit: %s", commit);
+    needed = strlen(text) * video_font_width + 44;
+    if (needed > width) width = needed;
+    if (width > 604) width = 604;
+    x = (640 - width) / 2;
+    sprintf(text, "Nightwatch %s", version);
+    y = document_window(text, "ABOUT", height, ICON_DRIVE, width);
+    document_text(x + 14, y + f + 14, repository, (width - 28) / video_font_width, 0, bg);
     body = y + 2 * f + 24;
-    video_rect(32, body, 576, 6 * (f + 2) + 8, 15);
-    outline(32, body, 576, 6 * (f + 2) + 8, video_mode == VIDEO_CGA ? 0 : 8);
+    video_rect(x + 14, body, width - 28, paper_height, 15);
+    outline(x + 14, body, width - 28, paper_height, video_mode == VIDEO_CGA ? 0 : 8);
     for (i = 0; i < 5; ++i)
-        document_text(40, body + 4 + i * (f + 2), credits[i], 560 / video_font_width,
+        document_text(x + 22, body + 4 + i * (f + 2), credits[i], (width - 44) / video_font_width,
                       i < 2 && video_mode != VIDEO_CGA ? 1 : 0, 15);
     sprintf(text, "Commit: %s", commit);
-    document_text(40, body + 4 + 5 * (f + 2), text, 560 / video_font_width, 0, 15);
-    line(32, y + height - f - 15, 576, video_mode == VIDEO_CGA ? 0 : 8);
-    video_label(32, y + height - f - 8, "Press any key to return", 0, bg, 0);
+    document_text(x + 22, body + 4 + 5 * (f + 2), text, (width - 44) / video_font_width, 0, 15);
+    line(x + 14, y + height - f - 15, width - 28, video_mode == VIDEO_CGA ? 0 : 8);
+    video_label(x + 14, y + height - f - 8, "Press any key to return", 0, bg, 0);
 }
 void graph_help(const char *version, const char *commit, const char *repository,
                 unsigned first, int full)
@@ -191,7 +295,7 @@ void graph_help(const char *version, const char *commit, const char *repository,
     video_overlay_begin(0);
     if (full) {
         sprintf(text, "Nightwatch %s", version);
-        document_window(text, "HELP", height, ICON_DRIVE);
+        document_window(text, "HELP", height, ICON_DRIVE, 604);
         video_label(x + 14, y + f + 14, repository, 0, bg, 0);
         sprintf(text, "Commit: %s", commit);
         video_label(x + 330, y + f + 14, text, 0, bg, 0);

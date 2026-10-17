@@ -24,7 +24,11 @@ void graph_view_line(int row, const char *text, int hex);
 void graph_view_footer(const char *position, const char *controls);
 void graph_about(const char *version, const char *commit, const char *repository,
                  const char **credits);
-/* Draw after the cell overlay flush. Reset initializes a covered/new track;
- * otherwise touch only the difference from previous. Percent is clipped. */
+/* Native copy/unpack modal with cached text fields and differential tracks.
+ * End releases its small far cache. Track row 0 is file, row 1 is overall.
+ * Reset initializes a new/covered track; percentages are clipped. */
+void graph_copy_begin(int unpacking);
+void graph_copy_text(unsigned field, const char *text);
+void graph_copy_end(void);
 void graph_progress(int row, unsigned percent, unsigned previous, int reset);
 #endif

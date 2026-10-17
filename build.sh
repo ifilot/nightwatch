@@ -22,7 +22,10 @@ cat > "$repo/build/BUILD.BAT" <<'BAT'
 @echo off
 set PATH=C:\TC;C:\TASM
 D:
-make -fMAKEFILE > COMPILE.LOG
+make -fMAKEFILE objects > COMPILE.LOG
+if errorlevel 1 goto failed
+rem Link after Make exits, freeing its conventional DOS memory.
+tcc -1- -mm -LC:\TC\LIB -M -eNW.EXE *.OBJ >> COMPILE.LOG
 if errorlevel 1 goto failed
 if not exist NW.EXE goto failed
 echo OK>BUILD.OK
