@@ -8,11 +8,14 @@ changes without a release tag are marked unreleased.
 
 ### Added
 
-- Blue/cyan browser emulator using self-hosted DOSBox WebAssembly, disposable
-  D:/E: demo drives, keyboard/touch controls and a filterable VGA screenshot
-  gallery. The static site reuses the tested DOS package and supports Pages.
-- Text viewer header shows the current file line and total line count, including
-  after paging, search and byte-offset jumps.
+- Blue/cyan web interface running the real DOS executable through self-hosted
+  DOSBox WebAssembly, with disposable D:/E: demo drives, keyboard/touch controls,
+  pause, fullscreen and reset. The browser and downloadable DOS package share
+  the same executable; reset or reload clears browser-session changes.
+- Filterable gallery of all 61 native VGA screenshots, with enlarged viewing
+  and keyboard navigation, including copy/extraction progress with kB/s markers.
+- Text viewer header shows the current logical file line and total line count
+  after paging, search and byte-offset jumps, including archive members.
 - Enter opens ZIP/ARJ archives as read-only folders, with subfolder navigation,
   F3/Shift-F3 member viewing and F5 extraction of selected files/folder trees.
   Listings use validated headers without unpacking; source archives stay intact.
@@ -23,11 +26,22 @@ changes without a release tag are marked unreleased.
   16-bit 8086/FAT12 checks and VGA navigator extraction coverage.
 - Original Quick Menu inspired 16x16 color icons inside the VGA interface,
   retaining the existing row count and transparent selection backgrounds.
-  EGA and CGA keep their existing artwork.
-- Development scope for native ARJ extraction and two original 16x16
-  file-browser icon studies inspired by Quick Menu and Windows 3.x.
-  The studies include all eight categories, native/enlarged previews and
-  a reproducible generator; the Quick Menu set is embedded for VGA.
+  All eight categories include reproducible artwork and previews, with an
+  alternative Windows 3.x inspired study. EGA and CGA retain their artwork.
+- Fictional D: work and E: backup drives for `make run`, containing representative
+  documents, source trees, images and real ZIP/ARJ archives. Existing local demo
+  files are preserved between launches.
+
+### Changed
+
+- `make site` builds a self-contained static website with pinned, checksum-checked
+  emulator downloads, corresponding sources and license notices. The site works
+  under URL subpaths and makes no third-party runtime requests.
+- Pushes to `master` build and browser-test the website from the tested DOS
+  package before deploying to GitHub Pages. Other branches, tags, pull requests
+  and manual runs do not deploy; Pages must use the GitHub Actions source.
+- DOS CI runs independent suites in parallel and reuses checked build inputs.
+  Compiler/linker gates require fresh outputs and verify the DOS near-heap budget.
 
 ## v1.2.0 — Unreleased
 
