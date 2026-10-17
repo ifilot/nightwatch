@@ -110,7 +110,8 @@ static int open_archive(Archive *a, const char *source, const char *target)
     Member main_header;
     long size;
     a->fd = -1;
-    if (strlen(source) >= NW_PATH || !fs_canonical(target,a->target))
+    a->target[0] = 0;
+    if (strlen(source) >= NW_PATH || (target && !fs_canonical(target,a->target)))
         return archive_message(ARC_ARJ_DESTINATION_MUST_BE_AN_EXISTING_DIRECTORY);
     strcpy(dir,source); cut = strrchr(dir,SEP);
     if (cut) {
@@ -145,7 +146,7 @@ static int preflight(Archive *a, unsigned long *files, unsigned long *bytes)
         if (!member(a,at,&m,0)) return 0;
         if (m.end) return 1;
         if (++count == 65535U) return archive_message(ARC_ARJ_TOO_MANY_ENTRIES);
-        if (!archive_directories(a,&m,0) || !archive_poll(m.name,0,0)) return 0;
+        if ((a->target[0] && !archive_directories(a,&m,0)) || !archive_poll(m.name,0,0)) return 0;
         if (!m.directory) {
             if (m.size > ARJ_LIMIT-*bytes) return archive_message(ARC_ARJ_TOTAL_OUTPUT_EXCEEDS_DOS_LIMITS);
             ++*files; *bytes += m.size;
@@ -194,5 +195,22 @@ int arj_extract(const char *archive, const char *target)
     }
     if (a.fd >= 0 && fs_close(a.fd) < 0 && ok) { fs_error("Close ARJ"); ok = 0; }
     operation_current_bytes = 0;
+    return ok;
+}
+
+int arj_walk(const char *source, ArchiveVisit visit, void *context)
+{
+    Archive a;
+    Member m;
+    unsigned long files, bytes, at;
+    int ok = open_archive(&a,source,NULL);
+    if (ok) ok = preflight(&a,&files,&bytes);
+    at = ok ? a.start : 0;
+    while (ok) {
+        if (!member(&a,at,&m,0)) { ok = 0; break; }
+        if (m.end) break;
+        ok = visit(&a,&m,unpack,context); at = m.next;
+    }
+    if (a.fd >= 0 && fs_close(a.fd) < 0 && ok) { fs_error("Close ARJ"); ok = 0; }
     return ok;
 }

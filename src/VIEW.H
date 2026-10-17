@@ -9,6 +9,15 @@
 long view_next(FILE *f, long offset, int rows);
 long view_previous(FILE *f, long offset, int rows);
 long view_last(FILE *f, int rows);
+/* Logical (LF-delimited) line position, independent of screen wrapping.
+ * Initialize offset to -1. The first call counts the whole file; subsequent
+ * calls scan only the intervening bytes (or restart for a backward jump).
+ * Restores the stream position; zero means I/O failure. Empty files are 0/0. */
+typedef struct {
+    long offset;
+    unsigned long breaks, total;
+} ViewPosition;
+int view_position(FILE *f, long offset, ViewPosition *position);
 /* Parse literal text or hex:DE AD 00 BE EF into caller storage (at least 63
  * bytes). Return one for a valid 1..63 byte pattern; discard outputs on zero. */
 int view_pattern(const char *text, unsigned char *bytes, unsigned *length, int *hex);

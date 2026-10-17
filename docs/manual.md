@@ -181,6 +181,12 @@ hexadecimal. Matches appear at the top of the view. Text supports Home/End and
 backward paging beyond its 128 cached offsets by rescanning earlier content when
 necessary.
 
+The text viewer header shows **Line X / Y**, where X is the first displayed
+file line and Y is the total. Wrapped rows still belong to the same file line;
+an empty file shows 0 / 0. The initial count scans the file, so opening large
+files on slow disks can take time. Hex mode shows the byte offset and file size
+in its footer.
+
 Press **F2**, then **R**, to enable or disable remembering the display mode
 (default: off). The F2 title shows the current setting. Enabling this option
 writes the current mode to `NIGHT.CFG`; subsequent successful mode selections
@@ -315,6 +321,36 @@ CGA/EGA/VGA screens and 23/49/55 ticks for ten moves. See
 These compare the old and new interfaces, rather than claiming physical hardware
 timing.
 
+## Browsing ZIP and ARJ archives
+
+Press **Enter** on a `.ZIP` or `.ARJ` file to open its contents in the active
+pane. The path caption includes the archive filename and current member folder.
+Archive browsing uses the same DOS 8.3 and format limits as extraction. Listing
+validates archive headers and names without decompressing payloads or creating
+files. Implicit directories are included, and the normal 512-entry pane limit,
+sorting, marking, scrolling and filename search apply.
+
+**Enter** opens a member folder. **Backspace** or **Enter** on `..` goes up;
+at the archive root it returns to the containing disk directory and reselects
+the archive. F9 can switch directly to an existing disk directory. Ctrl-R
+refreshes the archive listing; Ctrl-W saves the containing disk paths.
+
+**F3 / Shift-F3** views the cursor member as text/hex. Only that member is
+streamed into an exclusively created temporary file in the launch directory,
+with size/CRC checks before opening the viewer; the temporary is removed when
+the viewer closes. The launch directory must therefore be writable for viewing.
+The viewer caption retains the virtual archive/member path.
+
+**F5** (or Ctrl-U inside an archive) extracts the cursor entry or marked entries
+into an existing disk directory, defaulting to the inactive pane. A selected
+folder includes all its descendants, including entries beyond the pane cache.
+The existing overwrite/skip/cancel controls and staged replacement apply.
+
+Archive panes are read-only: editor, move, mkdir, delete, shell and storage-test
+commands are blocked there, as are transfers into a virtual archive pane. Source
+archives are never rewritten. Extract a nested archive with F5 before opening it;
+nested archive browsing and writing archive contents are not supported.
+
 ## ZIP and ARJ extraction
 
 Select a ZIP or ARJ file and press **Ctrl-U**. The destination defaults to the inactive
@@ -348,6 +384,7 @@ compression details, fixture provenance and recovery behavior.
 
 ```sh
 make test         # strict C89 host backend tests with address/undefined sanitizers
+make test-browse-dos # archive browser and navigator integration on DOS/8086
 make test-arj-dos # ARJ methods 0–4 on the 8086 and FAT12
 make test-zip-dos # ZIP extraction on the 8086 and FAT12, Windows/Linux archives
 make test-dos     # real DOS calls on a FAT12 image (DOSBox-X + mtools required)

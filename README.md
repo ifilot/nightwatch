@@ -82,18 +82,23 @@ as Slot-otter through DOS. Keep manifests/logs on another drive; see the
 | F3 / Shift-F3 | Text / hex viewer; F4 toggles inside the viewer |
 | F4, F5, F6, F7, F8 | Editor, copy, move, mkdir, delete |
 | Ctrl-F, Ctrl-P / Ctrl-N, Ctrl-S | Find filename, mark / unmark patterns, sort |
-| Ctrl-U | Unpack selected ZIP or ARJ into the other pane |
+| Enter on ZIP / ARJ | Browse archive contents as a read-only folder |
+| Ctrl-U | Unpack archive, or extract selected entries while browsing |
 | Ctrl-T | Storage integrity tests: quick / long / verify / cleanup |
 | F9, Ctrl-R, Ctrl-O | Change drive/path, refresh, DOS shell |
 | F1, F10 | Help, quit |
 
 Inside either viewer: **F7** searches, **F8** finds the next match, and **Ctrl-G**
 jumps to an offset. Search accepts ASCII or bytes such as `hex:DE AD 00 BE EF`.
+The text viewer header shows the current line and total line count.
 
 Requires DOS 3.0+, DOS 8.3 filenames and about **256 KB free conventional RAM**.
 EGA needs at least 128 KB video RAM. Each pane caches 512 entries; recursive
 operations traverse beyond that cache, up to 32 directory levels. Keyboard only. ZIP extraction supports stored and DEFLATE entries, including
 Windows and Linux archives. ZIP64, encryption and Deflate64 are unsupported.
+Enter opens ZIP/ARJ archives as read-only folders: navigate subfolders, view
+individual members with F3/Shift-F3, and extract selections with F5. Listing
+reads headers without unpacking the archive.
 Built-in ARJ extraction supports stored files and methods 1–4.
 See [ZIP support](docs/zip-support.md) and [ARJ support](docs/arj-support.md)
 for filename and format limits.

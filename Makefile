@@ -6,7 +6,7 @@ MODE ?= vga
 DOSBOX ?= dosbox
 DOS_TOOLCHAIN ?= $(CURDIR)/buildenv
 export DOS_TOOLCHAIN
-.PHONY: all build run demo test test-dos test-zip-dos test-arj-dos test-video test-storage-dos assets icons-overview benchmark benchmark-speed benchmark-copy package screenshots clean
+.PHONY: all build run demo test test-dos test-zip-dos test-arj-dos test-browse-dos test-video test-storage-dos assets icons-overview benchmark benchmark-speed benchmark-copy package screenshots clean
 all: build
 .PHONY: build-metadata
 build-metadata:
@@ -30,6 +30,8 @@ test-zip-dos: build
 	python3 tests/zip_fat12.py
 test-arj-dos: build
 	python3 tests/arj_dos.py
+test-browse-dos: build
+	python3 tests/browse_dos.py
 test-video: build
 	python3 tests/progress.py
 	python3 tests/video.py

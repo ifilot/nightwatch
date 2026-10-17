@@ -18,6 +18,7 @@
 #include "NW.H"
 #include "ZIP.H"
 #include "ARJ.H"
+#include "BROWSE.H"
 #include "STORTEST.H"
 #include "STORUI.H"
 #include "STORMSG.H"
@@ -490,17 +491,17 @@ static void surviving_directory(Panel *p)
 static void refresh_mask(unsigned mask)
 {
     int i;
-    for (i = 0; i < 2; ++i) if (mask & (1 << i)) surviving_directory(&panes[i]);
+    for (i = 0; i < 2; ++i) if ((mask & (1 << i)) && !browse_active(&panes[i])) surviving_directory(&panes[i]);
     if (mask && !stricmp(panes[0].path, panes[1].path)) mask = 3;
     /* Keep the established refresh behavior: marks clear in both panes. */
     for (i = 0; i < 2; ++i) {
         if (!(mask & (1 << i))) { panel_mark_all(&panes[i], 0); panes[i].top = 0; }
-        else if (i == 1 && mask == 3 && !stricmp(panes[0].path, panes[1].path)) {
+        else if (i == 1 && mask == 3 && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
             panel_snapshot(&panes[1], &panes[0]);
-        } else if (!panel_load(&panes[i])) {
+        } else if (!browse_load(&panes[i])) {
             notice(nw_error);
             /* Do not clone stale/failed data into the second pane. */
-            if (i == 0 && mask == 3 && !stricmp(panes[0].path, panes[1].path)) {
+            if (i == 0 && mask == 3 && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
                 if (!panel_load(&panes[1])) notice(nw_error);
                 return;
             }
@@ -616,7 +617,8 @@ static int current_path(char *path)
  */
 static void viewer(int hex_mode)
 {
-    char path[NW_PATH], header[160];
+    char path[NW_PATH], display[NW_PATH], temporary[NW_PATH], header[160], marker[40];
+    ViewPosition location;
     long pages[128], next, size, offset = 0, found;
     char search[194] = "", jump[24] = "";
     unsigned char needle[64];
@@ -630,15 +632,26 @@ static void viewer(int hex_mode)
     long position;
     int page = 0, count = 1, y, x, ch, k, eof;
     FILE *f;
+    int staged = 0;
     Entry *e = current();
     if (!e || (e->attr & NW_DIR) || !current_path(path)) return;
+    strcpy(display,path);
+    if (browse_active(&panes[active])) {
+        if (!path_join(path,startup,"VIEW.TMP") || !operation_temp(path,temporary,"TMP")) { notice(nw_error); return; }
+        begin_operation(); counting = 1;
+        n = browse_view(&panes[active],temporary);
+        end_operation();
+        if (!n) { notice(nw_error); return; }
+        strcpy(path,temporary); staged = 1;
+    }
     f = fopen(path, "rb");
-    if (!f) { fs_error("View"); notice(nw_error); return; }
+    if (!f) { fs_error("View"); if (staged) operation_discard(temporary); notice(nw_error); return; }
     if (fseek(f, 0L, SEEK_END) || (size = ftell(f)) < 0) {
-        fs_error("View size"); fclose(f); notice(nw_error); return;
+        fs_error("View size"); fclose(f); if (staged) operation_discard(temporary); notice(nw_error); return;
     }
     /* Page offsets are raw file bytes: CRLF conversion would break hex/search. */
     pages[0] = 0;
+    location.offset = -1;
     rows = video_rows - 3;
     for (;;) {
         if (dirty) {
@@ -648,10 +661,19 @@ static void viewer(int hex_mode)
             if (fseek(f, hex_mode ? offset : pages[page], SEEK_SET)) {
                 fs_error("View seek"); notice(nw_error); break;
             }
+            if (!hex_mode && !view_position(f, pages[page], &location)) {
+                fs_error("View lines"); notice(nw_error); break;
+            }
             video_overlay_begin(first); first = 0;
             video_clear(COLOR_NORMAL);
-            sprintf(header, " %s: %.65s", hex_mode ? "Hex" : "View", path);
+            if (hex_mode) sprintf(header, " Hex: %.65s", display);
+            else {
+                sprintf(marker, "Line %lu / %lu", location.breaks < location.total ?
+                        location.breaks + 1 : location.total, location.total);
+                sprintf(header, " View: %.*s", 71 - (int)strlen(marker), display);
+            }
             video_text(0, 0, header, COLOR_BAR);
+            if (!hex_mode) video_text(79 - strlen(marker), 0, marker, COLOR_BAR);
             if (hex_mode) {
                 video_text(0, 1, "Offset    00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F   ASCII", COLOR_ACTIVE);
                 got = (int)fread(bytes, 1, rows * 16, f);
@@ -761,6 +783,7 @@ static void viewer(int hex_mode)
         dirty = pages[page] != position;
     }
     fclose(f);
+    if (staged && !operation_discard(temporary)) notice(nw_error);
 }
 /* Run in the active pane directory with the original display restored. DOS keeps
  * a current directory per drive, so preserve both affected drive directories,
@@ -771,6 +794,7 @@ static void run_shell(const char *line)
     int drive = getdisk(), result, target = toupper(panes[active].path[0]) - 'A';
     char old[NW_PATH], other[NW_PATH];
     const char *shell = getenv("COMSPEC");
+    if (browse_active(&panes[active])) { archive_message(ARC_BROWSER_READONLY); notice(nw_error); return; }
     if (!getcwd(old, sizeof(old))) { fs_error("Current directory"); notice(nw_error); return; }
     setdisk(target);
     if (!getcwd(other, sizeof(other))) { setdisk(drive); notice("Cannot read shell drive directory"); return; }
@@ -841,6 +865,13 @@ static void operate(int move)
     if (target[1] != ':' || (target[2] != '\\' && target[2] != '/')) { notice("Use an absolute DOS path, such as C:\\FILES"); return; }
     directory = fs_info(target, &info) && (info.attr & NW_DIR);
     if (marked > 1 && !directory) { notice("Multiple files require an existing destination directory"); return; }
+    if (browse_active(p)) {
+        begin_operation(); counting = 1;
+        ok = browse_copy(p,target,1,&total_files,&total_bytes);
+        counting = 0; copy_progress = 2; progress_path[0] = 0; force_progress = 1;
+        if (ok) ok = browse_copy(p,target,0,&total_files,&total_bytes);
+        end_operation(); if (!ok) notice(nw_error); refresh(); return;
+    }
     affected = destination_mask(target, directory) | (move ? 1 << active : 0);
     begin_operation();
     copy_progress = !move;
@@ -888,6 +919,7 @@ static void extract_archive(void)
     int ok, arj;
     unsigned char magic[2];
     Entry *e = current();
+    if (browse_active(&panes[active])) { operate(0); return; }
     if (!e || (e->attr & NW_DIR) || !current_path(source)) return;
     ok = fs_read_open(source);
     if (ok < 0) { fs_error("Open archive"); notice(nw_error); return; }
@@ -953,8 +985,8 @@ static void change_path(void)
     strcpy(panes[active].path, full);
     if (!panel_load(&panes[active])) {
         strcpy(error, nw_error); strcpy(panes[active].path, old);
-        panel_load(&panes[active]); notice(error);
-    }
+        browse_load(&panes[active]); notice(error);
+    } else browse_release(&panes[active]);
     panes[active].cursor = panes[active].top = 0;
 }
 /* Locate configuration in the launch directory, independent of pane navigation.
@@ -1037,10 +1069,12 @@ static int settings_write(const char *record)
 /* Format the established four-line record, without the optional extension. */
 static void settings_format(char *data, int mode)
 {
+    char left[NW_PATH], right[NW_PATH];
+    browse_home(&panes[0],left); browse_home(&panes[1],right);
     sprintf(data, "NIGHTWATCH1\n%d %u %u %u %u\n%s\n%s\n", mode,
         (unsigned)panes[0].sort, (unsigned)panes[0].reverse,
         (unsigned)panes[1].sort, (unsigned)panes[1].reverse,
-        panes[0].path, panes[1].path);
+        left, right);
 }
 /* Ctrl-W explicitly saves pane state as well as the current display mode. */
 static void settings_save(void)
@@ -1219,6 +1253,10 @@ int main(int argc, char **argv)
         Entry *e;
         unsigned n;
         draw(); k = key_read(); e = current(); n = strlen(command);
+        if ((browse_active(p) && (k == KEY_F4 || k == KEY_F6 || k == KEY_F7 || k == KEY_F8 || k == 20)) ||
+            (browse_active(&panes[1-active]) && (k == KEY_F5 || k == KEY_F6 || k == 21))) {
+            archive_message(ARC_BROWSER_READONLY); notice(nw_error); continue;
+        }
         switch (k) {
         case KEY_F1: help(); break;
         case KEY_ALT_F1: about(); break;
@@ -1251,12 +1289,15 @@ int main(int argc, char **argv)
         case 27: command[0] = 0; break;
         case 8:
             if (n) command[n-1] = 0;
-            else if (!panel_enter(p, "..")) notice(nw_error);
+            else if (!browse_enter(p, "..")) notice(nw_error);
             break;
         case 13:
             if (n) { run_shell(command); command[0] = 0; }
-            else if (e && (e->attr & NW_DIR)) { if (!panel_enter(p, e->name)) notice(nw_error); }
-            else viewer(0);
+            else if (e && (e->attr & NW_DIR)) { if (!browse_enter(p, e->name)) notice(nw_error); }
+            else if (e && browse_type(e->name)) {
+                char source[NW_PATH];
+                if (!current_path(source) || !browse_open(p,source)) notice(nw_error);
+            } else viewer(0);
             break;
         case 0x5200:
             if (e && strcmp(e->name, "..")) { panel_mark(p, p->cursor, !e->marked); ++p->cursor; }
@@ -1271,5 +1312,6 @@ int main(int argc, char **argv)
             break;
         }
     }
+    browse_release(&panes[0]); browse_release(&panes[1]);
     video_restore(); return 0;
 }

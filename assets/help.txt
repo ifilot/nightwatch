@@ -42,6 +42,13 @@ Esc cancels between transfer blocks or directory entries.
 The unfinished copy is removed; completed files remain.
 Timestamps and file attributes are preserved.
 
+#ARCHIVE BROWSING
+Enter on ZIP/ARJ opens a read-only folder view without unpacking.
+Enter opens subfolders; Backspace or .. returns to the parent.
+F3/Shift-F3 views one member; F5 extracts selected/marked entries.
+Archive panes cannot be edited, deleted, moved or copied into.
+Extract nested archives with F5 before opening them.
+
 #ZIP AND ARJ EXTRACTION
 Choose an existing destination directory. O overwrites, S skips.
 Stored and DEFLATE ZIP entries work at all compression levels.

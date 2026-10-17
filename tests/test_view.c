@@ -7,6 +7,43 @@
 #include <string.h>
 #include <limits.h>
 #include "VIEW.H"
+static void line_position(void)
+{
+    ViewPosition p;
+    FILE *f = tmpfile();
+    long saved;
+    int i;
+    assert(f); p.offset = -1;
+    assert(view_position(f, 0, &p) && p.total == 0 && p.breaks == 0);
+    fclose(f);
+    f = tmpfile(); assert(f);
+    /* CRLF, blank lines, wrapping/tabs and a final unterminated line. */
+    fputs("a\r\n\n", f);
+    for (i = 0; i < 100; ++i) fputc('W', f);
+    fputs("\tend", f); fflush(f);
+    assert(!fseek(f, 2, SEEK_SET)); saved = ftell(f); p.offset = -1;
+    assert(view_position(f, 0, &p) && p.total == 3 && p.breaks == 0);
+    assert(ftell(f) == saved);
+    assert(view_position(f, 2, &p) && p.breaks == 0);
+    assert(view_position(f, 3, &p) && p.breaks == 1);
+    assert(view_position(f, 4, &p) && p.breaks == 2);
+    assert(view_position(f, 90, &p) && p.breaks == 2 && p.total == 3);
+    assert(view_position(f, 3, &p) && p.breaks == 1);
+    assert(view_position(f, 3, &p) && p.breaks == 1);
+    assert(view_position(f, 108, &p) && p.breaks == 2);
+    assert(ftell(f) == saved); fclose(f);
+    f = tmpfile(); assert(f); fputs("\n\r\n", f); fflush(f); p.offset = -1;
+    assert(view_position(f, 0, &p) && p.total == 2 && p.breaks == 0);
+    assert(view_position(f, 3, &p) && p.breaks == 2 && p.total == 2);
+    assert(view_position(f, 1, &p) && p.breaks == 1);
+    fclose(f);
+    f = tmpfile(); assert(f);
+    for (i = 0; i < 20000; ++i) fputs("long line\r\n", f);
+    fflush(f); p.offset = -1;
+    assert(view_position(f, 100001L, &p) && p.total == 20000 && p.breaks == 9091);
+    assert(view_position(f, 0, &p) && p.breaks == 0);
+    fclose(f);
+}
 int main(void)
 {
     FILE *f = tmpfile();
@@ -16,6 +53,7 @@ int main(void)
     int hex, i;
     long at = 0, old = 0, end, value;
     assert(f);
+    line_position();
     for (i = 0; i < 20000; ++i) fputs("line\r\n", f);
     fputs("AaBaBaC\0", f); fputc(0, f); fputc(255, f); fflush(f);
     for (i = 0; i < 150; ++i) { old = at; at = view_next(f, at, 23); assert(at > old); }
@@ -52,6 +90,6 @@ int main(void)
     assert(view_find(f,5,needle,length,hex)==-1);
     fclose(f);
     f = tmpfile(); assert(f); assert(view_last(f, 23) == 0); fclose(f);
-    puts("PASS: unbounded text page navigation, streaming overlapping search, binary patterns and checked offsets");
+    puts("PASS: logical line positions, unbounded text paging, overlapping search, binary patterns and offsets");
     return 0;
 }

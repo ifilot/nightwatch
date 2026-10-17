@@ -81,6 +81,9 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     images = [decode(f) for f in frames]
     if mode == 'vga': images[checks['binary_start']].save(base/'hex.png')
     if mode == 'text':
+        for index, expected in [(8, 'Line 1 / 70'), (9, 'Line 24 / 70'), (10, 'Line 1 / 70')]:
+            header = frames[index].read_bytes()[3:163:2].decode('ascii')
+            assert expected in header, (machine, index, header)
         cells = frames[0].read_bytes()[3:4003]
         for x, y, code in [(0,1,201),(39,1,187),(40,1,201),(79,1,187),(0,21,200),(79,21,188)]:
             assert cells[(y*80+x)*2] == code, (machine, 'CP437 frame', x, y)
@@ -260,6 +263,9 @@ for machine, mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga
             assert (work/f'F{index:03d}.BIN').read_bytes() == initial,(mode,'no-op changed screen',index)
             assert info(index)[7:9] == info(first)[7:9],(mode,'no-op wrote VRAM or reread',index)
     assert info(7)[8] == info(2)[8]+1 and info(22)[8] == info(16)[8]+1
+    if mode == 'text':
+        header = (work/'F022.BIN').read_bytes()[3:163:2].decode('ascii')
+        assert 'Line 0 / 0' in header, header
     print('PASS:',mode,'viewer no-op keys, EOF, empty file, tabs/wrapping, text/hex toggles: zero rereads and VRAM writes',flush=True)
 
 # Matching paths share enumeration, and mkdir/delete reload affected panes only.

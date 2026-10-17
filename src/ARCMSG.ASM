@@ -71,6 +71,11 @@ archive_offsets label word
     dw offset archive_65
     dw offset archive_66
     dw offset archive_67
+    dw offset archive_68
+    dw offset archive_69
+    dw offset archive_70
+    dw offset archive_71
+    dw offset archive_72
 archive_0 label byte
     db 041h,052h,04ah,03ah,020h,043h,052h,043h,02ch,020h,073h,069h,07ah,065h,020h,06fh
     db 072h,020h,063h,06fh,06dh,070h,072h,065h,073h,073h,065h,064h,020h,06ch,065h,06eh
@@ -320,6 +325,28 @@ archive_67 label byte
     db 05ah,049h,050h,03ah,020h,069h,06eh,076h,061h,06ch,069h,064h,020h,06fh,072h,020h
     db 074h,072h,075h,06eh,063h,061h,074h,065h,064h,020h,044h,045h,046h,04ch,041h,054h
     db 045h,020h,073h,074h,072h,065h,061h,06dh,000h
+archive_68 label byte
+    db 041h,072h,063h,068h,069h,076h,065h,03ah,020h,069h,06eh,076h,061h,06ch,069h,064h
+    db 020h,06fh,072h,020h,06fh,076h,065h,072h,06ch,06fh,06eh,067h,020h,062h,072h,06fh
+    db 077h,073h,065h,072h,020h,070h,061h,074h,068h,000h
+archive_69 label byte
+    db 041h,072h,063h,068h,069h,076h,065h,03ah,020h,069h,06eh,073h,075h,066h,066h,069h
+    db 063h,069h,065h,06eh,074h,020h,062h,072h,06fh,077h,073h,069h,06eh,067h,020h,06dh
+    db 065h,06dh,06fh,072h,079h,000h
+archive_70 label byte
+    db 045h,078h,074h,072h,061h,063h,074h,020h,06eh,065h,073h,074h,065h,064h,020h,061h
+    db 072h,063h,068h,069h,076h,065h,073h,020h,077h,069h,074h,068h,020h,046h,035h,020h
+    db 062h,065h,066h,06fh,072h,065h,020h,06fh,070h,065h,06eh,069h,06eh,067h,020h,074h
+    db 068h,065h,06dh,000h
+archive_71 label byte
+    db 041h,072h,063h,068h,069h,076h,065h,020h,070h,061h,06eh,065h,073h,020h,061h,072h
+    db 065h,020h,072h,065h,061h,064h,02dh,06fh,06eh,06ch,079h,03bh,020h,075h,073h,065h
+    db 020h,046h,035h,020h,074h,06fh,020h,065h,078h,074h,072h,061h,063h,074h,020h,066h
+    db 069h,06ch,065h,073h,000h
+archive_72 label byte
+    db 045h,078h,074h,072h,061h,063h,074h,069h,06fh,06eh,020h,072h,065h,071h,075h,069h
+    db 072h,065h,073h,020h,061h,06eh,020h,065h,078h,069h,073h,074h,069h,06eh,067h,020h
+    db 064h,069h,073h,06bh,020h,064h,069h,072h,065h,063h,074h,06fh,072h,079h,000h
 ARCDATA ends
 _TEXT segment byte public 'CODE'
 assume cs:_TEXT,ds:ARCDATA

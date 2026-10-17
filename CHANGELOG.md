@@ -8,6 +8,11 @@ changes without a release tag are marked unreleased.
 
 ### Added
 
+- Text viewer header shows the current file line and total line count, including
+  after paging, search and byte-offset jumps.
+- Enter opens ZIP/ARJ archives as read-only folders, with subfolder navigation,
+  F3/Shift-F3 member viewing and F5 extraction of selected files/folder trees.
+  Listings use validated headers without unpacking; source archives stay intact.
 - Built-in ARJ extraction for stored files and methods 1–4 through Ctrl-U
   and `/unarj`, with bounded preflight, DOS 8.3 path checks, CRC validation,
   overwrite/skip/cancel and staged file replacement shared with ZIP.

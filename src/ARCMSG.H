@@ -71,7 +71,12 @@ enum {
     ARC_ZIP_TOTAL_OUTPUT_EXCEEDS_DOS_LIMITS,
     ARC_ZIP_TRUNCATED_DATA_DESCRIPTOR,
     ARC_ZIP_USE_AN_ABSOLUTE_DRIVE_PATH,
-    ARC_ZIP_INVALID_OR_TRUNCATED_DEFLATE_STREAM
+    ARC_ZIP_INVALID_OR_TRUNCATED_DEFLATE_STREAM,
+    ARC_BROWSER_PATH,
+    ARC_BROWSER_MEMORY,
+    ARC_BROWSER_NESTED,
+    ARC_BROWSER_READONLY,
+    ARC_BROWSER_DESTINATION
 };
 #ifdef NW_HOST
 #ifdef NW_ARCHIVE_TEXT
@@ -144,6 +149,11 @@ static const char *archive_messages[] = {
     "ZIP: truncated data descriptor",
     "ZIP: use an absolute drive path",
     "ZIP: invalid or truncated DEFLATE stream",
+    "Archive: invalid or overlong browser path",
+    "Archive: insufficient browsing memory",
+    "Extract nested archives with F5 before opening them",
+    "Archive panes are read-only; use F5 to extract files",
+    "Extraction requires an existing disk directory",
 };
 #endif
 #else

@@ -29,4 +29,9 @@ int archive_equal_path(const char *a, const char *b);
 int archive_member_name(Member *m, unsigned char *raw, unsigned length);
 int archive_directories(Archive *a, const Member *m, int create);
 int archive_extract_member(Archive *a, Member *m, int (*unpack)(Archive *, Member *, int));
+/* Walk a completely validated archive without creating output. */
+typedef int (*ArchiveUnpack)(Archive *, Member *, int);
+typedef int (*ArchiveVisit)(Archive *, Member *, ArchiveUnpack, void *);
+int zip_walk(const char *source, ArchiveVisit visit, void *context);
+int arj_walk(const char *source, ArchiveVisit visit, void *context);
 #endif

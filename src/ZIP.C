@@ -112,7 +112,8 @@ static int open_archive(Archive *a, const char *source, const char *target)
     int i;
     char dir[NW_PATH], filename[NW_PATH], *cut;
     a->fd = -1;
-    if (strlen(source) >= NW_PATH || !fs_canonical(target, a->target))
+    a->target[0] = 0;
+    if (strlen(source) >= NW_PATH || (target && !fs_canonical(target, a->target)))
         return archive_message(ARC_ZIP_DESTINATION_MUST_BE_AN_EXISTING_DIRECTORY);
     strcpy(dir, source); cut = strrchr(dir, SEP);
     if (cut) {
@@ -166,7 +167,7 @@ static int preflight(Archive *a, unsigned long *files, unsigned long *bytes)
     unsigned long at = a->start, before, n;
     *files = *bytes = 0;
     for (i = 0; i < a->count; ++i) {
-        if (!member(a, at, &m) || !archive_directories(a, &m, 0) || !archive_poll(m.name, 0, 0)) return 0;
+        if (!member(a, at, &m) || (a->target[0] && !archive_directories(a, &m, 0)) || !archive_poll(m.name, 0, 0)) return 0;
         if (!m.directory) {
             if (m.size > ZIP_LIMIT - *bytes) return archive_message(ARC_ZIP_TOTAL_OUTPUT_EXCEEDS_DOS_LIMITS);
             ++*files; *bytes += m.size;
@@ -317,5 +318,23 @@ int zip_extract(const char *archive, const char *target)
     }
     if (a.fd >= 0 && fs_close(a.fd) < 0 && ok) { fs_error("Close ZIP"); ok = 0; }
     operation_current_bytes = 0;
+    return ok;
+}
+
+int zip_walk(const char *source, ArchiveVisit visit, void *context)
+{
+    Archive a;
+    Member m;
+    unsigned i;
+    unsigned long files, bytes, at;
+    int ok = open_archive(&a,source,NULL);
+    if (ok) ok = preflight(&a,&files,&bytes);
+    at = ok ? a.start : 0;
+    for (i = 0; ok && i < a.count; ++i) {
+        ok = member(&a,at,&m);
+        if (ok) ok = visit(&a,&m,unpack,context);
+        at = m.next;
+    }
+    if (a.fd >= 0 && fs_close(a.fd) < 0 && ok) { fs_error("Close ZIP"); ok = 0; }
     return ok;
 }

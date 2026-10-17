@@ -5,13 +5,13 @@ import re
 from dosbuild import compile_dos
 from object_cache import ObjectCache, signature
 ROOT = Path(__file__).resolve().parents[1]
-MODULES = ('INFLATE', 'INFFAST', 'INFTREES', 'ZUTIL', 'ADLER32', 'CRC32', 'ZIP', 'ARCHIVE', 'ARJ', 'ARJDEC')
+MODULES = ('INFLATE', 'INFFAST', 'INFTREES', 'ZUTIL', 'ADLER32', 'CRC32', 'ZIP', 'ARCHIVE', 'BROWSE', 'ARJ', 'ARJDEC')
 
 def prepare_zip(work, run, flags=""):
     work = Path(work)
     for old in work.glob('*.OBJ'):
         old.unlink()
-    for src in [*(ROOT/'vendor/zlib').iterdir(), ROOT/'src/ZIP.C', ROOT/'src/ZIP.H', ROOT/'src/ARJ.C', ROOT/'src/ARJ.H', ROOT/'src/ARCHIVE.C', ROOT/'src/ARCHIVE.H', ROOT/'src/ARCMSG.H', ROOT/'src/ARCMSG.ASM', ROOT/'src/ARJDEC.C', ROOT/'src/ARJDEC.H', ROOT/'src/FIXED.ASM', ROOT/'src/NW.H', ROOT/'src/VERSION.H']:
+    for src in [*(ROOT/'vendor/zlib').iterdir(), ROOT/'src/ZIP.C', ROOT/'src/ZIP.H', ROOT/'src/ARJ.C', ROOT/'src/ARJ.H', ROOT/'src/ARCHIVE.C', ROOT/'src/ARCHIVE.H', ROOT/'src/BROWSE.C', ROOT/'src/BROWSE.H', ROOT/'src/ARCMSG.H', ROOT/'src/ARCMSG.ASM', ROOT/'src/ARJDEC.C', ROOT/'src/ARJDEC.H', ROOT/'src/FIXED.ASM', ROOT/'src/NW.H', ROOT/'src/VERSION.H']:
         if src.suffix.lower() in ('.c', '.h', '.asm'):
             (work/src.name.upper()).write_bytes(src.read_text(encoding='ascii').replace('\n', '\r\n').encode('ascii'))
     commands = [r'set PATH=C:\TC;C:\TASM', r'set INCLUDE=C:\TC\INCLUDE', r'set LIB=C:\TC\LIB']
@@ -19,7 +19,7 @@ def prepare_zip(work, run, flags=""):
     commands += [f'tcc -1- -mm -O -Z -DZ_SOLO -DNO_GZIP {flags} -c {m}.C > Z{m}.LOG' for m in MODULES]
     objects = ['FIXED.OBJ', 'ARCMSG.OBJ']+[m+'.OBJ' for m in MODULES]
     inputs = [p for p in (ROOT/'vendor/zlib').iterdir() if p.suffix.lower() in ('.c','.h','.asm')]
-    inputs += [ROOT/'src/ZIP.C', ROOT/'src/ARJ.C', ROOT/'src/ARJDEC.C', ROOT/'src/ARCHIVE.C', ROOT/'src/ARCMSG.ASM', ROOT/'src/FIXED.ASM', Path(__file__), ROOT/'tests/object_cache.py']
+    inputs += [ROOT/'src/ZIP.C', ROOT/'src/ARJ.C', ROOT/'src/ARJDEC.C', ROOT/'src/ARCHIVE.C', ROOT/'src/BROWSE.C', ROOT/'src/ARCMSG.ASM', ROOT/'src/FIXED.ASM', Path(__file__), ROOT/'tests/object_cache.py']
     inputs += [p for p in (ROOT/'src').glob('*.H') if p.name != 'BUILD.H']
     cache = ObjectCache(ROOT/'build/test-objects', signature(inputs, commands))
     if cache.restore(work, objects):

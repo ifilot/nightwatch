@@ -66,3 +66,8 @@ ARC_ZIP_TOTAL_OUTPUT_EXCEEDS_DOS_LIMITS|ZIP: total output exceeds DOS limits
 ARC_ZIP_TRUNCATED_DATA_DESCRIPTOR|ZIP: truncated data descriptor
 ARC_ZIP_USE_AN_ABSOLUTE_DRIVE_PATH|ZIP: use an absolute drive path
 ARC_ZIP_INVALID_OR_TRUNCATED_DEFLATE_STREAM|ZIP: invalid or truncated DEFLATE stream
+ARC_BROWSER_PATH|Archive: invalid or overlong browser path
+ARC_BROWSER_MEMORY|Archive: insufficient browsing memory
+ARC_BROWSER_NESTED|Extract nested archives with F5 before opening them
+ARC_BROWSER_READONLY|Archive panes are read-only; use F5 to extract files
+ARC_BROWSER_DESTINATION|Extraction requires an existing disk directory

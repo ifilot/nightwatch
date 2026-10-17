@@ -14,6 +14,8 @@ Optional pane paths: NW /vga C:\\FILES D:\\BACKUP
 F1: help (A: About). Alt-F1: About. NW /version prints the version.
 F2: display mode. F3: text viewer. Shift-F3: hex viewer.
 F5: copy. F6: move. F7: mkdir. F8: delete. F10: quit.
+Enter on ZIP/ARJ opens a read-only folder view. F3 views a member; F5 extracts.
+Backspace leaves the archive. Extract nested archives before opening them.
 Ctrl-U unpacks ZIP (store/DEFLATE) or ARJ (methods 0-4) into the other panel.
 Archive names must use ASCII DOS 8.3 paths.
 NW /unzip D:\\PACK.ZIP D:\\OUT extracts without overwriting existing files.
