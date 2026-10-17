@@ -6,7 +6,7 @@ MODE ?= vga
 DOSBOX ?= dosbox
 DOS_TOOLCHAIN ?= $(CURDIR)/buildenv
 export DOS_TOOLCHAIN
-.PHONY: all build run demo test test-dos test-zip-dos test-arj-dos test-browse-dos test-video test-storage-dos assets icons-overview benchmark benchmark-speed benchmark-copy package screenshots clean
+.PHONY: all build run demo site serve-site test-site test test-dos test-zip-dos test-arj-dos test-browse-dos test-video test-storage-dos assets icons-overview benchmark benchmark-speed benchmark-copy package screenshots clean
 all: build
 .PHONY: build-metadata
 build-metadata:
@@ -56,5 +56,11 @@ benchmark-copy:
 	python3 tests/copy_speed.py
 package: build
 	python3 tools/package.py
+site: package
+	python3 tools/build_site.py
+serve-site:
+	python3 -m http.server 8000 --bind 127.0.0.1 --directory build/site
+test-site:
+	node tests/check_site.cjs
 clean:
 	python3 -c 'import shutil; shutil.rmtree("build", ignore_errors=True)'

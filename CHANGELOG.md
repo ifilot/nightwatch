@@ -8,6 +8,9 @@ changes without a release tag are marked unreleased.
 
 ### Added
 
+- Blue/cyan browser emulator using self-hosted DOSBox WebAssembly, disposable
+  D:/E: demo drives, keyboard/touch controls and a filterable VGA screenshot
+  gallery. The static site reuses the tested DOS package and supports Pages.
 - Text viewer header shows the current file line and total line count, including
   after paging, search and byte-offset jumps.
 - Enter opens ZIP/ARJ archives as read-only folders, with subfolder navigation,

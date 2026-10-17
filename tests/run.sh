@@ -47,6 +47,7 @@ python3 tests/test_package.py
 python3 tests/test_version.py
 python3 tests/test_build_metadata.py
 python3 tests/test_assets.py
+python3 tests/test_site.py
 python3 tests/zip.py
 python3 tests/arj.py
 python3 tests/browse.py

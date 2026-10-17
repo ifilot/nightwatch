@@ -5,6 +5,15 @@ be started manually. All jobs use GitHub-hosted Ubuntu 24.04 machines.
 Pull requests run host regression tests. Pushes and manual runs also compile and
 test DOS in the standalone [build environment](../buildenv/README.md).
 
+Pushes to `master` also build the browser emulator and screenshot gallery from
+the tested DOS package. Chromium checks real VGA boot, keyboard/modifier input,
+file viewing/copying, pause/reset/exit, mobile controls and gallery navigation
+under the `/nightwatch/` URL subpath before GitHub Pages deployment. Other
+branches, tags, pull requests and manual runs do not deploy the site. Set
+repository **Settings → Pages → Source** to **GitHub Actions** to enable hosting.
+The static build includes pinned emulator binaries, matching source archives
+and license notices; runtime requests stay on the site's own origin.
+
 ## Build environment
 
 `buildenv/TC/` and `buildenv/TASM/` contain the supplied Turbo C 2.0 and Turbo
