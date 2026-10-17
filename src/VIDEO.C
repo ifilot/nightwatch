@@ -332,13 +332,50 @@ void video_label(int x, int y, const char *text, unsigned fg, unsigned bg, int b
 {
     label_advance(x, y, text, fg, bg, bold, video_font_width);
 }
-/* VGA/EGA icons have one monochrome mask. CGA keeps its three native layers
+/* VGA sprites carry an opaque mask and four native color planes. Read the
+ * selected plane for software transparency, then write that plane alone.
+ * This keeps color artwork intact on both normal and selected backgrounds. */
+static void sprite_byte(unsigned offset, unsigned char mask, unsigned char bits)
+{
+    unsigned char old;
+    if (!mask) return;
+    old = pixels[offset];
+    pixels[offset] = (old & (unsigned char)~mask) | (bits & mask);
+    COUNT_VIDEO(1);
+}
+static void color_icon(int x, int y, const unsigned char *sprite)
+{
+    int plane, row, col, py, left = x >> 3, shift = x & 7;
+    unsigned char mask, bits;
+    unsigned at;
+    if (x < 0 || x >= 640) return;
+    gc(1, 0, &reg_enable); gc(8, 255, &reg_mask);
+    for (plane = 0; plane < 4; ++plane) {
+        planes(1 << plane);
+        outportb(0x3ce, 4); outportb(0x3cf, plane);
+        for (row = 0; row < 16; ++row) {
+            py = y + row;
+            if (py < 0 || py >= video_height) continue;
+            for (col = 0; col < 2; ++col) {
+                at = row * 2 + col;
+                mask = sprite[at]; bits = sprite[32 + plane * 32 + at];
+                if (left + col < 80)
+                    sprite_byte(offset_at(left + col, py), mask >> shift, bits >> shift);
+                if (shift && left + col + 1 < 80)
+                    sprite_byte(offset_at(left + col + 1, py), mask << (8-shift), bits << (8-shift));
+            }
+        }
+    }
+    outportb(0x3ce, 4); outportb(0x3cf, 0);
+}
+/* EGA icons have one monochrome mask. CGA keeps its three native layers
  * (outline, body, highlight), drawn in order over transparent zero bits. */
 void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigned highlight)
 {
     const unsigned char *mask;
     int height;
     if (icon < 0 || icon > ICON_DRIVE) return;
+    if (video_mode == VIDEO_VGA) { color_icon(x, y, vga_icon_sprites[icon]); return; }
     height = video_mode == VIDEO_CGA ? 8 : 16;
     mask = video_mode == VIDEO_CGA ? cga_icon_masks[icon] : icon_masks[icon];
     video_mask(x, y, mask, 2, height, outline);

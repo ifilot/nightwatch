@@ -88,6 +88,9 @@ jobs:
       - name: Test ZIP staging and timestamps on FAT12
         if: matrix.suite == 'zip'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/zip_fat12.py
+      - name: Test ARJ methods and staging on the 8086 and FAT12
+        if: matrix.suite == 'zip'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/arj_dos.py
       - name: Test differential progress dialogs
         if: matrix.suite == 'progress'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/progress.py

@@ -1,0 +1,434 @@
+{
+  "mode": "VGA 640x480, 16 colors",
+  "renderer_source_key": "4da8a9642cf7332308a24f71abdad87fbd97ad823ac84b874da25c1ff11b4b7f",
+  "method": "DOSBox VRAM captures; scripted input with the production renderer",
+  "screenshots": [
+    {
+      "file": "01-work-and-backup-drives.png",
+      "title": "01 Work And Backup Drives",
+      "scenario": "desktop",
+      "capture": "build/vga-screenshots/desktop/F000.BIN",
+      "sha256": "bd597bc0e6866db04214717b8ad023ee30ecfcf6185a8889b22d394cd803c8c3"
+    },
+    {
+      "file": "02-backup-pane-active.png",
+      "title": "02 Backup Pane Active",
+      "scenario": "desktop",
+      "capture": "build/vga-screenshots/desktop/F001.BIN",
+      "sha256": "b2ffb60420fbcfaad7f2593bf611f57181c00fa3a251762144a8897c0c21be7b"
+    },
+    {
+      "file": "03-image-file-selected.png",
+      "title": "03 Image File Selected",
+      "scenario": "desktop",
+      "capture": "build/vga-screenshots/desktop/F016.BIN",
+      "sha256": "7e62e72f48e829881beaaf70357420b79e1d84f9a6222b4bd484afdc495ab1fb"
+    },
+    {
+      "file": "04-mark-pattern-dialog.png",
+      "title": "04 Mark Pattern Dialog",
+      "scenario": "desktop",
+      "capture": "build/vga-screenshots/desktop/F017.BIN",
+      "sha256": "5a38e1c259d530e01683729e2fa49f8f7d9bee714c9b78e7f7f0db79b4e93bb5"
+    },
+    {
+      "file": "05-documents-marked.png",
+      "title": "05 Documents Marked",
+      "scenario": "desktop",
+      "capture": "build/vga-screenshots/desktop/F024.BIN",
+      "sha256": "90d6e76f1bec082d1adedd820d6b970fc580b1c1b39e796b6fcf50d409c056f3"
+    },
+    {
+      "file": "06-all-files-marked.png",
+      "title": "06 All Files Marked",
+      "scenario": "desktop",
+      "capture": "build/vga-screenshots/desktop/F033.BIN",
+      "sha256": "a5f372b43de3e41c5a998269ba1a648fb73b30eca8be526ad059f97a73adb542"
+    },
+    {
+      "file": "07-command-line.png",
+      "title": "07 Command Line",
+      "scenario": "desktop",
+      "capture": "build/vga-screenshots/desktop/F043.BIN",
+      "sha256": "e3fbef6fd371f7591a3380b4974c307626774bb2c668e199a195f7d35388a0ac"
+    },
+    {
+      "file": "08-documents-folder.png",
+      "title": "08 Documents Folder",
+      "scenario": "documents",
+      "capture": "build/vga-screenshots/documents/F000.BIN",
+      "sha256": "ef358c42f4055b05bdbab8a9d19a4c36538d632e60eae43f40451af0c7b0b752"
+    },
+    {
+      "file": "09-reports-first-page.png",
+      "title": "09 Reports First Page",
+      "scenario": "documents",
+      "capture": "build/vga-screenshots/documents/F011.BIN",
+      "sha256": "02b07ef4150cfede23811b2b258542c72bc63b2d74f4ec071959c177b966df44"
+    },
+    {
+      "file": "10-reports-scrolled.png",
+      "title": "10 Reports Scrolled",
+      "scenario": "documents",
+      "capture": "build/vga-screenshots/documents/F012.BIN",
+      "sha256": "d9eaaf472cf740f0a3bf0b96a9e0c11ffd010c2f5f54b1448fc11239fbbd6c7c"
+    },
+    {
+      "file": "11-reports-last-page.png",
+      "title": "11 Reports Last Page",
+      "scenario": "documents",
+      "capture": "build/vga-screenshots/documents/F013.BIN",
+      "sha256": "45d6866fbe40ad2252a0fefdafbb9e1af5af95257ee6855ae1068553289938aa"
+    },
+    {
+      "file": "12-project-source-tree.png",
+      "title": "12 Project Source Tree",
+      "scenario": "projects",
+      "capture": "build/vga-screenshots/projects/F000.BIN",
+      "sha256": "4929b851e112ffede555fa12234fe21c5926280733b0804f3fb45f91261048f6"
+    },
+    {
+      "file": "13-applications-and-games.png",
+      "title": "13 Applications And Games",
+      "scenario": "applications",
+      "capture": "build/vga-screenshots/applications/F000.BIN",
+      "sha256": "2be5daa5947a7f4210a048daa27841495a95ebda39cfee3c8d5f8a4bc8318a0d"
+    },
+    {
+      "file": "14-images-and-data.png",
+      "title": "14 Images And Data",
+      "scenario": "images",
+      "capture": "build/vga-screenshots/images/F000.BIN",
+      "sha256": "c1b8a94195f49d7debf90ca0a1191c4070712c9453f573eabd0aaa391df3fbfc"
+    },
+    {
+      "file": "15-archive-folders.png",
+      "title": "15 Archive Folders",
+      "scenario": "archives",
+      "capture": "build/vga-screenshots/archives/F000.BIN",
+      "sha256": "ca2f187b04657e88ecd4a854c0ad8d4e0f899338e09b4a34a12069507641165a"
+    },
+    {
+      "file": "16-sort-menu.png",
+      "title": "16 Sort Menu",
+      "scenario": "sorting",
+      "capture": "build/vga-screenshots/sorting/F001.BIN",
+      "sha256": "f430f821dd3b5b62c1824ad8490b218de8f7d37f262e1161d3e3afa3435e9af9"
+    },
+    {
+      "file": "17-sorted-by-size.png",
+      "title": "17 Sorted By Size",
+      "scenario": "sorting",
+      "capture": "build/vga-screenshots/sorting/F002.BIN",
+      "sha256": "93039ae2252834502ed0316db170e02b54cd22c882ab5c18dd7d6c892a42cdf4"
+    },
+    {
+      "file": "18-sorted-by-extension.png",
+      "title": "18 Sorted By Extension",
+      "scenario": "sorting",
+      "capture": "build/vga-screenshots/sorting/F004.BIN",
+      "sha256": "e75a25f69bf116e2f9973c2721e684a966c02138e50de9c506460ffc51acc82d"
+    },
+    {
+      "file": "19-reverse-sort.png",
+      "title": "19 Reverse Sort",
+      "scenario": "sorting",
+      "capture": "build/vga-screenshots/sorting/F006.BIN",
+      "sha256": "eef3953e65e3269627e8c30cca0bc8af838827f414d7a046f38d5c4fa4d92e0e"
+    },
+    {
+      "file": "20-help-first-page.png",
+      "title": "20 Help First Page",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F001.BIN",
+      "sha256": "b8331b5ba597da1489ed506fae3cdd3b98816caec11aa9df69dc0a7e0f8b4994"
+    },
+    {
+      "file": "21-help-second-page.png",
+      "title": "21 Help Second Page",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F002.BIN",
+      "sha256": "e3c7a6a38fb8936b4af677ede791692c2a9a80ce20a646611bbcc261ff3bbcac"
+    },
+    {
+      "file": "22-help-third-page.png",
+      "title": "22 Help Third Page",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F003.BIN",
+      "sha256": "3ca15d5d88ca958b5b187d916cf08e8e071f3565c86e81dc8cd47ea8c3a3ec6b"
+    },
+    {
+      "file": "23-help-last-page.png",
+      "title": "23 Help Last Page",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F004.BIN",
+      "sha256": "95439fafb607e400fd7541f370c6bf25b6c4cbed91ed06d488c9c93aedb3d061"
+    },
+    {
+      "file": "24-about.png",
+      "title": "24 About",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F006.BIN",
+      "sha256": "bace266ceb9d022a700ead09d0dafebe1ca2071e9e73754b5108111b9c69f59b"
+    },
+    {
+      "file": "25-display-mode-dialog.png",
+      "title": "25 Display Mode Dialog",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F008.BIN",
+      "sha256": "b20482991736ccc832fd011117c66bffc070199b2d70840a07985f7b3c066165"
+    },
+    {
+      "file": "26-storage-test-menu.png",
+      "title": "26 Storage Test Menu",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F010.BIN",
+      "sha256": "aee95e50b6b5d3b0f14c25d64d6c04f9c0dcc9e481dee20972cd68b9302a81e3"
+    },
+    {
+      "file": "27-change-drive-dialog.png",
+      "title": "27 Change Drive Dialog",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F012.BIN",
+      "sha256": "fc228b63a2657d7882a4e272a1891664cb3a2f33b8acf5086c3ff19b71446f0d"
+    },
+    {
+      "file": "28-find-file-dialog.png",
+      "title": "28 Find File Dialog",
+      "scenario": "help-and-menus",
+      "capture": "build/vga-screenshots/help-and-menus/F014.BIN",
+      "sha256": "88d0b912862ac2c6ff9c51cd2efed8247226811e3b0538ab0399a5ac7e97e2e8"
+    },
+    {
+      "file": "29-text-viewer.png",
+      "title": "29 Text Viewer",
+      "scenario": "text-viewer",
+      "capture": "build/vga-screenshots/text-viewer/F014.BIN",
+      "sha256": "b3585e7af376c077d0f042a689101e712dcf9e162d0380688ebb913bb8d17b87"
+    },
+    {
+      "file": "30-text-viewer-next-page.png",
+      "title": "30 Text Viewer Next Page",
+      "scenario": "text-viewer",
+      "capture": "build/vga-screenshots/text-viewer/F015.BIN",
+      "sha256": "276823ef3cf845ae61fa05dbd35b9076daad1c596a4172bd2cf6dc4f9cc7d759"
+    },
+    {
+      "file": "31-viewer-search-dialog.png",
+      "title": "31 Viewer Search Dialog",
+      "scenario": "text-viewer",
+      "capture": "build/vga-screenshots/text-viewer/F016.BIN",
+      "sha256": "de2682d8e3d3c6fd6d69077632fb72eab828f85ed8b300037fcf70a14457af73"
+    },
+    {
+      "file": "32-text-search-result.png",
+      "title": "32 Text Search Result",
+      "scenario": "text-viewer",
+      "capture": "build/vga-screenshots/text-viewer/F024.BIN",
+      "sha256": "f9d9df5a0032478dddddba904e93d5f7e9194eef766e5e9a840463530ee10374"
+    },
+    {
+      "file": "33-text-as-hex.png",
+      "title": "33 Text As Hex",
+      "scenario": "text-viewer",
+      "capture": "build/vga-screenshots/text-viewer/F025.BIN",
+      "sha256": "ac4c04407dd047e6397646616df3acee57e6994dcec667819905545c0650d525"
+    },
+    {
+      "file": "34-binary-hex-viewer.png",
+      "title": "34 Binary Hex Viewer",
+      "scenario": "hex-viewer",
+      "capture": "build/vga-screenshots/hex-viewer/F013.BIN",
+      "sha256": "a2d6a7569c4d77963561c343bd8f59d2d4412946e057e5a48f270bfd3812d69f"
+    },
+    {
+      "file": "35-hex-viewer-next-page.png",
+      "title": "35 Hex Viewer Next Page",
+      "scenario": "hex-viewer",
+      "capture": "build/vga-screenshots/hex-viewer/F014.BIN",
+      "sha256": "00e12cc9fc0976b4b881903914937c9ea40150d8bbcbfc9742effc1dad639da1"
+    },
+    {
+      "file": "36-offset-dialog.png",
+      "title": "36 Offset Dialog",
+      "scenario": "hex-viewer",
+      "capture": "build/vga-screenshots/hex-viewer/F015.BIN",
+      "sha256": "d94fcb1061049d15f45b8bd6c88fad1db6485237aeb5f890f60c782d4f4d5cfc"
+    },
+    {
+      "file": "37-hex-viewer-at-offset.png",
+      "title": "37 Hex Viewer At Offset",
+      "scenario": "hex-viewer",
+      "capture": "build/vga-screenshots/hex-viewer/F023.BIN",
+      "sha256": "deaafc091f372bfcd08f5799d67ec904818b1e219e967d981cc164df8d4c8330"
+    },
+    {
+      "file": "38-copy-destination-dialog.png",
+      "title": "38 Copy Destination Dialog",
+      "scenario": "copy",
+      "capture": "build/vga-screenshots/copy/F014.BIN",
+      "sha256": "b4c98767ea1c231c1e7ca00c98d265b18511ced166614685c80d9c0c7a532345"
+    },
+    {
+      "file": "39-copy-completed.png",
+      "title": "39 Copy Completed",
+      "scenario": "copy",
+      "capture": "build/vga-screenshots/copy/F015.BIN",
+      "sha256": "ead40a80a5b46bdf56b334ccc9cc19ea8330bdf1718f65757fb41c9207dac34e"
+    },
+    {
+      "file": "copy-counting.png",
+      "title": "Copy Counting",
+      "scenario": "copy",
+      "capture": "build/vga-screenshots/copy/P001.BIN",
+      "sha256": "eb5d3aa3f5ab52a5229c21431c5fd59d145dd6ef2fb78223e2c0c26a95daca97"
+    },
+    {
+      "file": "copy-progress.png",
+      "title": "Copy Progress",
+      "scenario": "copy",
+      "capture": "build/vga-screenshots/copy/P005.BIN",
+      "sha256": "24f47b69ada7c95ecd5867d127cc2b7853c16e1f24158855debad85f0c72a4eb"
+    },
+    {
+      "file": "copy-finished.png",
+      "title": "Copy Finished",
+      "scenario": "copy",
+      "capture": "build/vga-screenshots/copy/P008.BIN",
+      "sha256": "060a7b2b0d5e894623ccae964646806f59b40b792f4ca9703172f37ce776b278"
+    },
+    {
+      "file": "40-overwrite-or-skip-dialog.png",
+      "title": "40 Overwrite Or Skip Dialog",
+      "scenario": "overwrite",
+      "capture": "build/vga-screenshots/overwrite/F015.BIN",
+      "sha256": "df167caeefb78103fcf46eda96bfbb6941d2338d523d58b7c124da20fdcdd2a9"
+    },
+    {
+      "file": "41-existing-file-skipped.png",
+      "title": "41 Existing File Skipped",
+      "scenario": "overwrite",
+      "capture": "build/vga-screenshots/overwrite/F016.BIN",
+      "sha256": "d851fcadd6888f292eb709795e201b7083f547a9d1d9b78840e7246a864a2604"
+    },
+    {
+      "file": "42-move-destination-dialog.png",
+      "title": "42 Move Destination Dialog",
+      "scenario": "file-dialogs",
+      "capture": "build/vga-screenshots/file-dialogs/F014.BIN",
+      "sha256": "428339eb0efbe5f0182b9b7436903c91a3ddbec6e65d238330406e1e65b089a8"
+    },
+    {
+      "file": "43-delete-confirmation.png",
+      "title": "43 Delete Confirmation",
+      "scenario": "file-dialogs",
+      "capture": "build/vga-screenshots/file-dialogs/F016.BIN",
+      "sha256": "1b84328a564f43d12856c7f9a4b5ce7ab96c095526529f8a1949111e9abce6ad"
+    },
+    {
+      "file": "44-new-folder-dialog.png",
+      "title": "44 New Folder Dialog",
+      "scenario": "file-dialogs",
+      "capture": "build/vga-screenshots/file-dialogs/F018.BIN",
+      "sha256": "5841682873c4c2eb844708f34bda866e110c94df5be735cb97c2966fbf3a8c8f"
+    },
+    {
+      "file": "45-new-folder-created.png",
+      "title": "45 New Folder Created",
+      "scenario": "file-dialogs",
+      "capture": "build/vga-screenshots/file-dialogs/F028.BIN",
+      "sha256": "9036d1de3a884db763d2fbcb223b559cb9e718c06573a9cc9cf271b42fb3c501"
+    },
+    {
+      "file": "46-invalid-path-notice.png",
+      "title": "46 Invalid Path Notice",
+      "scenario": "file-dialogs",
+      "capture": "build/vga-screenshots/file-dialogs/F041.BIN",
+      "sha256": "c55649de900054fbe81b08e59d4d9f8cb9da90688df4f0f87b6715bb40915cd8"
+    },
+    {
+      "file": "47-zip-destination-dialog.png",
+      "title": "47 Zip Destination Dialog",
+      "scenario": "zip-extraction",
+      "capture": "build/vga-screenshots/zip-extraction/F012.BIN",
+      "sha256": "9ee2c22ae898532e18345051ba113de7bc1a298abaed3ebe1192b7901f6eeeee"
+    },
+    {
+      "file": "48-zip-existing-file-dialog.png",
+      "title": "48 Zip Existing File Dialog",
+      "scenario": "zip-extraction",
+      "capture": "build/vga-screenshots/zip-extraction/F013.BIN",
+      "sha256": "b6c152852a9c9b47ad686fdc525ef5cc73a5a047a10e4f9e4d8f12d97dab4550"
+    },
+    {
+      "file": "49-zip-extracted.png",
+      "title": "49 Zip Extracted",
+      "scenario": "zip-extraction",
+      "capture": "build/vga-screenshots/zip-extraction/F014.BIN",
+      "sha256": "80b65ddd3759a84b6020416c26b6f4a83d12c7f5827d54c810dd74e98e13860f"
+    },
+    {
+      "file": "50-arj-destination-dialog.png",
+      "title": "50 Arj Destination Dialog",
+      "scenario": "arj-extraction",
+      "capture": "build/vga-screenshots/arj-extraction/F012.BIN",
+      "sha256": "e560fabbb749e88444f5c43296369946abcb4eaa7980a3403bb2d47041e1e3e4"
+    },
+    {
+      "file": "51-arj-extracted.png",
+      "title": "51 Arj Extracted",
+      "scenario": "arj-extraction",
+      "capture": "build/vga-screenshots/arj-extraction/F013.BIN",
+      "sha256": "7e8a46f82b38a0b22b6f65c31dca33ca19ef93644e1315586b1e40c1892da7ff"
+    },
+    {
+      "file": "arj-extraction-progress.png",
+      "title": "Arj Extraction Progress",
+      "scenario": "arj-extraction",
+      "capture": "build/vga-screenshots/arj-extraction/P001.BIN",
+      "sha256": "2e075812f3004e2e401dbf0941f4cf17952b60c01e3f060ccb39427743c29ba5"
+    },
+    {
+      "file": "arj-extraction-finished.png",
+      "title": "Arj Extraction Finished",
+      "scenario": "arj-extraction",
+      "capture": "build/vga-screenshots/arj-extraction/P002.BIN",
+      "sha256": "f5cff10134066c5543aec665b97cad40370051811858844c7ced2a404825ea17"
+    },
+    {
+      "file": "52-storage-test-target.png",
+      "title": "52 Storage Test Target",
+      "scenario": "storage-test",
+      "capture": "build/vga-screenshots/storage-test/F002.BIN",
+      "sha256": "235357d1ae176fe8c612fef78920d00c4c40b8cc427cfa10b6c9c3272e2fcfec"
+    },
+    {
+      "file": "53-storage-test-log-drive.png",
+      "title": "53 Storage Test Log Drive",
+      "scenario": "storage-test",
+      "capture": "build/vga-screenshots/storage-test/F003.BIN",
+      "sha256": "236ce880d72c475fc0d66737803300d71c4036b173926679aee195a07d424a7b"
+    },
+    {
+      "file": "54-storage-test-seed.png",
+      "title": "54 Storage Test Seed",
+      "scenario": "storage-test",
+      "capture": "build/vga-screenshots/storage-test/F015.BIN",
+      "sha256": "b78a885e8bc2efcbccc49290aaa5926a39cd7ae3751efed27842f0dfb128ca2a"
+    },
+    {
+      "file": "55-storage-test-confirmation.png",
+      "title": "55 Storage Test Confirmation",
+      "scenario": "storage-test",
+      "capture": "build/vga-screenshots/storage-test/F019.BIN",
+      "sha256": "801f74ea54181fa56733fa2d1375d6451b4a828623f0a0f9716a450ad318198d"
+    },
+    {
+      "file": "56-storage-test-result.png",
+      "title": "56 Storage Test Result",
+      "scenario": "storage-test",
+      "capture": "build/vga-screenshots/storage-test/F020.BIN",
+      "sha256": "fe5493e01a37c3e437cccbfed3973b454f8b5658dbfa1e89f464164a2e7991dc"
+    }
+  ]
+}

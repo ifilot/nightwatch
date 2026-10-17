@@ -2,11 +2,11 @@
 # Host-side entry points. DOS compilation uses src/MAKEFILE inside DOSBox.
 # Keep bare make on the build even though generated-header rules appear first.
 .DEFAULT_GOAL := all
-MODE ?= text
+MODE ?= vga
 DOSBOX ?= dosbox
 DOS_TOOLCHAIN ?= $(CURDIR)/buildenv
 export DOS_TOOLCHAIN
-.PHONY: all build run test test-dos test-zip-dos test-video test-storage-dos assets icons-overview benchmark benchmark-speed benchmark-copy package screenshots clean
+.PHONY: all build run demo test test-dos test-zip-dos test-arj-dos test-video test-storage-dos assets icons-overview benchmark benchmark-speed benchmark-copy package screenshots clean
 all: build
 .PHONY: build-metadata
 build-metadata:
@@ -17,8 +17,10 @@ src/VERSION.H: VERSION tools/version.py
 build: build/NW.EXE
 build/NW.EXE: src/BUILD.H $(wildcard src/*.C src/*.H src/*.ASM vendor/zlib/*) src/MAKEFILE VERSION LICENSE assets/ICON-LICENSE.txt build.sh tools/version.py tools/build_metadata.py tools/stage.py tools/check_memory.py tools/dosbox.conf
 	bash ./build.sh
-run: build
-	$(DOSBOX) -conf tools/dosbox.conf -c 'mount c "$(CURDIR)/build"' -c 'c:' -c 'NW /$(MODE)' -c exit
+demo:
+	python3 tools/demo_drive.py
+run: build demo
+	$(DOSBOX) -conf tools/dosbox.conf -c 'mount c "$(CURDIR)/build"' -c 'mount d "$(CURDIR)/build/demo/D"' -c 'mount e "$(CURDIR)/build/demo/E"' -c 'c:' -c 'NW /$(MODE) D:\ E:\' -c exit
 test:
 	bash ./tests/run.sh
 test-dos:
@@ -26,6 +28,8 @@ test-dos:
 test-zip-dos: build
 	python3 tests/zip_dos.py
 	python3 tests/zip_fat12.py
+test-arj-dos: build
+	python3 tests/arj_dos.py
 test-video: build
 	python3 tests/progress.py
 	python3 tests/video.py

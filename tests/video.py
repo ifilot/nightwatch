@@ -95,6 +95,14 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
         if mode == 'cga':
             black = sum(n for n, color in colors if color == (0,0,0))
             assert 8 < black < 100, 'CGA folder must not be a solid block'
+        if mode == 'vga':
+            # Check actual VRAM, including transparent pixels on a selected row.
+            for row,name in enumerate(('parent','folder','document','binary','program','image','archive')):
+                sprite=Image.open(root/'assets/icons-v130'/('quickmenu-'+name+'.png')).convert('RGBA')
+                expected=Image.new('RGBA',(16,16),(*palette[1 if row==0 else 15],255))
+                expected.alpha_composite(sprite)
+                actual=image.crop((22,37+row*17,38,53+row*17))
+                assert actual.tobytes()==expected.convert('RGB').tobytes(),('VGA icon pixels',name)
 
     for index in [0, 1, 8]:
         colors = images[index].getcolors(640 * 480)
@@ -385,3 +393,21 @@ for machine,mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga'
     assert not list((work/'RIGHT').rglob('*.TMP')) and not list((work/'RIGHT').rglob('*.BAK'))
     assert list(work.glob('P*.BIN')),(mode,'no extraction progress captured')
     print('PASS:',mode,'Ctrl-U ZIP extraction, Windows separator paths, skip prompts and progress',flush=True)
+
+# ARJ uses the same Ctrl-U modal/progress path; validate format detection by
+# content using a neutral .BIN filename rather than relying on its extension.
+arj_manifest=json.loads((root/'tests/fixtures/arj/manifest.json').read_text())
+work=base/'arj-vga'
+if work.exists(): shutil.rmtree(work)
+work.mkdir(); (work/'LEFT').mkdir(); (work/'RIGHT').mkdir()
+shutil.copy2(base/'UITEST.EXE',work/'UITEST.EXE')
+shutil.copy2(root/'tests/fixtures/arj/METHOD1.ARJ',work/'LEFT/PACK.BIN')
+keys=[0x5000,21,13,21,13]+[ord('S')]*len(arj_manifest)+[0x4400]
+(work/'KEYS.TXT').write_text('\n'.join(f'{k:x}' for k in keys))
+dos(work,[r'UITEST /vga D:\LEFT D:\RIGHT'],'vgaonly')
+for name,info in arj_manifest.items():
+    assert hashlib.sha256((work/'RIGHT'/name).read_bytes()).hexdigest()==info['sha256'],name
+assert (work/'RIGHT/SUB/EMPTY').is_dir()
+assert not list((work/'RIGHT').rglob('*.TMP')) and not list((work/'RIGHT').rglob('*.BAK'))
+assert list(work.glob('P*.BIN')),'no ARJ progress captured'
+print('PASS: VGA Ctrl-U ARJ format detection, inactive pane, skip prompts and progress',flush=True)

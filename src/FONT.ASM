@@ -677,6 +677,9 @@ help_offsets label word
     dw offset help_89
     dw offset help_90
     dw offset help_91
+    dw offset help_92
+    dw offset help_93
+    dw offset help_94
 help_0 label byte
     db 04eh,069h,067h,068h,074h,077h,061h,074h,063h,068h,020h,069h,073h,020h,061h,020h
     db 074h,077h,06fh,02dh,070h,061h,06eh,065h,020h,066h,069h,06ch,065h,020h,06eh,061h
@@ -793,8 +796,8 @@ help_25 label byte
     db 06eh,066h,069h,072h,06dh,061h,074h,069h,06fh,06eh,02eh,000h
 help_26 label byte
     db 043h,074h,072h,06ch,02dh,055h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
-    db 020h,020h,020h,020h,055h,06eh,070h,061h,063h,06bh,020h,074h,068h,065h,020h,073h
-    db 065h,06ch,065h,063h,074h,065h,064h,020h,05ah,049h,050h,020h,069h,06eh,074h,06fh
+    db 020h,020h,020h,020h,055h,06eh,070h,061h,063h,06bh,020h,073h,065h,06ch,065h,063h
+    db 074h,065h,064h,020h,05ah,049h,050h,02fh,041h,052h,04ah,020h,069h,06eh,074h,06fh
     db 020h,074h,068h,065h,020h,06fh,074h,068h,065h,072h,020h,070h,061h,06eh,065h,02eh
     db 000h
 help_27 label byte
@@ -874,7 +877,8 @@ help_42 label byte
 help_43 label byte
     db 000h
 help_44 label byte
-    db 023h,05ah,049h,050h,020h,045h,058h,054h,052h,041h,043h,054h,049h,04fh,04eh,000h
+    db 023h,05ah,049h,050h,020h,041h,04eh,044h,020h,041h,052h,04ah,020h,045h,058h,054h
+    db 052h,041h,043h,054h,049h,04fh,04eh,000h
 help_45 label byte
     db 043h,068h,06fh,06fh,073h,065h,020h,061h,06eh,020h,065h,078h,069h,073h,074h,069h
     db 06eh,067h,020h,064h,065h,073h,074h,069h,06eh,061h,074h,069h,06fh,06eh,020h,064h
@@ -887,202 +891,217 @@ help_46 label byte
     db 06fh,072h,06bh,020h,061h,074h,020h,061h,06ch,06ch,020h,063h,06fh,06dh,070h,072h
     db 065h,073h,073h,069h,06fh,06eh,020h,06ch,065h,076h,065h,06ch,073h,02eh,000h
 help_47 label byte
+    db 041h,052h,04ah,020h,073h,075h,070h,070h,06fh,072h,074h,073h,020h,073h,074h,06fh
+    db 072h,065h,064h,020h,061h,06eh,064h,020h,06dh,065h,074h,068h,06fh,064h,073h,020h
+    db 031h,02dh,034h,03bh,020h,062h,069h,06eh,061h,072h,079h,020h,066h,069h,06ch,065h
+    db 073h,020h,06fh,06eh,06ch,079h,02eh,000h
+help_48 label byte
     db 04eh,061h,06dh,065h,073h,020h,06dh,075h,073h,074h,020h,066h,069h,074h,020h,041h
     db 053h,043h,049h,049h,020h,044h,04fh,053h,020h,038h,02eh,033h,03bh,020h,075h,06eh
     db 073h,061h,066h,065h,020h,070h,061h,074h,068h,073h,020h,061h,072h,065h,020h,072h
     db 065h,06ah,065h,063h,074h,065h,064h,02eh,000h
-help_48 label byte
+help_49 label byte
     db 043h,052h,043h,020h,061h,06eh,064h,020h,073h,069h,07ah,065h,073h,020h,061h,072h
     db 065h,020h,063h,068h,065h,063h,06bh,065h,064h,020h,062h,065h,066h,06fh,072h,065h
     db 020h,061h,020h,066h,069h,06ch,065h,020h,072h,065h,070h,06ch,061h,063h,065h,073h
     db 020h,074h,068h,065h,020h,06fh,072h,069h,067h,069h,06eh,061h,06ch,02eh,000h
-help_49 label byte
+help_50 label byte
     db 05ah,049h,050h,036h,034h,02ch,020h,065h,06eh,063h,072h,079h,070h,074h,069h,06fh
     db 06eh,02ch,020h,073h,070h,06ch,069h,074h,020h,061h,072h,063h,068h,069h,076h,065h
     db 073h,020h,061h,06eh,064h,020h,044h,065h,066h,06ch,061h,074h,065h,036h,034h,020h
     db 061h,072h,065h,020h,075h,06eh,073h,075h,070h,070h,06fh,072h,074h,065h,064h,02eh
     db 000h
-help_50 label byte
+help_51 label byte
     db 04eh,057h,020h,02fh,075h,06eh,07ah,069h,070h,020h,044h,03ah,05ch,050h,041h,043h
     db 04bh,02eh,05ah,049h,050h,020h,044h,03ah,05ch,04fh,055h,054h,020h,065h,078h,074h
     db 072h,061h,063h,074h,073h,020h,077h,069h,074h,068h,06fh,075h,074h,020h,06fh,076h
     db 065h,072h,077h,072h,069h,074h,069h,06eh,067h,02eh,000h
-help_51 label byte
-    db 000h
 help_52 label byte
+    db 04eh,057h,020h,02fh,075h,06eh,061h,072h,06ah,020h,044h,03ah,05ch,050h,041h,043h
+    db 04bh,02eh,041h,052h,04ah,020h,044h,03ah,05ch,04fh,055h,054h,020h,064h,06fh,065h
+    db 073h,020h,074h,068h,065h,020h,073h,061h,06dh,065h,020h,066h,06fh,072h,020h,041h
+    db 052h,04ah,02eh,000h
+help_53 label byte
+    db 041h,052h,04ah,020h,074h,065h,078h,074h,020h,06dh,06fh,064h,065h,02ch,020h,063h
+    db 068h,061h,070h,074h,065h,072h,073h,02ch,020h,065h,078h,074h,065h,06eh,064h,065h
+    db 064h,020h,068h,065h,061h,064h,065h,072h,073h,020h,061h,06eh,064h,020h,053h,046h
+    db 058h,020h,061h,072h,065h,020h,065h,078h,063h,06ch,075h,064h,065h,064h,02eh,000h
+help_54 label byte
+    db 000h
+help_55 label byte
     db 023h,056h,049h,045h,057h,049h,04eh,047h,020h,041h,04eh,044h,020h,045h,044h,049h
     db 054h,049h,04eh,047h,000h
-help_53 label byte
+help_56 label byte
     db 046h,033h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,074h,068h,065h,020h,074h,065h,078h
     db 074h,020h,076h,069h,065h,077h,065h,072h,02eh,000h
-help_54 label byte
+help_57 label byte
     db 053h,068h,069h,066h,074h,02dh,046h,033h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,074h,068h,065h,020h,068h,065h,078h
     db 020h,076h,069h,065h,077h,065h,072h,02eh,000h
-help_55 label byte
+help_58 label byte
     db 046h,034h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,074h,068h,065h,020h,065h,078h,074h
     db 065h,072h,06eh,061h,06ch,020h,065h,064h,069h,074h,06fh,072h,02eh,000h
-help_56 label byte
+help_59 label byte
     db 049h,06eh,020h,061h,020h,076h,069h,065h,077h,065h,072h,03ah,020h,061h,072h,072h
     db 06fh,077h,073h,020h,061h,06eh,064h,020h,050h,067h,055h,070h,02fh,050h,067h,044h
     db 06eh,020h,073h,063h,072h,06fh,06ch,06ch,03bh,020h,048h,06fh,06dh,065h,02fh,045h
     db 06eh,064h,020h,06ah,075h,06dh,070h,02eh,000h
-help_57 label byte
+help_60 label byte
     db 056h,069h,065h,077h,065h,072h,020h,046h,034h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,053h,077h,069h,074h,063h,068h,020h,062h,065h,074h,077h,065h
     db 065h,06eh,020h,074h,065h,078h,074h,020h,061h,06eh,064h,020h,068h,065h,078h,020h
     db 076h,069h,065h,077h,073h,02eh,000h
-help_58 label byte
+help_61 label byte
     db 056h,069h,065h,077h,065h,072h,020h,046h,037h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,053h,065h,061h,072h,063h,068h,020h,066h,06fh,072h,020h,074h
     db 065h,078h,074h,020h,06fh,072h,020h,062h,069h,06eh,061h,072h,079h,020h,062h,079h
     db 074h,065h,073h,02eh,000h
-help_59 label byte
+help_62 label byte
     db 056h,069h,065h,077h,065h,072h,020h,046h,038h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,046h,069h,06eh,064h,020h,074h,068h,065h,020h,06eh,065h,078h
     db 074h,020h,06fh,063h,063h,075h,072h,072h,065h,06eh,063h,065h,02eh,000h
-help_60 label byte
+help_63 label byte
     db 056h,069h,065h,077h,065h,072h,020h,043h,074h,072h,06ch,02dh,047h,020h,020h,020h
     db 020h,020h,020h,020h,047h,06fh,020h,074h,06fh,020h,061h,020h,062h,079h,074h,065h
     db 020h,06fh,066h,066h,073h,065h,074h,020h,028h,064h,065h,063h,069h,06dh,061h,06ch
     db 020h,06fh,072h,020h,030h,078h,020h,068h,065h,078h,029h,02eh,000h
-help_61 label byte
+help_64 label byte
     db 053h,065h,061h,072h,063h,068h,020h,074h,065h,078h,074h,020h,064h,069h,072h,065h
     db 063h,074h,06ch,079h,02ch,020h,06fh,072h,020h,075h,073h,065h,020h,068h,065h,078h
     db 03ah,044h,045h,020h,041h,044h,020h,030h,030h,020h,042h,045h,020h,045h,046h,020h
     db 066h,06fh,072h,020h,062h,079h,074h,065h,073h,02eh,000h
-help_62 label byte
+help_65 label byte
     db 045h,073h,063h,020h,063h,06ch,06fh,073h,065h,073h,020h,074h,068h,065h,020h,076h
     db 069h,065h,077h,065h,072h,020h,061h,06eh,064h,020h,072h,065h,074h,075h,072h,06eh
     db 073h,020h,074h,06fh,020h,074h,068h,065h,020h,070h,061h,06eh,065h,06ch,073h,02eh
     db 000h
-help_63 label byte
+help_66 label byte
     db 000h
-help_64 label byte
+help_67 label byte
     db 023h,054h,04fh,04fh,04ch,053h,020h,041h,04eh,044h,020h,053h,045h,054h,054h,049h
     db 04eh,047h,053h,000h
-help_65 label byte
+help_68 label byte
     db 046h,032h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,043h,068h,06fh,06fh,073h,065h,020h,064h,069h,073h,070h,06ch
     db 061h,079h,020h,06dh,06fh,064h,065h,03bh,020h,052h,020h,074h,06fh,067h,067h,06ch
     db 065h,073h,020h,072h,065h,06dh,065h,06dh,062h,065h,072h,069h,06eh,067h,020h,069h
     db 074h,02eh,000h
-help_66 label byte
+help_69 label byte
     db 043h,074h,072h,06ch,02dh,053h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,043h,068h,06fh,06fh,073h,065h,020h,074h,068h,065h,020h,070h
     db 061h,06eh,065h,06ch,027h,073h,020h,073h,06fh,072h,074h,069h,06eh,067h,020h,06fh
     db 072h,064h,065h,072h,02eh,000h
-help_67 label byte
+help_70 label byte
     db 043h,074h,072h,06ch,02dh,04fh,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,061h,020h,044h,04fh,053h,020h,073h
     db 068h,065h,06ch,06ch,03bh,020h,045h,058h,049h,054h,020h,072h,065h,074h,075h,072h
     db 06eh,073h,020h,074h,06fh,020h,04eh,069h,067h,068h,074h,077h,061h,074h,063h,068h
     db 02eh,000h
-help_68 label byte
+help_71 label byte
     db 043h,074h,072h,06ch,02dh,057h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,053h,061h,076h,065h,020h,06dh,06fh,064h,065h,02ch,020h,070h
     db 061h,074h,068h,073h,020h,061h,06eh,064h,020h,073h,06fh,072h,074h,069h,06eh,067h
     db 020h,074h,06fh,020h,04eh,049h,047h,048h,054h,02eh,043h,046h,047h,02eh,000h
-help_69 label byte
+help_72 label byte
     db 043h,074h,072h,06ch,02dh,054h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,053h,074h,06fh,072h,061h,067h,065h,020h,074h,065h,073h,074h
     db 073h,03ah,020h,071h,075h,069h,063h,06bh,02ch,020h,06ch,06fh,06eh,067h,02ch,020h
     db 076h,065h,072h,069h,066h,079h,02ch,020h,063h,06ch,065h,061h,06eh,075h,070h,02eh
     db 000h
-help_70 label byte
+help_73 label byte
     db 053h,074h,06fh,072h,061h,067h,065h,020h,074h,065h,073h,074h,073h,020h,06bh,065h
     db 065h,070h,020h,06dh,061h,06eh,069h,066h,065h,073h,074h,073h,020h,061h,06eh,064h
     db 020h,06ch,06fh,067h,073h,020h,06fh,06eh,020h,061h,06eh,06fh,074h,068h,065h,072h
     db 020h,064h,072h,069h,076h,065h,02eh,000h
-help_71 label byte
+help_74 label byte
     db 041h,066h,074h,065h,072h,020h,061h,020h,073h,061h,066h,065h,020h,075h,06eh,06dh
     db 06fh,075h,06eh,074h,02fh,072h,065h,062h,06fh,06fh,074h,02ch,020h,076h,065h,072h
     db 069h,066h,079h,020h,074h,068h,065h,020h,073h,061h,076h,065h,064h,020h,06dh,061h
     db 06eh,069h,066h,065h,073h,074h,02eh,000h
-help_72 label byte
+help_75 label byte
     db 046h,061h,069h,06ch,065h,064h,02fh,063h,061h,06eh,063h,065h,06ch,06ch,065h,064h
     db 020h,074h,065h,073h,074h,020h,066h,069h,06ch,065h,073h,020h,072h,065h,06dh,061h
     db 069h,06eh,020h,061h,076h,061h,069h,06ch,061h,062h,06ch,065h,020h,066h,06fh,072h
     db 020h,069h,06eh,073h,070h,065h,063h,074h,069h,06fh,06eh,02eh,000h
-help_73 label byte
+help_76 label byte
     db 046h,031h,020h,02fh,020h,041h,06ch,074h,02dh,046h,031h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,04fh,070h,065h,06eh,020h,048h,065h,06ch,070h,020h,02fh,020h
     db 041h,062h,06fh,075h,074h,02eh,000h
-help_74 label byte
+help_77 label byte
     db 046h,031h,030h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h,020h
     db 020h,020h,020h,020h,051h,075h,069h,074h,020h,04eh,069h,067h,068h,074h,077h,061h
     db 074h,063h,068h,02eh,000h
-help_75 label byte
+help_78 label byte
     db 054h,079h,070h,065h,020h,061h,020h,063h,06fh,06dh,06dh,061h,06eh,064h,020h,061h
     db 06eh,064h,020h,070h,072h,065h,073h,073h,020h,045h,06eh,074h,065h,072h,020h,074h
     db 06fh,020h,072h,075h,06eh,020h,069h,074h,020h,069h,06eh,020h,044h,04fh,053h,02eh
     db 000h
-help_76 label byte
+help_79 label byte
     db 000h
-help_77 label byte
+help_80 label byte
     db 023h,044h,04fh,053h,020h,04ch,049h,04dh,049h,054h,053h,000h
-help_78 label byte
+help_81 label byte
     db 04eh,061h,06dh,065h,073h,020h,075h,073h,065h,020h,044h,04fh,053h,020h,038h,02eh
     db 033h,020h,066h,06fh,072h,06dh,061h,074h,02eh,020h,048h,069h,064h,064h,065h,06eh
     db 020h,061h,06eh,064h,020h,073h,079h,073h,074h,065h,06dh,020h,066h,069h,06ch,065h
     db 073h,020h,061h,072h,065h,020h,073h,068h,06fh,077h,06eh,02eh,000h
-help_79 label byte
+help_82 label byte
     db 044h,061h,074h,065h,073h,020h,061h,072h,065h,020h,064h,069h,073h,070h,06ch,061h
     db 079h,065h,064h,020h,061h,073h,020h,04dh,04dh,02dh,044h,044h,02dh,059h,059h,02eh
     db 000h
-help_80 label byte
+help_83 label byte
     db 050h,061h,06eh,065h,06ch,073h,020h,068h,06fh,06ch,064h,020h,035h,031h,032h,020h
     db 065h,06eh,074h,072h,069h,065h,073h,03bh,020h,05bh,04ch,049h,04dh,049h,054h,05dh
     db 020h,072h,065h,070h,06fh,072h,074h,073h,020h,06fh,06dh,069h,074h,074h,065h,064h
     db 020h,065h,06eh,074h,072h,069h,065h,073h,02eh,000h
-help_81 label byte
+help_84 label byte
     db 052h,065h,063h,075h,072h,073h,069h,076h,065h,020h,06fh,070h,065h,072h,061h,074h
     db 069h,06fh,06eh,073h,020h,069h,06eh,063h,06ch,075h,064h,065h,020h,065h,06eh,074h
     db 072h,069h,065h,073h,020h,062h,065h,079h,06fh,06eh,064h,020h,074h,068h,069h,073h
     db 020h,070h,061h,06eh,065h,06ch,020h,06ch,069h,06dh,069h,074h,02eh,000h
-help_82 label byte
+help_85 label byte
     db 04fh,070h,065h,072h,061h,074h,069h,06fh,06eh,073h,020h,073h,075h,070h,070h,06fh
     db 072h,074h,020h,075h,070h,020h,074h,06fh,020h,033h,032h,020h,06eh,065h,073h,074h
     db 065h,064h,020h,06ch,065h,076h,065h,06ch,073h,020h,061h,06eh,064h,020h,031h,032h
     db 037h,02dh,062h,079h,074h,065h,020h,070h,061h,074h,068h,073h,02eh,000h
-help_83 label byte
+help_86 label byte
     db 041h,020h,063h,06fh,070h,079h,020h,073h,065h,06ch,065h,063h,074h,069h,06fh,06eh
     db 020h,063h,061h,06eh,020h,063h,06fh,06eh,074h,061h,069h,06eh,020h,075h,070h,020h
     db 074h,06fh,020h,034h,02ch,032h,039h,034h,02ch,039h,036h,037h,02ch,032h,039h,035h
     db 020h,062h,079h,074h,065h,073h,02eh,000h
-help_84 label byte
+help_87 label byte
     db 052h,065h,061h,064h,02dh,06fh,06eh,06ch,079h,020h,066h,069h,06ch,065h,073h,020h
     db 061h,072h,065h,020h,070h,072h,065h,073h,065h,072h,076h,065h,064h,020h,061h,06eh
     db 064h,020h,063h,061h,06eh,06eh,06fh,074h,020h,062h,065h,020h,064h,065h,06ch,065h
     db 074h,065h,064h,020h,064h,069h,072h,065h,063h,074h,06ch,079h,02eh,000h
-help_85 label byte
+help_88 label byte
     db 000h
-help_86 label byte
+help_89 label byte
     db 023h,041h,042h,04fh,055h,054h,020h,041h,04eh,044h,020h,04ch,049h,043h,045h,04eh
     db 053h,045h,053h,000h
-help_87 label byte
+help_90 label byte
     db 041h,020h,069h,06eh,020h,048h,065h,06ch,070h,020h,06fh,070h,065h,06eh,073h,020h
     db 041h,062h,06fh,075h,074h,020h,077h,069h,074h,068h,020h,076h,065h,072h,073h,069h
     db 06fh,06eh,020h,061h,06eh,064h,020h,06ch,069h,063h,065h,06eh,073h,065h,020h,069h
     db 06eh,066h,06fh,072h,06dh,061h,074h,069h,06fh,06eh,02eh,000h
-help_88 label byte
+help_91 label byte
     db 04eh,069h,067h,068h,074h,077h,061h,074h,063h,068h,020h,069h,073h,020h,06ch,069h
     db 063h,065h,06eh,073h,065h,064h,020h,075h,06eh,064h,065h,072h,020h,047h,050h,04ch
     db 076h,033h,03bh,020h,073h,065h,065h,020h,04ch,049h,043h,045h,04eh,053h,045h,02eh
     db 054h,058h,054h,02eh,000h
-help_89 label byte
+help_92 label byte
     db 054h,068h,065h,020h,065h,06dh,062h,065h,064h,064h,065h,064h,020h,053h,070h,06ch
     db 065h,065h,06eh,020h,066h,06fh,06eh,074h,073h,020h,075h,073h,065h,020h,042h,053h
     db 044h,02dh,032h,02dh,043h,06ch,061h,075h,073h,065h,03bh,020h,073h,065h,065h,020h
     db 046h,04fh,04eh,054h,04ch,049h,043h,02eh,054h,058h,054h,02eh,000h
-help_90 label byte
+help_93 label byte
     db 056h,047h,041h,02fh,045h,047h,041h,020h,069h,063h,06fh,06eh,073h,03ah,020h,031h
     db 036h,070h,078h,06ch,073h,020h,062h,079h,020h,050h,061h,075h,06ch,020h,04dh,061h
     db 063h,06bh,065h,06eh,07ah,069h,065h,03bh,020h,073h,065h,065h,020h,049h,043h,04fh
     db 04eh,04ch,049h,043h,02eh,054h,058h,054h,02eh,000h
-help_91 label byte
+help_94 label byte
     db 07ah,06ch,069h,062h,020h,031h,02eh,033h,02eh,032h,020h,069h,073h,020h,065h,06dh
     db 062h,065h,064h,064h,065h,064h,020h,066h,06fh,072h,020h,069h,06eh,066h,06ch,061h
     db 074h,065h,03bh,020h,073h,065h,065h,020h,05ah,04ch,049h,042h,04ch,049h,043h,02eh

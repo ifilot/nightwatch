@@ -48,6 +48,7 @@ python3 tests/test_version.py
 python3 tests/test_build_metadata.py
 python3 tests/test_assets.py
 python3 tests/zip.py
+python3 tests/arj.py
 
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -fsyntax-only src/STORUI.C
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc \

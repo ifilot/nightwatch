@@ -1,0 +1,68 @@
+ARC_ARJ_CRC_SIZE_OR_COMPRESSED_LENGTH_MISMATCH|ARJ: CRC, size or compressed length mismatch
+ARC_ARJ_DESTINATION_MUST_BE_AN_EXISTING_DIRECTORY|ARJ: destination must be an existing directory
+ARC_ARJ_DUPLICATE_OR_CONFLICTING_DOS_NAMES|ARJ: duplicate or conflicting DOS names
+ARC_ARJ_FILENAME_IS_TOO_LONG|ARJ: filename is too long
+ARC_ARJ_HEADER_CRC_OR_UNSUPPORTED_EXTENDED_HEADER|ARJ: header CRC or unsupported extended header
+ARC_ARJ_INCONSISTENT_DIRECTORY_NAME|ARJ: inconsistent directory name
+ARC_ARJ_INSUFFICIENT_DECOMPRESSION_MEMORY|ARJ: insufficient decompression memory
+ARC_ARJ_INVALID_ARCHIVE_DIRECTORY|ARJ: invalid archive directory
+ARC_ARJ_INVALID_DATA_BOUNDS|ARJ: invalid data bounds
+ARC_ARJ_INVALID_END_RECORD_OR_TRAILING_DATA|ARJ: invalid end record or trailing data
+ARC_ARJ_INVALID_HEADER_SIGNATURE|ARJ: invalid header signature
+ARC_ARJ_INVALID_HEADER_SIZE|ARJ: invalid header size
+ARC_ARJ_INVALID_OR_TRUNCATED_COMPRESSED_DATA|ARJ: invalid or truncated compressed data
+ARC_ARJ_ONLY_BINARY_FILES_AND_DIRECTORIES_SUPPORTED|ARJ: only binary files and directories supported
+ARC_ARJ_SPECIAL_FILES_UNSUPPORTED|ARJ: special files unsupported
+ARC_ARJ_SPLIT_ENCRYPTED_SECURED_OR_NEWER_FORMAT_UNSUPPORTED|ARJ: split, encrypted, secured or newer format unsupported
+ARC_ARJ_TOO_MANY_ENTRIES|ARJ: too many entries
+ARC_ARJ_TOTAL_OUTPUT_EXCEEDS_DOS_LIMITS|ARJ: total output exceeds DOS limits
+ARC_ARJ_UNSUPPORTED_METHOD_OR_INVALID_SIZES|ARJ: unsupported method or invalid sizes
+ARC_ARJ_UNTERMINATED_FILENAME_OR_COMMENT|ARJ: unterminated filename or comment
+ARC_ARJ_USE_AN_ABSOLUTE_DRIVE_PATH|ARJ: use an absolute drive path
+ARC_ARCHIVE_CANNOT_REPLACE_ITS_SOURCE_ARCHIVE|Archive: cannot replace its source archive
+ARC_ARCHIVE_DESTINATION_ANCESTOR_IS_NOT_A_SAFE_DIRECTORY|Archive: destination ancestor is not a safe directory
+ARC_ARCHIVE_DESTINATION_EXISTS_CTRL_U_OFFERS_OVERWRITE_SKIP|Archive: destination exists; Ctrl-U offers overwrite/skip
+ARC_ARCHIVE_DESTINATION_IS_A_DIRECTORY|Archive: destination is a directory
+ARC_ARCHIVE_FILENAME_IS_TOO_LONG|Archive: filename is too long
+ARC_ARCHIVE_REQUIRES_ASCII_DOS_8_3_NAMES|Archive: requires ASCII DOS 8.3 names
+ARC_ARCHIVE_REQUIRES_SAFE_DOS_8_3_NAMES|Archive: requires safe DOS 8.3 names
+ARC_ARCHIVE_TRUNCATED_RECORD|Archive: truncated record
+ARC_ARCHIVE_UNEXPECTED_END_OF_FILE|Archive: unexpected end of file
+ARC_OPERATION_CANCELLED|Operation cancelled
+ARC_ZIP64_IS_NOT_SUPPORTED|ZIP64 is not supported
+ARC_ZIP_CRC_SIZE_OR_COMPRESSED_LENGTH_MISMATCH|ZIP: CRC, size or compressed length mismatch
+ARC_ZIP_ZIP64_OR_OVERSIZED_ENTRY_UNSUPPORTED|ZIP: ZIP64 or oversized entry unsupported
+ARC_ZIP_ARCHIVE_EXCEEDS_DOS_OFFSET_LIMITS|ZIP: archive exceeds DOS offset limits
+ARC_ZIP_COMPRESSION_METHOD_UNSUPPORTED_USE_STORE_OR_DEFLATE|ZIP: compression method unsupported (use store or deflate)
+ARC_ZIP_DATA_DESCRIPTOR_MISMATCH|ZIP: data descriptor mismatch
+ARC_ZIP_DESTINATION_MUST_BE_AN_EXISTING_DIRECTORY|ZIP: destination must be an existing directory
+ARC_ZIP_DIRECTORY_CARRIES_FILE_DATA|ZIP: directory carries file data
+ARC_ZIP_DIRECTORY_COUNT_OR_LENGTH_MISMATCH|ZIP: directory count or length mismatch
+ARC_ZIP_DUPLICATE_OR_CONFLICTING_DOS_NAMES|ZIP: duplicate or conflicting DOS names
+ARC_ZIP_ENCRYPTION_SPLIT_OR_NEWER_FORMAT_UNSUPPORTED|ZIP: encryption, split or newer format unsupported
+ARC_ZIP_INCOMPLETE_DEFLATE_STREAM|ZIP: incomplete DEFLATE stream
+ARC_ZIP_INCONSISTENT_DIRECTORY_ATTRIBUTES|ZIP: inconsistent directory attributes
+ARC_ZIP_INSUFFICIENT_DECOMPRESSION_MEMORY|ZIP: insufficient decompression memory
+ARC_ZIP_INVALID_ARCHIVE_DIRECTORY|ZIP: invalid archive directory
+ARC_ZIP_INVALID_CENTRAL_DIRECTORY|ZIP: invalid central directory
+ARC_ZIP_INVALID_CENTRAL_RECORD|ZIP: invalid central record
+ARC_ZIP_INVALID_COMPRESSED_DATA_BOUNDS|ZIP: invalid compressed data bounds
+ARC_ZIP_INVALID_DESCRIPTOR_LOCAL_SIZES|ZIP: invalid descriptor local sizes
+ARC_ZIP_INVALID_DIRECTORY_OR_ZIP64|ZIP: invalid directory or ZIP64
+ARC_ZIP_INVALID_EXTRA_FIELD|ZIP: invalid extra field
+ARC_ZIP_INVALID_FILENAME_OR_DIRECTORY_BOUNDS|ZIP: invalid filename or directory bounds
+ARC_ZIP_INVALID_LOCAL_OFFSET|ZIP: invalid local offset
+ARC_ZIP_LOCAL_AND_CENTRAL_HEADERS_DISAGREE|ZIP: local and central headers disagree
+ARC_ZIP_LOCAL_FILENAME_MISMATCH|ZIP: local filename mismatch
+ARC_ZIP_LOCAL_SIZE_OR_CRC_MISMATCH|ZIP: local size or CRC mismatch
+ARC_ZIP_MISSING_DATA_DESCRIPTOR|ZIP: missing data descriptor
+ARC_ZIP_MISSING_END_RECORD|ZIP: missing end record
+ARC_ZIP_OUTPUT_EXCEEDS_DECLARED_SIZE|ZIP: output exceeds declared size
+ARC_ZIP_OVERLAPPING_ENTRIES|ZIP: overlapping entries
+ARC_ZIP_SPLIT_ARCHIVES_UNSUPPORTED|ZIP: split archives unsupported
+ARC_ZIP_STORED_SIZE_MISMATCH|ZIP: stored size mismatch
+ARC_ZIP_SYMBOLIC_LINKS_AND_SPECIAL_FILES_UNSUPPORTED|ZIP: symbolic links and special files unsupported
+ARC_ZIP_TOTAL_OUTPUT_EXCEEDS_DOS_LIMITS|ZIP: total output exceeds DOS limits
+ARC_ZIP_TRUNCATED_DATA_DESCRIPTOR|ZIP: truncated data descriptor
+ARC_ZIP_USE_AN_ABSOLUTE_DRIVE_PATH|ZIP: use an absolute drive path
+ARC_ZIP_INVALID_OR_TRUNCATED_DEFLATE_STREAM|ZIP: invalid or truncated DEFLATE stream

@@ -17,6 +17,7 @@
 #include <bios.h>
 #include "NW.H"
 #include "ZIP.H"
+#include "ARJ.H"
 #include "STORTEST.H"
 #include "STORUI.H"
 #include "STORMSG.H"
@@ -363,7 +364,7 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
             if (reset) {
                 for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
                 frame(3, y, 74, 11, COLOR_DIALOG);
-                video_text(5, y + 1, copy_progress == 2 ? "Unpacking ZIP - Esc cancels" : "Copying - Esc cancels", COLOR_DIALOG);
+                video_text(5, y + 1, copy_progress == 2 ? "Unpacking archive - Esc cancels" : "Copying - Esc cancels", COLOR_DIALOG);
             }
             copy_dialog = 1; copy_generation = video_generation();
             /* Keep long DOS paths inside the dialog border. */
@@ -878,27 +879,34 @@ static void operate(int move)
     end_operation();
     sprintf(status, "%lu completed, %lu skipped (%s)", operation_files, operation_skipped, move ? "move" : "copy"); refresh_mask(affected);
 }
-/* Confirm once, recursively delete the marked/current selection, and refresh
- * affected directories even when cancellation leaves earlier deletions committed.
+/* Unpack the selected archive into the inactive pane with shared operation
+ * controls. Detect ARJ by content; each reader validates its complete format.
  */
-static void extract_zip(void)
+static void extract_archive(void)
 {
     char source[NW_PATH], target[NW_PATH];
-    int ok;
+    int ok, arj;
+    unsigned char magic[2];
     Entry *e = current();
     if (!e || (e->attr & NW_DIR) || !current_path(source)) return;
+    ok = fs_read_open(source);
+    if (ok < 0) { fs_error("Open archive"); notice(nw_error); return; }
+    arj = fs_read(ok, magic, 2);
+    if (fs_close(ok) < 0 || arj != 2) { notice("Cannot read archive"); return; }
+    arj = magic[0] == 0x60 && magic[1] == 0xea;
     strcpy(target, panes[1-active].path);
-    if (!prompt("Unpack ZIP into existing directory", target, sizeof(target))) return;
+    if (!prompt("Unpack ZIP/ARJ into existing directory", target, sizeof(target))) return;
     begin_operation(); counting = 1;
-    ok = zip_measure(source, target, &total_files, &total_bytes);
+    ok = arj ? arj_measure(source, target, &total_files, &total_bytes) :
+               zip_measure(source, target, &total_files, &total_bytes);
     counting = 0; copy_progress = 2; progress_path[0] = 0; force_progress = 1;
-    if (ok) ok = zip_extract(source, target);
+    if (ok) ok = arj ? arj_extract(source, target) : zip_extract(source, target);
     if (ok && progress_path[0]) {
         force_progress = 1; operation_ui(progress_path, last_total, last_total);
     }
     end_operation();
     if (!ok) notice(nw_error);
-    sprintf(status, "%lu unpacked, %lu skipped (ZIP)", operation_files, operation_skipped);
+    sprintf(status, "%lu unpacked, %lu skipped (%s)", operation_files, operation_skipped, arj ? "ARJ" : "ZIP");
     refresh();
 }
 static void delete_entries(void)
@@ -1177,6 +1185,11 @@ int main(int argc, char **argv)
         if (!zip_extract(argv[2], argv[3])) { puts(nw_error); return 1; }
         printf("%lu files unpacked\n", operation_files); return 0;
     }
+    if (argc > 1 && !stricmp(argv[1], "/unarj")) {
+        if (argc != 4) { puts("NW /unarj archive.arj existing-directory"); return 1; }
+        if (!arj_extract(argv[2], argv[3])) { puts(nw_error); return 1; }
+        printf("%lu files unpacked\n", operation_files); return 0;
+    }
     if (!getcwd(startup, sizeof(startup))) { puts("Cannot read current directory"); return 1; }
     strcpy(panes[0].path, startup); strcpy(panes[1].path, startup);
     settings_load(&mode);
@@ -1232,7 +1245,7 @@ int main(int argc, char **argv)
         case 14: find_name(2); break;
         case 19: sort_menu(); break;
         case 23: settings_save(); break;
-        case 21: extract_zip(); break;
+        case 21: extract_archive(); break;
         case 20: storage_menu(); break;
         case 15: run_shell(NULL); break;
         case 27: command[0] = 0; break;

@@ -1,0 +1,9 @@
+ARJ32 v 3.10, Copyright (c) 1998-2004, ARJ Software Russia.
+
+Creating archive  : /mnt/d/PROGRAMMING/MSDOS/nightwatch/tests/fixtures/arj/METHOD3.ARJ
+Adding    HELLO.TXT                           0%  27%  47%  66%  86% 100%  0.3%    
+Adding    SUB/EMPTY                     0.0%    
+Adding    SUB/SMALL.TXT                       0% 100%        0% 100%100.0%    
+Adding    SUB/DATA.BIN                        0%  36%  63%  90% 100%        0%  32%  65%  98% 100%100.0%    
+Adding    SUB/EMPTY.DAT                       0%        0%  0.0%    
+     5 file(s)

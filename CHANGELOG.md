@@ -4,6 +4,23 @@ Notable changes to Nightwatch, newest first. This history was reconstructed
 from the repository's commits and release tags. Release dates follow the tags;
 changes without a release tag are marked unreleased.
 
+## v1.3.0 — Unreleased
+
+### Added
+
+- Built-in ARJ extraction for stored files and methods 1–4 through Ctrl-U
+  and `/unarj`, with bounded preflight, DOS 8.3 path checks, CRC validation,
+  overwrite/skip/cancel and staged file replacement shared with ZIP.
+- Independent method 0–4 ARJ fixtures, malformed-input and fault coverage,
+  16-bit 8086/FAT12 checks and VGA navigator extraction coverage.
+- Original Quick Menu inspired 16x16 color icons inside the VGA interface,
+  retaining the existing row count and transparent selection backgrounds.
+  EGA and CGA keep their existing artwork.
+- Development scope for native ARJ extraction and two original 16x16
+  file-browser icon studies inspired by Quick Menu and Windows 3.x.
+  The studies include all eight categories, native/enlarged previews and
+  a reproducible generator; the Quick Menu set is embedded for VGA.
+
 ## v1.2.0 — Unreleased
 
 ### Added

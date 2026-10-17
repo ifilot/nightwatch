@@ -1,7 +1,7 @@
 # Nightwatch
 
 [![GitHub Actions](https://github.com/ifilot/nightwatch/actions/workflows/build.yml/badge.svg)](https://github.com/ifilot/nightwatch/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-v1.2.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-v1.3.0-blue)](VERSION)
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
 A Midnight Commander style, two-pane file navigator for **MS-DOS on 8088/8086
@@ -13,6 +13,9 @@ EGA and VGA, with embedded fonts and icons.
 | <img src="docs/screenshots/text.png" width="400" alt="Nightwatch text interface with two file panes and function keys"> | <img src="docs/screenshots/cga.png" width="400" alt="Nightwatch CGA monochrome interface with compact file icons"> |
 | **EGA · 640×350, 16 colors** | **VGA · 640×480, 16 colors** |
 | <img src="docs/screenshots/ega.png" width="400" alt="Nightwatch EGA file browser"> | <img src="docs/screenshots/vga.png" width="400" alt="Nightwatch VGA file browser"> |
+
+A larger [VGA screenshot gallery](screenshots/README.md) covers browsing, viewers,
+file operations, archives and storage diagnostics.
 
 Browse drives and directories, mark files with patterns, sort entries, and
 recursively copy, move or delete. Transfers offer overwrite/skip and Escape cancellation. Copies count files
@@ -79,7 +82,7 @@ as Slot-otter through DOS. Keep manifests/logs on another drive; see the
 | F3 / Shift-F3 | Text / hex viewer; F4 toggles inside the viewer |
 | F4, F5, F6, F7, F8 | Editor, copy, move, mkdir, delete |
 | Ctrl-F, Ctrl-P / Ctrl-N, Ctrl-S | Find filename, mark / unmark patterns, sort |
-| Ctrl-U | Unpack selected ZIP into the other pane |
+| Ctrl-U | Unpack selected ZIP or ARJ into the other pane |
 | Ctrl-T | Storage integrity tests: quick / long / verify / cleanup |
 | F9, Ctrl-R, Ctrl-O | Change drive/path, refresh, DOS shell |
 | F1, F10 | Help, quit |
@@ -91,9 +94,14 @@ Requires DOS 3.0+, DOS 8.3 filenames and about **256 KB free conventional RAM**.
 EGA needs at least 128 KB video RAM. Each pane caches 512 entries; recursive
 operations traverse beyond that cache, up to 32 directory levels. Keyboard only. ZIP extraction supports stored and DEFLATE entries, including
 Windows and Linux archives. ZIP64, encryption and Deflate64 are unsupported.
-See [ZIP support](docs/zip-support.md) for filename and format limits.
+Built-in ARJ extraction supports stored files and methods 1–4.
+See [ZIP support](docs/zip-support.md) and [ARJ support](docs/arj-support.md)
+for filename and format limits.
 
 ## Build and test
+
+The [1.3.0 exploration notes](docs/v1.3.0.md) cover proposed ARJ extraction
+and original Quick Menu / Windows 3.x inspired file-browser icon studies.
 
 The complete DOS toolchain and a Debian Trixie Docker build recipe live in
 [`buildenv/`](buildenv/README.md). The image installs DOSBox and DOSBox-X from
@@ -111,9 +119,11 @@ no sibling repository is needed.
 
 ```sh
 make                                    # build/NW.EXE
-make run MODE=vga                        # open a DOSBox window
+make run                                 # VGA with populated demo drives D: and E:
+make run MODE=text                       # use another display mode
 make test                               # host regression tests + sanitizers
 make test-dos                           # DOS filesystem tests on FAT12
+make test-arj-dos                       # ARJ methods on 8086 and FAT12
 make test-video                         # all display modes + BIOS/8086 checks
 make test-storage-dos                   # storage test + restart/verify in DOS
 make screenshots                        # test and refresh README captures
@@ -125,7 +135,8 @@ The included Borland tools retain their original proprietary notices; see
 [build environment provenance](buildenv/BORLAND-NOTICE.md). Bundled DOSBox-X
 sources retain their GPLv2 and component notices.
 Nightwatch code and original CGA icons are **GPLv3** ([license](LICENSE)).
-VGA/EGA icons use [16pxls](https://16pxls.com/) by Paul Mackenzie under
+VGA icons are original Quick Menu inspired color artwork.
+EGA icons use [16pxls](https://16pxls.com/) by Paul Mackenzie under
 CC-BY-SA-4.0 ([attribution and license](assets/ICON-LICENSE.txt)). Fonts use
 [Spleen](https://github.com/fcambus/spleen) under its BSD license. See the
 [manual](docs/manual.md), [rendering notes](docs/rendering.md) and

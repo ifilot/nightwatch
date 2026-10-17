@@ -15,7 +15,7 @@ def compile_host():
             '-Isrc','-Ivendor/zlib','-fsyntax-only','src/ZIP.C'],cwd=ROOT,check=True)
     sp.run(['cc','-x','c','-std=c89','-DNW_HOST','-DNW_ZIP_TEST','-DZ_SOLO','-DNO_GZIP',
             '-Isrc','-Itests','-Ivendor/zlib','-fsanitize=address,undefined',
-            '-fno-omit-frame-pointer','-no-pie','-g','src/CORE.C','src/ZIP.C',
+            '-fno-omit-frame-pointer','-no-pie','-g','src/CORE.C','src/ARCHIVE.C','src/ZIP.C',
             'tests/fs_host.c','tests/ZIPTEST.C',
             *map(str, sorted((ROOT/'vendor/zlib').glob('*.c'))),'-o',str(BINARY)],cwd=ROOT,check=True)
 
