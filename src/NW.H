@@ -7,7 +7,7 @@
 #ifndef NW_H
 #define NW_H
 /* NW_PATH includes the terminating NUL; NW_FILES counts entries, including
- * the synthetic parent. Two directory caches dominate DGROUP usage; recursive
+ * the synthetic parent. Large directories use page offsets. Two caches dominate DGROUP; recursive
  * traversal uses FsSearch instead of these pane caches.
  */
 #define NW_PATH 128
@@ -31,7 +31,7 @@ typedef struct {
 } Entry;
 /* Each pane owns its path, selection, sort and marks. top is the first visible
  * entry; cursor is an index, clamped by panel_scroll before dereferencing.
- * truncated flags omitted entries beyond NW_FILES, including the parent slot.
+ * truncated flags more entries after this page; archives retain a fixed limit.
  */
 typedef struct {
     char path[NW_PATH];
@@ -40,6 +40,9 @@ typedef struct {
     /* Renderers rely on revisions: mutate entries through load/mark helpers. */
     unsigned revision;
     unsigned char sort, reverse;
+    unsigned long offset, free_kib, measured_bytes;
+    unsigned measured_revision;
+    int measured_cursor;
 } Panel;
 extern Panel panes[2];
 extern char nw_error[160];
@@ -56,6 +59,15 @@ int path_join(char *out, const char *dir, const char *name);
  * preserves the existing cache and UI state.
  */
 int panel_load(Panel *p);
+/* Page through directory enumeration using a bounded cache. Marks are page-local. */
+int panel_page(Panel *p, int forward);
+/* Free KiB, or FFFFFFFF when unavailable. This queries only the requested drive. */
+unsigned long fs_space(const char *path);
+unsigned long panel_selected_bytes(const Panel *p, unsigned *directories);
+/* Streaming recursive filename search, independent of pane capacity.
+ * Visitor returns 1 continue, 0 stop successfully, -1 cancel/error. */
+typedef int (*TreeVisit)(const char *, const Entry *, void *);
+int tree_find(const char *root, const char *pattern, TreeVisit visit, void *context);
 /* Copy a successful same-directory listing, preserving receiving sort/selection.
  * The receiving path is already set by the caller; marks clear independently.
  */
@@ -99,6 +111,9 @@ void fs_end(FsSearch *search);
 /* Progress returns zero to cancel. Conflict returns 1 overwrite, 2 skip, 0 cancel. */
 extern int (*operation_progress)(const char *, unsigned long, unsigned long);
 extern int (*operation_conflict)(const char *, const char *);
+/* Error callback: 1 retry this file, 2 skip, 0 cancel. Failed copies clean staging first. */
+extern const Entry *operation_source_info;
+extern int (*operation_error)(const char *, const char *, const char *);
 /* Per-command completed/skipped counts; caller resets them before a batch.
  * A file operation counts once; a whole-directory rename also counts once.
  * Directory creation/removal do not increment the completed count.
@@ -129,7 +144,8 @@ int file_move(const char *src, const char *dst);
  */
 int valid_name(const char *name);
 /* Platform boundary: DOS implementation and a POSIX test implementation. */
-/* Fill a bounded pane listing with a synthetic parent except at the drive root.
+/* Fill a bounded directory page, skipping offset non-parent entries, with a
+ * synthetic parent except at the drive root. Sort and marks are page-local.
  * Metadata is raw filesystem data; panel_load owns sorting and revisions.
  * Failure before scanning preserves the old cache; a failed partial scan must
  * set count/truncated to zero so panel_load can invalidate its UI state.
@@ -175,7 +191,7 @@ typedef struct {
     char NW_FAR *data;
     unsigned size;
 } FsCopyBuffer;
-void fs_copy_buffer_init(FsCopyBuffer *buffer, void *fallback, unsigned size);
+void fs_copy_buffer_init(FsCopyBuffer *buffer, void NW_FAR *fallback, unsigned size);
 void fs_copy_buffer_free(FsCopyBuffer *buffer);
 int fs_copy_read(int fd, FsCopyBuffer *buffer);
 int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count);

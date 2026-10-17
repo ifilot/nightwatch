@@ -6,6 +6,7 @@
 #define _XOPEN_SOURCE 700
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -84,6 +85,7 @@ int fs_list(Panel *p)
     DIR *d;
     struct dirent *item;
     char path[NW_PATH];
+    unsigned long skipped=0;
     ++test_list_calls; d = opendir(p->path);
     if (!d) return 0;
     p->count = p->truncated = 0;
@@ -91,11 +93,18 @@ int fs_list(Panel *p)
         if (!strcmp(item->d_name, ".") || !valid_name(item->d_name)) {
             if (strcmp(item->d_name, "..") || !strcmp(p->path, "/")) continue;
         }
+        if (strcmp(item->d_name,"..") && skipped++<p->offset) continue;
         if (p->count == NW_FILES) { p->truncated = 1; break; }
         if (!path_join(path, p->path, item->d_name) || !fs_info(path, &p->files[p->count])) continue;
         strcpy(p->files[p->count++].name, item->d_name);
     }
     closedir(d); return 1;
+}
+unsigned long fs_space(const char *path)
+{
+    struct statvfs s;
+    if (statvfs(path,&s)) return 0xffffffffUL;
+    return (unsigned long)((double)s.f_bavail*(double)s.f_frsize/1024.0);
 }
 int fs_mkdir(const char *p) { return mkdir(p, 0700) == 0; }
 int fs_delete(const char *p, int d) { if (fault("delete", p)) return 0; return (d ? rmdir(p) : unlink(p)) == 0; }
@@ -131,13 +140,14 @@ int fs_read(int fd, void *p, unsigned n) { if (fault("eof", NULL)) return 0; if 
 int fs_write(int fd, const void *p, unsigned n)
 {
     if (fault("write", NULL)) return -1;
+    if (fault("zero", NULL)) return 0;
     if (test_write_fail) { errno = ENOSPC; return -1; }
     if (test_short_write && n > 7) n = 7;
     return write(fd, p, n);
 }
 int fs_test_copy_alloc_fail, fs_test_copy_allocations;
 unsigned fs_test_copy_size;
-void fs_copy_buffer_init(FsCopyBuffer *buffer, void *fallback, unsigned size)
+void fs_copy_buffer_init(FsCopyBuffer *buffer, void NW_FAR *fallback, unsigned size)
 {
     buffer->allocation = fs_test_copy_alloc_fail ? NULL : malloc(16384);
     buffer->data = buffer->allocation ? buffer->allocation : fallback;

@@ -19,7 +19,7 @@ to 80-column color text, or monochrome text when launched from mode 07h.
 
 ## Build and run
 
-Turbo C 2.0 and its DOS MAKE run inside DOSBox. The code uses C89, the small
+Turbo C 2.0 and its DOS MAKE run inside DOSBox. The code uses C89, the medium
 memory model, and `-1-` to explicitly disable 80186/286 instructions. A small 8086 assembly module embeds font
 resources outside the near-data segment; no Borland BGI driver is used.
 Turbo Assembler 2.0 is also required.
@@ -33,7 +33,7 @@ copied into this repository. Set `DOS_TOOLCHAIN` to their installation directory
 ```sh
 export DOS_TOOLCHAIN=/path/to/toolchain
 make
-make run                 # VGA with fictional DOS work and backup drives
+make run                 # VGA with sample hard disks, floppies and an SD card
 make run MODE=text
 make run MODE=cga
 make run MODE=ega
@@ -52,13 +52,30 @@ appear in `build/`. Sources are staged there with DOS line endings and DOS
 filenames. The source directory and toolchain are not modified by
 compilation. `make clean` removes generated build artifacts.
 
-`make run` mounts `build/` as DOS C:, plus generated demo directories
-`build/demo/D/` as D: and `build/demo/E/` as E:. It starts VGA with the work
-drive and backup/transfer drive in the two panes. The samples include nested
-application and project folders, documents, binary data, real PCX/BMP images,
-ZIP and ARJ archives, and runnable batch files. Existing demo files are preserved
-on later launches; missing samples are recreated. `make demo` populates the
-drives without launching DOSBox. Everything is generated under `build/`.
+`make run` mounts `build/` as DOS C: and starts with D: (work) and E:
+(backup/transfer) in the two panes. Press F9 to choose another drive:
+
+| Drive | Demo media | Persistent storage |
+| --- | --- | --- |
+| A: | 3.5-inch floppy, 1.44 MB | `build/demo/A.IMG` |
+| B: | 5.25-inch floppy, 360 KB | `build/demo/B.IMG` |
+| D: | Work disk | `build/demo/D/` |
+| E: | Backup disk | `build/demo/E/` |
+| S: | Simulated SD card | `build/demo/S/` |
+
+The floppies are FAT12 images with their corresponding capacities. A demo-only
+launcher supplies floppy metadata and simulates Slot-otter discovery for S:,
+so the picker shows the matching icons. It runs the unchanged `NW.EXE` and
+requires no SD hardware or custom driver.
+
+The samples include documents, project folders, images, ZIP and ARJ archives.
+Existing files are preserved on later launches. Missing directory samples are
+recreated; existing floppy images are left intact. To reset a floppy, delete its
+`.IMG` file before the next launch. `build/demo/A/` and `B/` contain only the
+initial seed files; edit floppy contents through DOSBox or mtools.
+`make demo` prepares the drives and launcher without opening an interactive
+session. It needs DOSBox and mtools (`mformat` and `mcopy`). Everything is
+generated under `build/` and removed by `make clean`.
 
 To work with other files, mount their directory in DOSBox and invoke the
 executable manually. For example:
@@ -75,6 +92,29 @@ pane directories. Without them both panes start in the current directory. On DOS
 hardware, copy `NW.EXE`, `FONTLIC.TXT` and `ICONLIC.TXT` to a disk and run it directly. The
 license file accompanies redistributed font data; the executable needs no
 external font or icon files.
+
+## Drive picker
+
+Press **F9** to list configured drives. The current drive is highlighted. Use
+Up/Down or a drive letter to select one and press Enter to open its root in the
+active pane. Left/Right move between columns when many drives are present;
+Home/End select the first entry or the final **Enter a path...** option. Escape
+leaves both panes and marks unchanged. Choose **Enter a path...**, or press **.**,
+to retain direct directory-path entry, including when leaving an archive.
+
+The list uses DOS metadata rather than opening every drive. Type information is
+used when DOS and its driver support it; unsupported queries retain a generic
+type/icon. VGA uses distinct 16x16 icons for 3.5-inch and 5.25-inch floppy drives,
+fixed disks and Slot-otter SD. Other modes show the same textual descriptions.
+A configured drive can be empty or unavailable; filesystem access happens on
+selection, with DOS critical errors returned to Nightwatch rather than the DOS
+Abort/Retry prompt. An unsuccessful canonicalization leaves the pane unchanged.
+
+OTTERSD is recognised before the generic remote-drive fallback, using its private
+INT 2Fh AX=D74Fh discovery signature and returned drive number. The picker does
+not assume an S: drive. Discovery runs once per opening; OTTERSD checks its media
+presence signal and may take a removed card offline. Nightwatch does not issue
+mount/unmount controls. An offline resident is labelled accordingly.
 
 ## Controls and behavior
 
@@ -95,7 +135,7 @@ external font or icon files.
 | F6 | Move/rename marked files or selected entry |
 | F7 | Create an 8.3 directory |
 | F8 | Confirm recursive deletion of files or directories |
-| F9 | Change the active pane's directory/drive (e.g. `A:\`) |
+| F9 | Pick a drive for the active pane; choose "Enter a path..." or press `.` to type a folder path |
 | F10 | Quit and restore the original video mode, page and cursor |
 | Ctrl-R | Refresh both panes |
 | Ctrl-F | Find the next filename matching a pattern (`*`, `?`), wrapping within the pane |
@@ -174,6 +214,12 @@ on a cached host drive; they measure CPU/DOS overhead, not physical disk seeks
 or expected throughput on real hardware. Cancellation is checked after at most
 one additional block, whose I/O duration depends on the drive.
 
+In graphics modes, the text viewer, hex viewer and About screen use the same
+window style as Help: a blue title bar, gray frame and white document area.
+The viewer keeps the file path and navigation controls visible while paging.
+Text wraps to the document width; hex view retains 16 bytes per row, grouped
+in pairs. Line counts and byte offsets appear below the document.
+
 Both viewers offer **F7** search, **F8** next match and **Ctrl-G** byte-offset
 jump. Search accepts case-insensitive literal ASCII or exact binary patterns
 such as `hex:DE AD 00 BE EF` (up to 63 bytes). Jumps accept decimal or `0x`
@@ -181,7 +227,7 @@ hexadecimal. Matches appear at the top of the view. Text supports Home/End and
 backward paging beyond its 128 cached offsets by rescanning earlier content when
 necessary.
 
-The text viewer header shows **Line X / Y**, where X is the first displayed
+The text viewer shows **Line X / Y**, where X is the first displayed
 file line and Y is the total. Wrapped rows still belong to the same file line;
 an empty file shows 0 / 0. The initial count scans the file, so opening large
 files on slow disks can take time. Hex mode shows the byte offset and file size
@@ -212,11 +258,63 @@ and directory changes, and verify every byte. Local manifests and logs must be
 on another drive. See the [storage test guide](storage-test.md) for profiles,
 verification after reboot, cleanup rules and the OTTERSD zero-gap requirement.
 
+### Everyday file tools
+
+Enter runs a selected EXE, COM or BAT through DOS in the active pane's directory.
+The original display and working directories are restored on return; both panes
+are refreshed. Press any key after the child finishes. Files in an archive must
+be extracted before execution. F3 still views executable bytes without running
+anything.
+
+The idle status shows free space on both pane drives (K means KiB) and selected
+file bytes. A shared drive is shown once.
+Folder contents are not scanned on every cursor movement. Ctrl-L calculates a
+recursive selection total, with progress and Escape cancellation; the cached
+result is invalidated by selection changes and directory refreshes. Unknown
+free space is explicitly shown as unknown.
+
+Ctrl-PgDn and Ctrl-PgUp page physical directory listings. Pages use DOS enumeration
+order and hold up to 512 entries including the parent. The chosen sort is applied
+within each page. [MORE] indicates a following page. Marks belong to the page;
+changing pages with marks asks before clearing them. Refresh retains the page
+offset; folder navigation starts at page one. Archive listings keep their existing
+512-entry cap.
+
+Alt-F7 searches beneath an existing directory or drive root using DOS filename
+patterns. It streams enumeration beyond the pane cache, bounded by the same
+32-level nesting and 127-byte path limits as recursive file operations. Matches
+appear one at a time: N continues, Enter opens the containing directory and
+selects the entry (including on a later directory page), and Escape stops.
+
+Ctrl-A, or Alt-Enter when the BIOS supplies it, opens file properties. R/H/S/A
+toggle Read-only, Hidden, System and Archive. Edits remain local until Enter;
+Escape cancels. Existing directory and other attribute bits are retained.
+Attribute editing is unavailable inside archives.
+
+Path/dialog input and the command line support insertion, Left/Right, Home/End,
+Delete, Backspace and Ctrl-Left/Right word movement. Tab completes local names;
+a unique directory gains its separator, while ambiguous names extend to their
+common prefix. Dialog Up/Down recalls recent entries. Command Ctrl-E/Ctrl-X
+recalls previous/next commands; Up/Down also works while composing a command.
+There are four recent entries per history, stored only for the current session.
+Ctrl-U clears a dialog field; Escape clears the command line.
+
+Conflict prompts show source and destination bytes and packed DOS date/time.
+O overwrites once, A overwrites all remaining conflicts, S skips once and K skips
+all remaining conflicts. The choice resets for each command and also applies to
+archive extraction. Transfer errors offer retry, skip or cancel. File retry starts
+again after partial staging cleanup; completed files remain committed. A skipped
+move retains its source. Recovery files named by an error are retained when
+rollback or cleanup fails. DOS critical errors during interactive operations
+return to Nightwatch rather than opening an Abort/Retry prompt; the original
+handler is restored while external programs run and on exit.
+
 ### Current boundaries
 
 - DOS 3.0 or later; DOS 8.3 names and conventional memory only.
-- A cache of 512 entries per pane, including `..`; directories sort before
-  files. `[LIMIT]` explicitly reports truncation. Hidden and system files are
+- A cache of 512 entries per physical-directory page, including `..`; directories
+  sort before files within a page. `[MORE]` reports another page. Archive panes
+  retain their 512-entry `[LIMIT]` boundary. Hidden and system files are
   included.
 - Recursive directory copy/move/delete; same-drive moves prefer DOS rename.
   Existing directories merge, and files require an overwrite/skip decision.
@@ -228,8 +326,8 @@ verification after reboot, cleanup rules and the OTTERSD zero-gap requirement.
 - The text viewer caches 128 page offsets and rescans for older pages. Both
   viewers stream files; text End and uncached backward paging may take time on
   large files or slow disks.
-- Hex view shows eight-digit byte offsets, 16 hexadecimal bytes per row in two
-  groups, and printable ASCII (other bytes appear as dots). PgDn/Space/Enter and
+- Hex view shows eight-digit byte offsets, 16 hexadecimal bytes per row
+  (grouped in pairs in graphics modes), and printable ASCII (other bytes appear as dots). PgDn/Space/Enter and
   PgUp page, Up/Down scroll one row, Home/End jump to the first/last page. F4
   switches near the current byte position; returning to text resets its page
   history. Hex paging has no history limit. Files use DOS signed 32-bit seek
@@ -287,8 +385,10 @@ reference](https://www.osdever.net/FreeVGA/vga/seqreg.htm).
 
 The desktop keeps only visible-entry snapshots. Moving the cursor repaints the
 two affected entries and the position indicator; idle redraws write no video
-memory. There is no RAM framebuffer. Dialogs and the viewer share a cell overlay
-renderer, which redraws changed spans and returns to the pixel desktop on close.
+memory. There is no RAM framebuffer. Dialogs use a cell overlay renderer that redraws
+changed spans. Graphical Help, About and viewers use native document windows
+and return to the pixel desktop on close. Viewer pages repaint only when the
+file position or display mode changes.
 Labels rasterize in a 512-byte scratch buffer and batch color-plane writes
 across scanlines. Graphical viewers use the same opaque rendering path.
 Scrolling copies unchanged pixels using CGA bank-aware transfers or EGA/VGA
@@ -297,12 +397,12 @@ content revisions avoid directory scans and entry comparisons on ordinary input.
 Text mode retains its cell buffer and updates affected rows instead of
 rebuilding the desktop.
 
-Two 512-entry pane caches occupy about 25 KB. The copy fallback buffer is
-2 KB, cell buffers total 9,600 bytes, and the runtime stack is 8 KB. Font/help
+Two 512-entry pane caches occupy about 25 KB. The copy fallback buffer occupies
+2 KB outside DGROUP, cell buffers total 9,600 bytes, and the runtime stack is 8 KB. Font/help
 and fixed Huffman tables live in immutable segments outside DGROUP; there is
 no duplicate font cache. The medium memory model permits separate code
 segments while retaining near pointers for ordinary data. The ZIP-enabled
-executable is about 102 KB. **Allow 256 KB free conventional memory**, including
+executable is about 161 KB. **Allow 256 KB free conventional memory**, including
 roughly 40 KB of far allocations during inflation. Shells/editors need
 additional memory. The build checks that near data plus the actual stack leave
 at least 2 KB of the 64 KB data segment for stdio and other heap use.
@@ -455,7 +555,7 @@ before/after comparisons, preserve the earlier sources in
 
 ## Version and license
 
-Nightwatch v1.0.0 is licensed under GPL-3.0-only; see [LICENSE](../LICENSE).
+Nightwatch is licensed under GPL-3.0-only; see [LICENSE](../LICENSE).
 Spleen font data remains BSD-2-Clause. The About window (Alt-F1 or F1 then A)
 shows the code, font and 16pxls icon credits. `NW /version` or `NW --version` prints the version.
 [VERSION](../VERSION) is authoritative; `tools/version.py` updates its DOS

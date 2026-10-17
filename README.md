@@ -1,7 +1,7 @@
 # Nightwatch
 
 [![GitHub Actions](https://github.com/ifilot/nightwatch/actions/workflows/build.yml/badge.svg)](https://github.com/ifilot/nightwatch/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-v1.3.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-v1.4.0-blue)](VERSION)
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
 **Browse, copy and organise your files on MS-DOS.** Nightwatch puts two folders
@@ -26,6 +26,7 @@ is active; press Tab to switch sides.*
 - [Download and install](#download-and-install)
 - [Your first few minutes](#your-first-few-minutes)
 - [Features in pictures](#features-in-pictures)
+- [More everyday tools](#more-everyday-tools)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Choose a display mode](#choose-a-display-mode)
 - [What you need](#what-you-need)
@@ -43,9 +44,10 @@ Under **Assets**, download **`NIGHTWATCH-DOS.zip`**. This contains the ready-to-
 program; you do not need to compile anything. The **Source code** downloads are
 for building Nightwatch yourself.
 
-This guide describes **v1.3.0**. If the latest published release is older, check
+This guide describes **v1.4.0**. If the latest published release is older, check
 its release notes: ARJ extraction, archive browsing and the new VGA icons require
-v1.3.0 or newer. [All releases are listed here.](https://github.com/ifilot/nightwatch/releases)
+v1.3.0 or newer; the F9 drive picker requires v1.4.0.
+[All releases are listed here.](https://github.com/ifilot/nightwatch/releases)
 
 ### 2. Extract the files
 
@@ -86,7 +88,9 @@ if you use Quick Menu; Nightwatch itself does not need it.
 
 1. **Choose a folder.** Use the arrow keys to select a folder and press
    **Enter** to open it. **Backspace** goes up one folder when the command line
-   is empty. **F9** lets you type a different drive or folder path.
+   is empty. **F9** opens the drive picker: use the arrows or a drive letter,
+   then **Enter** to open its root. Choose **Enter a path...**, or press **.**
+   inside the picker, to jump directly to a folder.
 2. **Open your destination.** Press **Tab** to switch to the other pane, then
    navigate to the folder where you want to put files. Press Tab to return.
 3. **Look inside a file.** Select it and press **F3**. Use **PgUp/PgDn** to read
@@ -104,6 +108,16 @@ NW /vga C:\WORK C:\BACKUP
 ```
 
 ## Features in pictures
+
+### Choose a drive with F9
+
+Press **F9** to see the configured drives. Use the arrow keys or a drive letter
+to select one, then press **Enter** to open it in the active pane. Recognised
+floppy, fixed-disk and Slot-otter SD drives have their own VGA icons in the
+picker and pane headers; other drives
+use a generic icon. Choose **Enter a path...**, or press **.**, to type a folder path.
+
+![Drive picker with distinct icons for 3.5-inch and 5.25-inch floppy drives, fixed disks and Slot-otter SD](docs/screenshots/drive-picker.png)
 
 ### Copy files with a clear view of progress
 
@@ -125,7 +139,7 @@ switches between text and hex, **F7** searches and **F8** finds the next match.
 
 | Read text | Inspect bytes |
 | --- | --- |
-| <img src="docs/screenshots/text-viewer.png" width="360" alt="Text viewer with a Line 1 / 70 indicator in the top right"> | <img src="screenshots/34-binary-hex-viewer.png" width="360" alt="Hex viewer showing byte offsets, hexadecimal values and readable text"> |
+| <img src="docs/screenshots/text-viewer.png" width="360" alt="Text viewer with line position and navigation controls below the document"> | <img src="screenshots/34-binary-hex-viewer.png" width="360" alt="Hex viewer showing byte offsets, hexadecimal values and readable text"> |
 
 ### Open ZIP and ARJ files like folders
 
@@ -159,6 +173,39 @@ for how to run a test, verify its results and remove its test files.
 
 [Explore the complete VGA screenshot gallery →](screenshots/README.md)
 
+## More everyday tools
+
+- **Run a program:** select an `.EXE`, `.COM` or `.BAT` and press Enter.
+  It runs in the active folder. Press a key when it finishes to return.
+- **Check capacity:** the idle status line shows free space on both pane drives (K means KiB)
+  and bytes in the selected files. **Ctrl-L** calculates a total including
+  selected folders; Escape cancels a long calculation.
+- **Handle many conflicts:** copy prompts show both files' sizes and dates.
+  Choose **O** to overwrite once, **A** to overwrite all conflicts in this
+  operation, **S** to skip once or **K** to skip all. After a transfer error,
+  **R** retries the failed file, **S** skips it and **Esc** cancels the remaining
+  work. Completed files stay in place.
+- **Browse large folders:** **Ctrl-PgDn** opens the next directory page and
+  **Ctrl-PgUp** returns to the previous one. Each page holds up to 512 entries.
+  `[MORE]` means there are more entries. Sorting and marks apply to the current
+  page; changing pages clears its marks after confirmation.
+- **Find a file anywhere below a folder:** press **Alt-F7**, choose the starting
+  folder or drive root and enter a pattern such as `*.TXT`. **N** finds the next
+  match, **Enter** opens its location and **Esc** stops the search.
+- **Inspect and change attributes:** **Ctrl-A** opens properties. **R**, **H**,
+  **S** and **A** toggle Read-only, Hidden, System and Archive. **Enter** saves;
+  **Esc** leaves the attributes unchanged.
+
+| Resolve copy conflicts | Inspect file attributes |
+| --- | --- |
+| <img src="docs/screenshots/batch-conflict.png" width="360" alt="Copy conflict showing both files' size and date, with overwrite-all and skip-all choices"> | <img src="docs/screenshots/file-properties.png" width="360" alt="File properties with editable Read-only, Hidden, System and Archive flags"> |
+
+Path and command fields support **Left/Right**, **Home/End**, **Delete** and
+**Backspace**. **Tab** completes a filename or folder from the active directory;
+ambiguous names complete only their shared prefix. **Up/Down** recall recent
+input in dialogs. Use **Ctrl-E/Ctrl-X** for command history, including when the
+command line is empty. Histories last for the current session.
+
 ## Keyboard shortcuts
 
 The function-key labels at the bottom of the screen are always there as a
@@ -168,7 +215,7 @@ reminder. Press **F1** for help inside Nightwatch.
 | --- | --- |
 | **↑ / ↓**, **PgUp / PgDn** | Move through the file list |
 | **Tab** | Switch between the two panes |
-| **Enter / Backspace** | Open a folder or archive / go up a folder |
+| **Enter / Backspace** | Open a folder or archive, run a DOS program / go up a folder |
 | **Insert / Space** | Mark or unmark the selected entry |
 | **+ / -** | Mark all entries / clear all marks, with an empty command line |
 | **F1 / F2** | Open help / choose a display mode |
@@ -176,10 +223,14 @@ reminder. Press **F1** for help inside Nightwatch.
 | **F4** | Open the file in an external editor, such as DOS EDIT |
 | **F5 / F6** | Copy / move or rename the selection |
 | **F7 / F8** | Create a folder / delete the selection after confirmation |
-| **F9 / F10** | Change drive or folder / quit Nightwatch |
+| **F9 / F10** | Pick a drive (or enter a path) / quit Nightwatch |
 | **Ctrl-U** | Unpack an archive, or extract selected entries while browsing one |
 | **Ctrl-F / Ctrl-S** | Find a filename / sort the file list |
 | **Ctrl-P / Ctrl-N** | Mark / unmark files using a filename pattern |
+| **Alt-F7** | Search filenames beneath a folder or drive root |
+| **Ctrl-A / Ctrl-L** | File attributes / calculate selection size including folders |
+| **Ctrl-PgUp / Ctrl-PgDn** | Previous / next directory page |
+| **Ctrl-E / Ctrl-X** | Previous / next command from session history |
 | **Ctrl-R** | Refresh the file lists |
 | **Ctrl-W** | Save the current display mode, folder paths and sorting |
 | **Ctrl-O** | Open a DOS shell; type `EXIT` to return |
@@ -212,8 +263,10 @@ then **R** to turn that option on.
 - A keyboard. The DOS application does not use a mouse.
 
 Files and folders must use **DOS 8.3 names**: up to eight characters before the
-extension and three after it, such as `REPORT.TXT`. Each pane displays up to
-512 entries; folder copying and other recursive operations can process more.
+extension and three after it, such as `REPORT.TXT`. Directory listings use pages of up to 512 entries; Ctrl-PgDn/PgUp reach further
+entries. Sorting and marks are local to a page. Archive listings retain a
+512-entry limit. Recursive file operations and filename search process entries
+beyond the visible page.
 
 ZIP extraction supports stored and DEFLATE-compressed files. ARJ extraction
 supports stored files and methods 1–4. Encrypted or split archives are not
@@ -228,7 +281,9 @@ so you can try browsing, copying and unpacking sample files. Changes are cleared
 when you reset or reload the page; your computer's files are not mounted.
 
 The web interface includes on-screen keys, pause, fullscreen, reset and a
-filterable screenshot gallery. See [For developers](#for-developers) below to
+filterable screenshot gallery. Its Find, Attributes and Size buttons send the
+new shortcuts directly; Size avoids the browser-reserved Ctrl-L shortcut.
+See [For developers](#for-developers) below to
 build and serve it locally. [Website deployment instructions](docs/ci.md)
 explain how to publish it with GitHub Pages.
 
@@ -251,15 +306,19 @@ With the [native build requirements](buildenv/README.md) installed:
 
 ```sh
 make build          # Build build/NW.EXE
-make run            # Run VGA mode with fictional work and backup drives
+make run            # Run VGA with sample hard disks, floppies and an SD card
 make test           # Run host tests
 make package        # Create the downloadable DOS package
 make site           # Build the self-contained browser version
 make serve-site     # Serve it at http://localhost:8000
 ```
 
-`make run` preserves changes to its local demo files between launches. The
-browser demo resets its drives on reload. Building the website downloads
+`make run` includes A: (3.5-inch, 1.44 MB), B: (5.25-inch, 360 KB), D: (work),
+E: (backup) and S: (simulated SD card). Press F9 to explore them. It preserves
+changes between launches: floppy files live in `build/demo/A.IMG` and `B.IMG`;
+D:, E: and S: use their matching folders under `build/demo/`. The SD identity is
+simulated for the demo; no Slot-otter hardware is needed. The browser demo
+resets its D: and E: drives on reload. Building the website downloads
 checksum-verified emulator files on the first run and caches them for later builds.
 
 See [CI and deployment](docs/ci.md), [rendering notes](docs/rendering.md),

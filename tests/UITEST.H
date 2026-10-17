@@ -2,8 +2,18 @@
 /* Test-only BIOS/VRAM capture and scripted keys; never linked into NW.EXE. */
 #include <assert.h>
 const unsigned char far *asset_font(int mode);
+unsigned test_fail_writes;
 static FILE *test_keys;
+static char test_directory[NW_PATH];
 static int test_frame;
+/* Shell pauses execute in the pane directory; captures belong to startup. */
+static FILE *test_open(const char *name, const char *mode)
+{
+    char path[NW_PATH];
+    if (!test_directory[0]) assert(getcwd(test_directory,sizeof(test_directory)));
+    assert(path_join(path,test_directory,name));
+    return fopen(path,mode);
+}
 /* Binary evidence: mode byte + little-endian height word, then VRAM bytes.
  * Text stores 4000 cell bytes plus 256 eight-row glyphs; graphics stores logical
  * scanlines, one CGA plane or four EGA/VGA planes. Reads do not count as writes.
@@ -19,7 +29,7 @@ static void test_capture(void)
     FILE *f;
     union REGS r;
     sprintf(name, "F%03d.BIN", test_frame++);
-    f = fopen(name, "wb"); assert(f);
+    f = test_open(name, "wb"); assert(f);
     height = video_mode == VIDEO_EGA ? 350 : (video_mode == VIDEO_VGA ? 480 : 200);
     head[0] = video_mode; head[1] = height & 255; head[2] = height >> 8;
     fwrite(head, 1, 3, f);
@@ -51,7 +61,7 @@ static void test_capture(void)
     }
     fclose(f);
     sprintf(name, "F%03d.POS", test_frame - 1);
-    f = fopen(name, "w"); assert(f);
+    f = test_open(name, "w"); assert(f);
     fprintf(f, "%d %d %d %d %d %d %d %lu %lu %u %d %d\n", video_mode,
             video_mode == VIDEO_TEXT ? video_rows - 8 : graph_rows(), active,
             panes[0].top, panes[0].cursor, panes[1].top, panes[1].cursor,
@@ -72,7 +82,7 @@ static void test_progress_capture(unsigned long done, unsigned long total)
     remove(name); assert(!rename(old, name));
     sprintf(old, "F%03d.POS", test_frame); remove(old);
     sprintf(name, "P%03u.TXT", sequence++);
-    f = fopen(name, "w"); assert(f);
+    f = test_open(name, "w"); assert(f);
     fprintf(f, "%d %lu %lu %lu %lu %lu %lu %lu %lu %lu\n", counting,
             total_files, total_bytes, operation_files, operation_skipped,
             done, total, operation_bytes, operation_current_bytes, transfer_rate);
@@ -84,9 +94,10 @@ static int test_key_read(void)
 {
     unsigned key;
     test_capture();
-    if (!test_keys) test_keys = fopen("KEYS.TXT", "r");
+    if (!test_keys) test_keys = test_open("KEYS.TXT", "r");
     if (!test_keys || fscanf(test_keys, "%x", &key) != 1) {
         video_restore(); puts("FAIL: script ran out of keys"); exit(1);
     }
+    if ((key&0xff00)==0xf100) { test_fail_writes=key&255; return 0; }
     return key;
 }

@@ -18,9 +18,9 @@ build: build/NW.EXE
 build/NW.EXE: src/BUILD.H $(wildcard src/*.C src/*.H src/*.ASM vendor/zlib/*) src/MAKEFILE VERSION LICENSE assets/ICON-LICENSE.txt build.sh tools/version.py tools/build_metadata.py tools/stage.py tools/check_memory.py tools/dosbox.conf
 	bash ./build.sh
 demo:
-	python3 tools/demo_drive.py
+	python3 tools/prepare_demo.py
 run: build demo
-	$(DOSBOX) -conf tools/dosbox.conf -c 'mount c "$(CURDIR)/build"' -c 'mount d "$(CURDIR)/build/demo/D"' -c 'mount e "$(CURDIR)/build/demo/E"' -c 'c:' -c 'NW /$(MODE) D:\ E:\' -c exit
+	$(DOSBOX) -conf tools/dosbox.conf -c 'mount c "$(CURDIR)/build"' -c 'imgmount a "$(CURDIR)/build/demo/A.IMG" -t floppy -fs fat' -c 'imgmount b "$(CURDIR)/build/demo/B.IMG" -t floppy -fs fat' -c 'mount d "$(CURDIR)/build/demo/D"' -c 'mount e "$(CURDIR)/build/demo/E"' -c 'mount s "$(CURDIR)/build/demo/S"' -c 'c:' -c 'DEMO\DEMODRV NW.EXE /$(MODE) D:\ E:\' -c exit
 test:
 	bash ./tests/run.sh
 test-dos:
@@ -37,6 +37,9 @@ test-video: build
 	python3 tests/video.py
 	python3 tests/help.py
 	python3 tests/features.py
+	python3 tests/drive_dos.py
+	python3 tests/demo_dos.py
+	python3 tests/workflows_dos.py
 	python3 tests/storage_ui.py
 	python3 tests/storage_dos.py
 test-storage-dos:

@@ -107,32 +107,39 @@ $('fullscreen').addEventListener('click',async()=>{
   }catch(_){status('Fullscreen is unavailable in this browser');}
 });
 if(!$('player').requestFullscreen) $('fullscreen').hidden=true;
+function syncModifiers(event,key){
+  // Virtual keyboards can report Shift on a character without sending a
+  // separate Shift key-up. Reconcile both transitions before the next key.
+  const shifted=event.key.length===1&&'ABCDEFGHIJKLMNOPQRSTUVWXYZ~!@#$%^&*()_+{}|:"<>?'.includes(event.key);
+  for(const [pressed,codes] of [[event.shiftKey||shifted,[340,344]],[event.ctrlKey,[341,345]],[event.altKey,[342,346]]]){
+    if(pressed){
+      if(!codes.some(code=>held.has(code))){
+        const code=codes.includes(key)?key:codes[0];
+        held.add(code);engine.sendKeyEvent(code,true);
+      }
+    }else for(const code of codes) if(held.delete(code)) engine.sendKeyEvent(code,false);
+  }
+}
 canvas.addEventListener('keydown',event=>{
   const key=keys[event.code];
   if(!engine||loading||paused||event.metaKey||key===undefined) return;
   event.preventDefault();
   // Reconcile modifiers after focus changes; Ctrl-U/Shift-F3 must reach DOS.
-  for(const [pressed,code] of [[event.shiftKey,340],[event.ctrlKey,341],[event.altKey,342]]){
-    if(pressed&&!held.has(code)){held.add(code);engine.sendKeyEvent(code,true);}
-  }
+  syncModifiers(event,key);
   if(!held.has(key)){held.add(key);engine.sendKeyEvent(key,true);}
 });
 canvas.addEventListener('keyup',event=>{
   const key=keys[event.code];
+  if(engine&&!loading&&!paused&&!event.metaKey) syncModifiers(event,key);
   if(!held.has(key)) return;
   event.preventDefault();held.delete(key);engine?.sendKeyEvent(key,false);
-  // Both left/right modifier codes may be present after reconciliation.
-  if(['ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight'].includes(event.code)){
-    for(const [pressed,codes] of [[event.shiftKey,[340,344]],[event.ctrlKey,[341,345]],[event.altKey,[342,346]]]){
-      if(!pressed) for(const code of codes) if(held.delete(code)) engine?.sendKeyEvent(code,false);
-    }
-  }
 });
 canvas.addEventListener('blur',releaseKeys);window.addEventListener('blur',releaseKeys);
 document.addEventListener('visibilitychange',()=>{if(document.hidden) releaseKeys();});
-for(const button of document.querySelectorAll('[data-key]')) button.addEventListener('click',()=>{
+for(const button of document.querySelectorAll('[data-key],[data-combo]')) button.addEventListener('click',()=>{
   if(!engine||paused||loading) return;
-  engine.simulateKeyPress(...modifiers,Number(button.dataset.key));
+  const chord=button.dataset.combo ? button.dataset.combo.split(',').map(Number) : [Number(button.dataset.key)];
+  engine.simulateKeyPress(...modifiers,...chord);
   modifiers.clear();canvas.focus();
   for(const toggle of document.querySelectorAll('[data-modifier]')) toggle.setAttribute('aria-pressed','false');
 });

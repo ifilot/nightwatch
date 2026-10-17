@@ -44,8 +44,15 @@ def build_ui():
                                       'static int modal_key_read(void) { return test_key_read(); }\n') + text[end:]
                 # Capture copy dialogs separately so ordinary scripted-key frame
                 # numbers remain stable. Production source has no capture calls.
+                text = text.replace('        bioskey(0);', '        key_read();')
                 text = text.replace('        paint_tick = now;',
                                     '        test_progress_capture(done, total); paint_tick = now;')
+            if src.name == 'FSDOS.C':
+                # Faults are armed only by reserved keys in the scripted runner.
+                text = text.replace('int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count)\n{',
+                    'extern unsigned test_fail_writes;\n'
+                    'int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count)\n{\n'
+                    '    if (test_fail_writes) { --test_fail_writes; errno=ENOSPC; return -1; }')
             if src.name == 'CORE.C':
                 # Test-only pacing makes BIOS-timed copy snapshots deterministic,
                 # even when the mounted host filesystem transfers a MB instantly.

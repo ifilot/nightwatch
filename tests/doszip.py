@@ -11,21 +11,21 @@ def prepare_zip(work, run, flags=""):
     work = Path(work)
     for old in work.glob('*.OBJ'):
         old.unlink()
-    for src in [*(ROOT/'vendor/zlib').iterdir(), ROOT/'src/ZIP.C', ROOT/'src/ZIP.H', ROOT/'src/ARJ.C', ROOT/'src/ARJ.H', ROOT/'src/ARCHIVE.C', ROOT/'src/ARCHIVE.H', ROOT/'src/BROWSE.C', ROOT/'src/BROWSE.H', ROOT/'src/ARCMSG.H', ROOT/'src/ARCMSG.ASM', ROOT/'src/ARJDEC.C', ROOT/'src/ARJDEC.H', ROOT/'src/FIXED.ASM', ROOT/'src/NW.H', ROOT/'src/VERSION.H']:
+    for src in [*(ROOT/'vendor/zlib').iterdir(), ROOT/'src/ZIP.C', ROOT/'src/ZIP.H', ROOT/'src/ARJ.C', ROOT/'src/ARJ.H', ROOT/'src/ARCHIVE.C', ROOT/'src/ARCHIVE.H', ROOT/'src/BROWSE.C', ROOT/'src/BROWSE.H', ROOT/'src/ARCMSG.H', ROOT/'src/ARCMSG.ASM', ROOT/'src/ARJDEC.C', ROOT/'src/ARJDEC.H', ROOT/'src/FIXED.ASM', ROOT/'src/FONT.ASM', ROOT/'src/NW.H', ROOT/'src/VERSION.H']:
         if src.suffix.lower() in ('.c', '.h', '.asm'):
             (work/src.name.upper()).write_bytes(src.read_text(encoding='ascii').replace('\n', '\r\n').encode('ascii'))
     commands = [r'set PATH=C:\TC;C:\TASM', r'set INCLUDE=C:\TC\INCLUDE', r'set LIB=C:\TC\LIB']
-    commands += ['tasm /mx FIXED.ASM > ZFIXED.LOG', 'tasm /mx ARCMSG.ASM > ZARCMSG.LOG']
+    commands += ['tasm /mx FIXED.ASM > ZFIXED.LOG', 'tasm /mx ARCMSG.ASM > ZARCMSG.LOG', 'tasm /mx FONT.ASM > ZFONT.LOG']
     commands += [f'tcc -1- -mm -O -Z -DZ_SOLO -DNO_GZIP {flags} -c {m}.C > Z{m}.LOG' for m in MODULES]
-    objects = ['FIXED.OBJ', 'ARCMSG.OBJ']+[m+'.OBJ' for m in MODULES]
+    objects = ['FIXED.OBJ', 'ARCMSG.OBJ', 'FONT.OBJ']+[m+'.OBJ' for m in MODULES]
     inputs = [p for p in (ROOT/'vendor/zlib').iterdir() if p.suffix.lower() in ('.c','.h','.asm')]
-    inputs += [ROOT/'src/ZIP.C', ROOT/'src/ARJ.C', ROOT/'src/ARJDEC.C', ROOT/'src/ARCHIVE.C', ROOT/'src/BROWSE.C', ROOT/'src/ARCMSG.ASM', ROOT/'src/FIXED.ASM', Path(__file__), ROOT/'tests/object_cache.py']
+    inputs += [ROOT/'src/ZIP.C', ROOT/'src/ARJ.C', ROOT/'src/ARJDEC.C', ROOT/'src/ARCHIVE.C', ROOT/'src/BROWSE.C', ROOT/'src/ARCMSG.ASM', ROOT/'src/FIXED.ASM', ROOT/'src/FONT.ASM', Path(__file__), ROOT/'tests/object_cache.py']
     inputs += [p for p in (ROOT/'src').glob('*.H') if p.name != 'BUILD.H']
     cache = ObjectCache(ROOT/'build/test-objects', signature(inputs, commands))
     if cache.restore(work, objects):
         print('PASS: reused checked DOS ZIP objects', flush=True)
         return
-    compile_dos(work, run, 'ZBUILD', commands, objects, ['ZFIXED.LOG','ZARCMSG.LOG']+['Z'+m+'.LOG' for m in MODULES])
+    compile_dos(work, run, 'ZBUILD', commands, objects, ['ZFIXED.LOG','ZARCMSG.LOG','ZFONT.LOG']+['Z'+m+'.LOG' for m in MODULES])
     cache.save(work, objects)
 
 def compile_app(work, run, name, commands, outputs, logs):
@@ -42,6 +42,13 @@ def compile_app(work, run, name, commands, outputs, logs):
     font.write_bytes(text.replace('\n','\r\n').encode('ascii'))
     changed = []
     logs = list(logs)
+    if '"DRIVE.H"' in (work/'MAIN.C').read_text():
+        for asset_name in ('DRIVE.C','DRIVE.H','DRIVEDOS.C','FEATURE.C','FEATURE.H','FEATMSG.ASM'):
+            (work/asset_name).write_bytes((ROOT/'src'/asset_name).read_text().replace('\n','\r\n').encode('ascii'))
+        changed += [r'set PATH=C:\TC;C:\TASM', r'set INCLUDE=C:\TC\INCLUDE',
+                    'tcc -1- -mm -O -Z -c DRIVE.C DRIVEDOS.C FEATURE.C > DRCOMP.LOG',
+                    'tasm /mx FEATMSG.ASM > FECOMP.LOG']
+        logs += ['DRCOMP.LOG','FECOMP.LOG']
     if not any('tasm' in c and 'FONT.ASM' in c for c in commands):
         changed += [r'set PATH=C:\TC;C:\TASM', 'tasm /mx FONT.ASM > ZFONT.LOG']
         logs.append('ZFONT.LOG')

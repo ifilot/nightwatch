@@ -22,7 +22,13 @@ unsigned fs_list_calls;
  * Raw intdos failures (fs_stamp) do not translate their DOS error into errno. */
 void fs_error(const char *action)
 {
-    sprintf(nw_error, "%.65s: %.80s", action, strerror(errno));
+    const char *message=strerror(errno);
+    char *newline;
+    if (errno==ENOSPC) message="Disk full";
+    else if (errno==EIO) message="Disk I/O error";
+    else if (errno==EROFS) message="Write-protected disk";
+    sprintf(nw_error,"%.65s: %.80s",action,message);
+    newline=strchr(nw_error,'\n'); if (newline) *newline=0;
 }
 /* Resolve an existing directory using DOS itself.  DOS stores a separate
  * current directory per drive: save the original drive/directory and also
@@ -62,7 +68,7 @@ static void entry_from_ff(Entry *e, const struct ffblk *f)
     strcpy(e->name, f->ff_name); e->attr = f->ff_attrib;
     e->size = f->ff_fsize; e->date = f->ff_fdate; e->time = f->ff_ftime;
 }
-/* Load a bounded panel listing including hidden/system entries, but not
+/* Load one bounded directory page including hidden/system entries, but not
  * volume labels.  Synthesize one parent entry away from drive roots; mark
  * truncation when capacity is reached rather than overrunning near data.
  * Only ENOENT denotes normal search exhaustion. A failed scan must not be
@@ -73,6 +79,7 @@ int fs_list(Panel *p)
     char spec[NW_PATH];
     int done;
     Entry dir;
+    unsigned long skipped=0;
 #ifdef NW_DIAGNOSTICS
     ++fs_list_calls;
 #endif
@@ -89,7 +96,7 @@ int fs_list(Panel *p)
         memset(e, 0, sizeof(*e)); strcpy(e->name, ".."); e->attr = NW_DIR;
     }
     while (!done) {
-        if (strcmp(f.ff_name, ".") && strcmp(f.ff_name, "..")) {
+        if (strcmp(f.ff_name, ".") && strcmp(f.ff_name, "..") && skipped++>=p->offset) {
             if (p->count == NW_FILES) { p->truncated = 1; break; }
             entry_from_ff(&p->files[p->count++], &f);
         }
@@ -100,6 +107,20 @@ int fs_list(Panel *p)
         }
     }
     return 1;
+}
+unsigned long fs_space(const char *path)
+{
+    union REGS r;
+    unsigned long clusters, bytes;
+    unsigned drive=(unsigned char)path[0];
+    if (drive>='a' && drive<='z') drive-='a'-'A';
+    if (path[1]!=':' || drive<'A' || drive>'Z') return 0xffffffffUL;
+    memset(&r,0,sizeof(r)); r.h.ah=0x36; r.h.dl=(unsigned char)(drive-'A'+1);
+    intdos(&r,&r);
+    if (r.x.ax==0xffff) return 0xffffffffUL;
+    clusters=r.x.bx; bytes=(unsigned long)r.x.ax*r.x.cx;
+    /* Compute KiB before multiplication on volumes whose byte total wraps. */
+    return clusters*(bytes/1024UL)+clusters*(bytes%1024UL)/1024UL;
 }
 /* Query a file or directory.  DOS findfirst cannot describe a drive root,
  * so verify it through canonicalization and synthesize its directory entry. */
@@ -143,7 +164,7 @@ int fs_read(int fd, void *data, unsigned count) { return read(fd, data, count); 
 int fs_write(int fd, const void *data, unsigned count) { return write(fd, data, count); }
 /* Turbo C owns the remaining conventional memory through its far heap.
  * Normalize DS:DX so a complete 16 KiB transfer cannot wrap a segment. */
-void fs_copy_buffer_init(FsCopyBuffer *buffer, void *fallback, unsigned size)
+void fs_copy_buffer_init(FsCopyBuffer *buffer, void NW_FAR *fallback, unsigned size)
 {
     unsigned offset;
     buffer->allocation = farmalloc(16384UL);
@@ -200,7 +221,7 @@ int fs_stamp(int fd, const Entry *e)
 {
     union REGS r;
     r.x.ax = 0x5701; r.x.bx = fd; r.x.cx = e->time; r.x.dx = e->date;
-    intdos(&r, &r); return !r.x.cflag;
+    intdos(&r, &r); if (r.x.cflag) errno=EIO; return !r.x.cflag;
 }
 /* Set DOS attribute bits using Turbo C _chmod mode 1; nonnegative succeeds. */
 int fs_attr(const char *path, unsigned attr) { return _chmod(path, 1, attr) >= 0; }

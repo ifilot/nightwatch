@@ -16,22 +16,22 @@
  * Return the byte offset after rows display lines, or the byte position at EOF
  * if reached sooner. EOF here is an offset, not the C-library EOF sentinel.
  * The caller supplies a nonnegative offset and a positive row count. Layout
- * follows the viewer's 80-column wrapping and eight-column tab stops; CR is
+ * follows the requested column width and eight-column tab stops; CR is
  * ignored. A byte which fills the last column belongs to this page, including
  * a tab whose expansion reaches the boundary. Seek/read/position failure is
  * reported as -1. No page contents are retained here.
  */
-long view_next(FILE *f, long offset, int rows)
+long view_next_columns(FILE *f, long offset, int rows, int columns)
 {
     int x = 0, y = 0, ch;
-    if (fseek(f, offset, SEEK_SET)) return -1;
+    if (rows <= 0 || columns <= 0 || fseek(f, offset, SEEK_SET)) return -1;
     while (y < rows && (ch = getc(f)) != EOF) {
         if (ch == '\r') continue;
         if (ch == '\n') { ++y; x = 0; }
         else if (ch == '\t') {
             int spaces = 8 - (x & 7);
-            while (spaces--) if (++x == 80) { x = 0; ++y; }
-        } else if (++x == 80) { x = 0; ++y; }
+            while (spaces--) if (++x == columns) { x = 0; ++y; }
+        } else if (++x == columns) { x = 0; ++y; }
     }
     return ferror(f) ? -1 : ftell(f);
 }
@@ -44,11 +44,11 @@ long view_next(FILE *f, long offset, int rows)
  * positioned beyond EOF cannot make this loop run forever. Return -1 on I/O
  * failure, or zero when there is no earlier page.
  */
-long view_previous(FILE *f, long offset, int rows)
+long view_previous_columns(FILE *f, long offset, int rows, int columns)
 {
     long at = 0, next;
     while (at < offset) {
-        next = view_next(f, at, rows);
+        next = view_next_columns(f, at, rows, columns);
         if (next < 0) return -1;
         if (next >= offset || next == at) return at;
         at = next;
@@ -62,15 +62,28 @@ long view_previous(FILE *f, long offset, int rows)
  * return the preceding start rather than displaying an empty trailing page.
  * An empty file has start zero; I/O failure returns -1.
  */
-long view_last(FILE *f, int rows)
+long view_last_columns(FILE *f, int rows, int columns)
 {
     long at = 0, next, previous = 0;
     for (;;) {
-        next = view_next(f, at, rows);
+        next = view_next_columns(f, at, rows, columns);
         if (next < 0) return -1;
         if (next == at) return previous;
         previous = at; at = next;
     }
+}
+/* The text adapter retains the original 80-column page layout. */
+long view_next(FILE *f, long offset, int rows)
+{
+    return view_next_columns(f, offset, rows, 80);
+}
+long view_previous(FILE *f, long offset, int rows)
+{
+    return view_previous_columns(f, offset, rows, 80);
+}
+long view_last(FILE *f, int rows)
+{
+    return view_last_columns(f, rows, 80);
 }
 int view_position(FILE *f, long offset, ViewPosition *position)
 {

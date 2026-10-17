@@ -6,6 +6,7 @@
 #include "NW.H"
 #include "VIDEO.H"
 #include "ASSETS.H"
+#include "DRIVE.H"
 const unsigned char far *asset_font(int mode);
 /* All mutable buffers live in the near data segment. Keeping
  * full pixel frames here would exhaust its 64K budget; graphics instead go
@@ -343,7 +344,7 @@ static void sprite_byte(unsigned offset, unsigned char mask, unsigned char bits)
     pixels[offset] = (old & (unsigned char)~mask) | (bits & mask);
     COUNT_VIDEO(1);
 }
-static void color_icon(int x, int y, const unsigned char *sprite)
+static void color_icon(int x, int y, const unsigned char far *sprite)
 {
     int plane, row, col, py, left = x >> 3, shift = x & 7;
     unsigned char mask, bits;
@@ -383,6 +384,19 @@ void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigne
         video_mask(x, y, mask + height * 2, 2, height, body);
         video_mask(x, y, mask + height * 4, 2, height, highlight);
     }
+}
+void video_drive_icon(int x, int y, unsigned kind)
+{
+    unsigned index;
+    if (video_mode!=VIDEO_VGA) return;
+    switch (kind) {
+        case DRIVE_FLOPPY35: index=0; break;
+        case DRIVE_FLOPPY525: index=1; break;
+        case DRIVE_FIXED: index=2; break;
+        case DRIVE_SD: index=3; break;
+        default: color_icon(x,y,vga_icon_sprites[ICON_DRIVE]); return;
+    }
+    color_icon(x,y,asset_drive_icon(index));
 }
 /* Copy whole-byte listing interiors; callers repaint the scrollbar afterwards.
  * Gutters inside rounded edge bytes are constant throughout the listing. */
@@ -444,6 +458,15 @@ void video_overlay_begin(int clear)
         ++generation;
     }
     if (clear) { overlay_clear = 1; invalid = 1; }
+}
+/* Directly painted documents have no cell-buffer representation. Reset the
+ * synthetic baseline so repeated prompts paint over them on every opening. */
+void video_native_overlay(void)
+{
+    video_overlay_begin(0);
+    video_clear(COLOR_NORMAL);
+    memcpy(previous, screen, sizeof(screen));
+    invalid = overlay_clear = 0;
 }
 static int box_char(int ch)
 {

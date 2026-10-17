@@ -44,6 +44,28 @@ static void line_position(void)
     assert(view_position(f, 0, &p) && p.breaks == 0);
     fclose(f);
 }
+static void document_pages(void)
+{
+    FILE *f = tmpfile();
+    int i;
+    assert(f);
+    for (i = 0; i < 211; ++i) fputc('W', f);
+    fflush(f);
+    assert(view_next_columns(f, 0, 2, 70) == 140);
+    assert(view_previous_columns(f, 140, 2, 70) == 0);
+    assert(view_previous_columns(f, 210, 2, 70) == 140);
+    assert(view_last_columns(f, 2, 70) == 140);
+    assert(view_next_columns(f, 0, 0, 70) == -1);
+    assert(view_next_columns(f, 0, 2, 0) == -1);
+    fclose(f);
+    f = tmpfile(); assert(f);
+    for (i = 0; i < 69; ++i) fputc('W', f);
+    fputs("\tEND\r\nTail", f); fflush(f);
+    assert(view_next_columns(f, 0, 1, 70) == 70);
+    assert(view_next_columns(f, 0, 2, 70) == 75);
+    assert(view_next_columns(f, 70, 1, 70) == 75);
+    fclose(f);
+}
 int main(void)
 {
     FILE *f = tmpfile();
@@ -54,6 +76,7 @@ int main(void)
     long at = 0, old = 0, end, value;
     assert(f);
     line_position();
+    document_pages();
     for (i = 0; i < 20000; ++i) fputs("line\r\n", f);
     fputs("AaBaBaC\0", f); fputc(0, f); fputc(255, f); fflush(f);
     for (i = 0; i < 150; ++i) { old = at; at = view_next(f, at, 23); assert(at > old); }

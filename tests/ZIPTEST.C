@@ -21,6 +21,11 @@ extern int test_short_write;
 unsigned _stklen = 8192;
 static int cancel, conflict = 1;
 static unsigned long polls;
+#ifdef NW_HOST
+static int retry_decision;
+static int recover(const char *src, const char *dst, const char *message)
+{ (void)src; (void)dst; (void)message; return retry_decision; }
+#endif
 static int progress(const char *name, unsigned long done, unsigned long total)
 {
     (void)name;
@@ -49,6 +54,10 @@ int main(int argc, char **argv)
     ok = zip_measure(argv[1], argv[2], &files, &bytes);
 #ifdef NW_HOST
     if (argc > 3) {
+        if (!strcmp(argv[3], "retry-write") || !strcmp(argv[3], "skip-write")) {
+            retry_decision=!strcmp(argv[3],"retry-write") ? 1 : 2;
+            operation_error=recover; fs_test_fail("write","",2);
+        }
         if (!strcmp(argv[3], "short")) test_short_write = 7;
         if (!strcmp(argv[3], "write")) fs_test_fail("write", "", 1);
         if (!strcmp(argv[3], "read")) fs_test_fail("read", "", 1);

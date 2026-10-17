@@ -56,8 +56,8 @@ buffers. The Turbo C history/codebook allocation is 28,440 bytes. It allocates
 no archive-sized table. ZIP and ARJ share path validation,
 bounded reads and staged replacement in `src/ARCHIVE.C`. Archive error text
 lives in an immutable assembly segment outside DGROUP. The production build
-uses 55,056 bytes of static near data plus the 8,192-byte stack, leaving
-2,288 bytes of near heap; its executable is 147,386 bytes.
+uses 55,072 bytes of static near data plus the 8,192-byte stack, leaving
+2,272 bytes of near heap; its executable is 150,694 bytes.
 
 ## Implementation and verification
 

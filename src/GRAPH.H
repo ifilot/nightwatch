@@ -10,11 +10,20 @@
  * including NUL; status fits 160 bytes, including NUL, for the renderer caches.
  * Drawing uses direct VRAM primitives, not the cell buffer/video_flush(). */
 int graph_rows(void);
+void graph_command_cursor(unsigned cursor);
 void graph_draw(Panel *panels, int active, const char *status, const char *command);
 /* Native Help keeps its chrome fixed while scrolling the embedded document. */
 int graph_help_rows(void);
 void graph_help(const char *version, const char *commit, const char *repository,
                 unsigned first, int full);
+/* Native document windows share Help's frame, paper and fixed controls. */
+int graph_view_rows(void);
+int graph_view_columns(void);
+void graph_view_begin(int hex, const char *path, int full);
+void graph_view_line(int row, const char *text, int hex);
+void graph_view_footer(const char *position, const char *controls);
+void graph_about(const char *version, const char *commit, const char *repository,
+                 const char **credits);
 /* Draw after the cell overlay flush. Reset initializes a covered/new track;
  * otherwise touch only the difference from previous. Percent is clipped. */
 void graph_progress(int row, unsigned percent, unsigned previous, int reset);

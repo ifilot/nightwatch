@@ -9,6 +9,10 @@
 long view_next(FILE *f, long offset, int rows);
 long view_previous(FILE *f, long offset, int rows);
 long view_last(FILE *f, int rows);
+/* Native document windows wrap to their available pixel width. */
+long view_next_columns(FILE *f, long offset, int rows, int columns);
+long view_previous_columns(FILE *f, long offset, int rows, int columns);
+long view_last_columns(FILE *f, int rows, int columns);
 /* Logical (LF-delimited) line position, independent of screen wrapping.
  * Initialize offset to -1. The first call counts the whole file; subsequent
  * calls scan only the intervening bytes (or restart for a backward jump).

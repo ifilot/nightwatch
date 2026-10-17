@@ -44,6 +44,8 @@ extern unsigned long video_cells;
 void video_rect(int x, int y, int width, int height, unsigned color);
 void video_label(int x, int y, const char *s, unsigned fg, unsigned bg, int bold);
 void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigned highlight);
+/* Native VGA drive-picker sprite. Other modes use textual drive types. */
+void video_drive_icon(int x, int y, unsigned kind);
 /* Scroll moves the overlapping interior by signed pixel dy. It rounds x
  * outward to byte boundaries: callers must keep those edge gutters uniform,
  * repaint exposed rows and any scrollbar. Returns zero when unsupported. */
@@ -55,6 +57,7 @@ void video_mask(int x, int y, const unsigned char *mask, int bytes, int height, 
  * a full background clear at the next flush. */
 void video_desktop_begin(void);
 void video_overlay_begin(int clear);
+void video_native_overlay(void);
 unsigned video_generation(void);
 /* init captures BIOS mode/page/cursor and probes the adapter. set returns
  * zero without changing mode when unsupported; success discards old content.

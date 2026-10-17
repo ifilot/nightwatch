@@ -6,6 +6,12 @@ VGA uses original 16×16 Quick Menu inspired color artwork, authored in
 `make assets` compiles an opacity mask and four color planes for each sprite
 into `src/ASSETS.H`. The VGA artwork is GPL-3.0-only.
 
+The VGA F9 picker and pane headers use four original 16x16 drive icons from
+`tools/drive_icons.py`: 3.5-inch floppy, 5.25-inch floppy, hard disk and SD card.
+Their PNGs and [comparison preview](drive-icons/preview.png) are in
+`drive-icons/`. `make assets` packs them into far FONTDATA in `src/FONT.ASM`,
+preserving near-heap space. These icons are GPL-3.0-only.
+
 EGA uses monochrome 16x16 icons from [16pxls](https://16pxls.com/)
 v1.0.1 by Paul Mackenzie, licensed CC-BY-SA-4.0. Selected original PNGs and
 provenance are in [16pxls/](16pxls/README.md); attribution and the full license

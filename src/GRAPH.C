@@ -5,11 +5,15 @@
 #include "VIDEO.H"
 #include "GRAPH.H"
 #include "HELP.H"
+#include "DRIVE.H"
+#include "BROWSE.H"
 /* Every supported graph_rows() result must fit this painted-row capacity.
  * Current CGA/EGA/VGA layouts expose 18/15/22 rows respectively. */
 #define MAX_VISIBLE 22
-#define PANEL_WIDTH 310
-static const char *actions[] = { "Help", "Mode", "View", "Edit", "Copy", "Move", "Mkdir", "Delete", "Path", "Quit" };
+/* Reach both screen edges while retaining the eight-pixel center gutter. */
+#define PANEL_WIDTH 316
+#define PANEL_STRIDE (640 - PANEL_WIDTH)
+static const char *actions[] = { "Help", "Mode", "View", "Edit", "Copy", "Move", "Mkdir", "Delete", "Drive", "Quit" };
 /* This is a cache of what is actually on screen, including the selected
  * appearance. Keep it separate from Panel so moving a cursor usually paints
  * two rows rather than re-reading or redrawing the whole directory. */
@@ -21,6 +25,8 @@ static Painted painted[2][MAX_VISIBLE];
 static char paths[2][NW_PATH], old_status[160], old_command[NW_PATH];
 static int old_active = -1, old_count[2], old_cursor[2], old_marks[2], old_limit[2], old_top[2];
 static unsigned seen_generation, old_revision[2];
+static unsigned command_cursor, painted_command_cursor=65535U;
+void graph_command_cursor(unsigned cursor) { command_cursor=cursor; }
 static char summaries[2][64];
 static int mono, top, bottom, list_top, row_height, caption_height, column_height, foot_height, command_y, command_height, button_y, icon_height;
 static unsigned desktop_color, paper, ink, muted, selection, white;
@@ -72,6 +78,105 @@ int graph_help_rows(void)
     int f = video_font_height;
     return (14 * f - 4) / (f + 2);
 }
+/* Shared native window chrome: Help, documents and credits use the same
+ * title strip, inset paper and shadow instead of BIOS-sized cell dialogs. */
+static int document_window(const char *title, const char *badge, int height, int icon)
+{
+    int f = video_font_height, x = 18, y = (video_height - height) / 2;
+    unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
+    unsigned bar = video_mode == VIDEO_CGA ? 0 : 1;
+    video_native_overlay();
+    video_rect(x + 3, y + 3, 604, height, 0);
+    video_rect(x, y, 604, height, bg); outline(x, y, 604, height, 0);
+    line(x + 1, y + 1, 602, 15);
+    video_rect(x + 2, y + 2, 600, f + 6, bar);
+    video_icon(x + 10, y + 3, icon, video_mode == VIDEO_CGA ? 0 : 7, 15, 15);
+    video_label(x + 32, y + 4, title, 15, bar, 0);
+    video_label(x + 600 - strlen(badge) * video_font_width, y + 4, badge, 15, bar, 0);
+    return y;
+}
+static void document_text(int x, int y, const char *text, int columns, unsigned fg, unsigned bg)
+{
+    char clipped[128];
+    strncpy(clipped, text, columns); clipped[columns] = 0;
+    video_label(x, y, clipped, fg, bg, 0);
+}
+int graph_view_columns(void)
+{
+    int columns = 560 / video_font_width;
+    return columns > 80 ? 80 : columns;
+}
+int graph_view_rows(void)
+{
+    return (video_height - 20 - 4 * video_font_height - 62) / (video_font_height + 2);
+}
+static int document_body(void) { return 10 + 2 * video_font_height + 24; }
+void graph_view_begin(int hex, const char *path, int full)
+{
+    int f = video_font_height, body = document_body(), rows = graph_view_rows();
+    unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
+    if (full) {
+        document_window(hex ? "Hex viewer" : "Text viewer", hex ? "HEX" : "VIEW",
+                        video_height - 20, ICON_DOCUMENT);
+        document_text(32, 10 + f + 14, path, 576 / video_font_width, 0, bg);
+    }
+    video_rect(32, body, 576, rows * (f + 2) + 8, 15);
+    outline(32, body, 576, rows * (f + 2) + 8, video_mode == VIDEO_CGA ? 0 : 8);
+    if (hex) video_label(40, body + 4,
+        "Offset    0001 0203 0405 0607 0809 0A0B 0C0D 0E0F   ASCII",
+        video_mode == VIDEO_CGA ? 0 : 1, 15, 0);
+}
+void graph_view_line(int row, const char *text, int hex)
+{
+    int y = document_body() + 4 + row * (video_font_height + 2), i, j, at;
+    char compact[80], address[9];
+    unsigned accent = video_mode == VIDEO_CGA ? 0 : 1;
+    if (!hex) { video_label(40, y, text, 0, 15, 0); return; }
+    /* Preserve sixteen bytes and their ASCII, grouping hex pairs to fit the
+     * same paper width even with VGA's full eight-pixel font. */
+    memcpy(compact, text, 10); at = 10;
+    for (i = 0; i < 16; ++i) {
+        j = 10 + i * 3 + (i >= 8);
+        compact[at++] = text[j]; compact[at++] = text[j + 1];
+        if ((i & 1) && i < 15) compact[at++] = ' ';
+    }
+    compact[at++] = ' '; compact[at++] = ' ';
+    memcpy(compact + at, text + 61, 18); compact[at + 18] = 0;
+    video_label(40, y, compact, 0, 15, 0);
+    memcpy(address, text, 8); address[8] = 0;
+    video_label(40, y, address, accent, 15, 0);
+    video_label(40 + at * video_font_width, y, compact + at, accent, 15, 0);
+}
+void graph_view_footer(const char *position, const char *controls)
+{
+    int f = video_font_height, height = video_height - 20;
+    unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
+    line(32, 10 + height - 2 * f - 25, 576, video_mode == VIDEO_CGA ? 0 : 8);
+    video_rect(32, 10 + height - 2 * f - 20, 576, 2 * f + 14, bg);
+    document_text(32, 10 + height - 2 * f - 20, position, 576 / video_font_width,
+                  video_mode == VIDEO_CGA ? 0 : 1, bg);
+    document_text(32, 10 + height - f - 8, controls, 576 / video_font_width, 0, bg);
+}
+void graph_about(const char *version, const char *commit, const char *repository,
+                 const char **credits)
+{
+    int f = video_font_height, height = 11 * f + 78, y, i, body;
+    unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
+    char text[80];
+    sprintf(text, "Nightwatch %s", version);
+    y = document_window(text, "ABOUT", height, ICON_DRIVE);
+    document_text(32, y + f + 14, repository, 576 / video_font_width, 0, bg);
+    body = y + 2 * f + 24;
+    video_rect(32, body, 576, 6 * (f + 2) + 8, 15);
+    outline(32, body, 576, 6 * (f + 2) + 8, video_mode == VIDEO_CGA ? 0 : 8);
+    for (i = 0; i < 5; ++i)
+        document_text(40, body + 4 + i * (f + 2), credits[i], 560 / video_font_width,
+                      i < 2 && video_mode != VIDEO_CGA ? 1 : 0, 15);
+    sprintf(text, "Commit: %s", commit);
+    document_text(40, body + 4 + 5 * (f + 2), text, 560 / video_font_width, 0, 15);
+    line(32, y + height - f - 15, 576, video_mode == VIDEO_CGA ? 0 : 8);
+    video_label(32, y + height - f - 8, "Press any key to return", 0, bg, 0);
+}
 void graph_help(const char *version, const char *commit, const char *repository,
                 unsigned first, int full)
 {
@@ -85,14 +190,8 @@ void graph_help(const char *version, const char *commit, const char *repository,
     char text[96];
     video_overlay_begin(0);
     if (full) {
-        video_rect(x + 3, y + 3, 604, height, 0);
-        video_rect(x, y, 604, height, bg); outline(x, y, 604, height, 0);
-        line(x + 1, y + 1, 602, 15);
-        video_rect(x + 2, y + 2, 600, f + 6, title);
-        video_icon(x + 10, y + 3, ICON_DRIVE, video_mode == VIDEO_CGA ? 0 : 7, 15, 15);
         sprintf(text, "Nightwatch %s", version);
-        video_label(x + 32, y + 4, text, 15, title, 0);
-        video_label(x + 550, y + 4, "HELP", 15, title, 0);
+        document_window(text, "HELP", height, ICON_DRIVE);
         video_label(x + 14, y + f + 14, repository, 0, bg, 0);
         sprintf(text, "Commit: %s", commit);
         video_label(x + 330, y + f + 14, text, 0, bg, 0);
@@ -165,9 +264,9 @@ static void chrome(void)
     int p, x, height = bottom - top;
     video_rect(0, 0, 640, video_height, desktop_color);
     for (p = 0; p < 2; ++p) {
-        x = 6 + p * 318;
-        video_rect(x + PANEL_WIDTH, top + 2, 2, height, muted);
-        video_rect(x + 2, bottom, PANEL_WIDTH, 2, muted);
+        x = p * PANEL_STRIDE;
+        if (!p) video_rect(x + PANEL_WIDTH, top + 2, 2, height, muted);
+        video_rect(x, bottom, PANEL_WIDTH, 2, muted);
         video_rect(x, top, PANEL_WIDTH, height, paper);
         outline(x, top, PANEL_WIDTH, height, ink);
         video_rect(x + 1, top + caption_height, PANEL_WIDTH - 2, column_height, mono ? 0 : 7);
@@ -205,12 +304,12 @@ static void size_text(char *text, const Entry *e)
  * VGA/EGA reserve the final scanline as white space between 16-pixel icons. */
 static void entry_row(int panel, int row, const Entry *e, int selected, int fresh)
 {
-    int x = 6 + panel * 318, y = list_top + row * row_height, icon;
+    int x = panel * PANEL_STRIDE, y = list_top + row * row_height, icon;
     unsigned bg = selected ? selection : paper;
     unsigned fg = selected ? white : ink, body, edge, light;
     char size[16], date[12];
-    if (!fresh || selected) video_rect(x + 2, y, PANEL_WIDTH - 8, row_height, bg);
-    if (!mono && selected) line(x + 2, y + icon_height, PANEL_WIDTH - 8, paper);
+    if (!fresh || selected) video_rect(x + 1, y, PANEL_WIDTH - 2, row_height, bg);
+    if (!mono && selected) line(x + 1, y + icon_height, PANEL_WIDTH - 2, paper);
     if (!e) return;
     icon = file_icon(e);
     body = bg; edge = light = fg;
@@ -263,7 +362,7 @@ static void summary(int p, int x, const char *text, int full)
 void graph_draw(Panel *panels, int active, const char *status, const char *command)
 {
     int p, row, index, rows, marks, x, changed, full, selected, scan, content, delta;
-    char text[100];
+    char text[160];
     unsigned caption, fg;
     video_desktop_begin(); rows = graph_rows();
     full = seen_generation != video_generation();
@@ -276,7 +375,7 @@ void graph_draw(Panel *panels, int active, const char *status, const char *comma
     }
     for (p = 0; p < 2; ++p) {
         Panel *panel = &panels[p];
-        x = 6 + p * 318;
+        x = p * PANEL_STRIDE;
         panel_scroll(panel, rows);
         if (full || old_active != active || strcmp(paths[p], panel->path)) {
             int max = (PANEL_WIDTH - 36) / video_font_width;
@@ -285,7 +384,12 @@ void graph_draw(Panel *panels, int active, const char *status, const char *comma
             caption = p == active ? (mono ? 0 : 1) : (mono ? 15 : 8);
             fg = mono && p != active ? 0 : 15;
             video_rect(x + 1, top + 1, PANEL_WIDTH - 2, caption_height - 1, caption);
-            video_icon(x + 8, top + (caption_height - icon_height) / 2, ICON_DRIVE, caption, fg, fg);
+            if (video_mode==VIDEO_VGA) {
+                unsigned letter=(unsigned char)panel->path[0];
+                if (letter>='a' && letter<='z') letter-='a'-'A';
+                video_drive_icon(x+8,top+(caption_height-icon_height)/2,
+                                 drive_kind(letter-'A'));
+            } else video_icon(x + 8, top + (caption_height - icon_height) / 2, ICON_DRIVE, caption, fg, fg);
             video_label(x + 30, top + (caption_height - video_font_height) / 2, path, fg, caption, 0);
             strcpy(paths[p], panel->path);
         }
@@ -296,15 +400,15 @@ void graph_draw(Panel *panels, int active, const char *status, const char *comma
          * tandem. Exposed rows are invalidated, while changed selection is
          * reconciled below. A rejected/unavailable scroll falls back to repaint. */
         if (!full && delta && delta < rows && delta > -rows && old_revision[p] == panel->revision &&
-            video_scroll(x + 2, list_top, PANEL_WIDTH - 8, rows * row_height, -delta * row_height)) {
+            video_scroll(x + 1, list_top, PANEL_WIDTH - 2, rows * row_height, -delta * row_height)) {
             if (delta > 0) {
                 memmove(painted[p], painted[p] + delta, (rows - delta) * sizeof(Painted));
                 memset(painted[p] + rows - delta, 0, delta * sizeof(Painted));
-                video_rect(x + 2, list_top + (rows - delta) * row_height, PANEL_WIDTH - 8, delta * row_height, paper);
+                video_rect(x + 1, list_top + (rows - delta) * row_height, PANEL_WIDTH - 2, delta * row_height, paper);
             } else {
                 memmove(painted[p] - delta, painted[p], (rows + delta) * sizeof(Painted));
                 memset(painted[p], 0, -delta * sizeof(Painted));
-                video_rect(x + 2, list_top, PANEL_WIDTH - 8, -delta * row_height, paper);
+                video_rect(x + 1, list_top, PANEL_WIDTH - 2, -delta * row_height, paper);
             }
         }
         /* Entry comparison is needed only after content changes. Cursor-only
@@ -326,7 +430,7 @@ void graph_draw(Panel *panels, int active, const char *status, const char *comma
             }
         }
         old_revision[p] = panel->revision;
-        if (full || old_count[p] != panel->count || old_top[p] != panel->top || old_active != active) {
+        if (scan || old_count[p] != panel->count) {
             /* Use long intermediates: pixel-height products can exceed the
              * 16-bit signed int range even though the result fits on screen. */
             int track = rows * row_height, thumb, thumb_y;
@@ -338,35 +442,49 @@ void graph_draw(Panel *panels, int active, const char *status, const char *comma
                 video_rect(x + PANEL_WIDTH - 6, list_top, 3, track, mono ? 15 : 7);
                 video_rect(x + PANEL_WIDTH - 6, thumb_y, 3, thumb, mono ? 0 : 8);
             }
+            /* Keep the active row continuous through the scrollbar lane.
+             * Repainting the track on cursor changes restores the old row. */
+            if (p == active && panel->count && panel->cursor >= panel->top &&
+                panel->cursor < panel->top + rows) {
+                int y = list_top + (panel->cursor - panel->top) * row_height;
+                video_rect(x + PANEL_WIDTH - 6, y, 3, icon_height, selection);
+                if (!mono) line(x + PANEL_WIDTH - 6, y + icon_height, 3, paper);
+            }
             old_top[p] = panel->top;
         }
         marks = panel->marks;
-        if (full || old_count[p] != panel->count || old_cursor[p] != panel->cursor ||
+        if (full || content || old_count[p] != panel->count || old_cursor[p] != panel->cursor ||
             old_marks[p] != marks || old_limit[p] != panel->truncated) {
             sprintf(text, "%d/%d entries  %d marked%s", panel->count ? panel->cursor + 1 : 0,
                     panel->count, marks, panel->truncated ? " [LIMIT]" : "");
+            if (!browse_active(panel) && (panel->offset || panel->truncated))
+                sprintf(text,"Page %lu: %d/%d %d marked%s",panel->offset/(NW_FILES-(strlen(panel->path)>3))+1,
+                        panel->count ? panel->cursor+1 : 0,panel->count,marks,panel->truncated ? " [MORE]" : "");
             summary(p, x, text, full);
             old_count[p] = panel->count; old_cursor[p] = panel->cursor;
             old_marks[p] = marks; old_limit[p] = panel->truncated;
         }
     }
     old_active = active;
-    if (full || strcmp(status, old_status) || strcmp(command, old_command)) {
+    if (full || strcmp(status, old_status) || strcmp(command, old_command) || command_cursor!=painted_command_cursor) {
         int max = (608 - video_font_width) / video_font_width;
         const char *visible = command;
-        video_rect(6, command_y, 628, command_height, paper);
-        outline(6, command_y, 628, command_height, ink);
-        video_label(10, command_y + (mono ? 1 : 2), ">", ink, paper, 0);
-        if (strlen(visible) > (unsigned)max) visible += strlen(visible) - max;
-        video_label(24, command_y + (mono ? 1 : 2), visible, ink, paper, 0);
-        video_rect(24 + strlen(visible) * video_font_width, command_y + command_height - 2,
+        unsigned start=command_cursor>(unsigned)max ? command_cursor-max : 0;
+        video_rect(0, command_y, 640, command_height, paper);
+        outline(0, command_y, 640, command_height, ink);
+        video_label(4, command_y + (mono ? 1 : 2), ">", ink, paper, 0);
+        visible+=start;
+        strncpy(text,visible,max); text[max]=0;
+        video_label(24, command_y + (mono ? 1 : 2), text, ink, paper, 0);
+        video_rect(24 + (command_cursor-start) * video_font_width, command_y + command_height - 2,
                    video_font_width - 1, 1, ink);
         if (!*command && strncmp(status, "Tab switches panes.", 19)) {
-            int limit = 400 / video_font_width;
+            int limit = 592 / video_font_width;
             strncpy(text, status, limit); text[limit] = 0;
             video_label(628 - strlen(text) * video_font_width, command_y + (mono ? 1 : 2),
                         text, mono ? 0 : 1, paper, 0);
         }
         strcpy(old_status, status); strcpy(old_command, command);
+        painted_command_cursor=command_cursor;
     }
 }

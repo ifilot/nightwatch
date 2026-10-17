@@ -9,7 +9,9 @@ PgUp / PgDn         Move through the directory a page at a time.
 Enter               Open a directory or file; run a typed command.
 Backspace           Go to parent if the command line is empty.
 Ctrl-R              Refresh the current directory.
-F9                  Change the panel path or drive.
+F9                  Pick a drive for the active panel.
+Arrows or a letter select; Enter opens its root; Esc cancels.
+Choose "Enter a path..." or press . for a directory path.
 
 #SELECTING FILES
 Insert / Space      Mark or unmark the selected entry.
@@ -88,15 +90,42 @@ Type a command and press Enter to run it in DOS.
 #DOS LIMITS
 Names use DOS 8.3 format. Hidden and system files are shown.
 Dates are displayed as MM-DD-YY.
-Panels hold 512 entries; [LIMIT] reports omitted entries.
+Directory pages hold 512 entries; [MORE] means another page.
+Archive panes retain their 512-entry [LIMIT] boundary.
 Recursive operations include entries beyond this panel limit.
 Operations support up to 32 nested levels and 127-byte paths.
 A copy selection can contain up to 4,294,967,295 bytes.
 Read-only files are preserved and cannot be deleted directly.
 
+#More file tools
+Enter on EXE, COM or BAT runs it in the active directory.
+Alt-F7 searches beneath a directory, beyond the visible page.
+Search: Enter opens a match's location; N continues; Esc stops.
+Ctrl-A (or Alt-Enter) inspects and changes R/H/S/A attributes.
+Ctrl-L calculates bytes in the selection, including folders.
+Free space on both drives and selected bytes appear when idle.
+K means KiB (1024 bytes). A shared drive is shown once.
+
+#Large folders and input
+Ctrl-PgDn / Ctrl-PgUp load the next / previous directory page.
+Pages hold up to 512 entries; sorting and marks belong to a page.
+[MORE] means another page exists. Archive panes retain [LIMIT].
+Input: Left/Right, Home/End, Delete and Backspace edit in place.
+Ctrl-Left/Right move by words. Tab completes a local filename.
+Dialogs: Up/Down recall recent input. Ctrl-U clears the field.
+Commands: Ctrl-E / Ctrl-X recall previous / next commands.
+Up/Down also recall history while a command is being edited.
+
+#Batch transfers
+Conflicts show source and destination size and date.
+O overwrites once; A overwrites all; S skips once; K skips all.
+Transfer errors offer R retry file, S skip file, or Esc cancel.
+Retry cleans partial staging first; completed files stay copied.
+
 #ABOUT AND LICENSES
 A in Help opens About with version and license information.
 Nightwatch is licensed under GPLv3; see LICENSE.TXT.
 The embedded Spleen fonts use BSD-2-Clause; see FONTLIC.TXT.
-VGA/EGA icons: 16pxls by Paul Mackenzie; see ICONLIC.TXT.
+VGA icons are original Quick Menu inspired artwork.
+EGA icons: 16pxls by Paul Mackenzie; see ICONLIC.TXT.
 zlib 1.3.2 is embedded for inflate; see ZLIBLIC.TXT.

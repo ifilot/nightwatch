@@ -94,6 +94,17 @@ class ZipTests(unittest.TestCase):
         with zipfile.ZipFile(path,'w',compression=zipfile.ZIP_DEFLATED) as z:
             for i in range(520): z.writestr(f'F{i:07d}.TXT',str(i).encode())
         self.assertIn('files=520',self.run_zip(path)); self.assertEqual(len(list(self.dest.iterdir())),520)
+    def test_retry_and_skip_failed_archive_member(self):
+        data=bytes(range(256))*160
+        self.run_zip(raw_zip(data),mode='retry-write')
+        self.assertEqual((self.dest/'HELLO.TXT').read_bytes(),data)
+        self.assertEqual(sorted(p.name for p in self.dest.iterdir()),['HELLO.TXT'])
+        self.clean()
+        (self.dest/'HELLO.TXT').write_bytes(b'original')
+        result=self.run_zip(raw_zip(data),mode='skip-write')
+        self.assertEqual((self.dest/'HELLO.TXT').read_bytes(),b'original')
+        self.assertIn('completed=0 skipped=1',result)
+        self.assertEqual(sorted(p.name for p in self.dest.iterdir()),['HELLO.TXT'])
     def test_empty_archive(self):
         path=self.work/'EMPTY.ZIP'
         with zipfile.ZipFile(path,'w'): pass

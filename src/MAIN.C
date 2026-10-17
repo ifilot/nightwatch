@@ -16,9 +16,11 @@
 #include <dir.h>
 #include <bios.h>
 #include "NW.H"
+#include "FEATURE.H"
 #include "ZIP.H"
 #include "ARJ.H"
 #include "BROWSE.H"
+#include "DRIVE.H"
 #include "STORTEST.H"
 #include "STORUI.H"
 #include "STORMSG.H"
@@ -43,8 +45,11 @@
 #define KEY_F8 0x4200
 #define KEY_F9 0x4300
 #define KEY_F10 0x4400
+static unsigned text_command_cursor=65535U;
 static int active;
 static char command[NW_PATH];
+unsigned command_cursor;
+static int conflict_policy, operation_cancelled, searching;
 static char status[160] = "Tab switches panes. F1 shows help. F2 selects display mode.";
 static char startup[NW_PATH];
 /* Keep manually saved pane settings while automatic saves update only mode. */
@@ -173,9 +178,35 @@ static void draw_panel(int which, int full, int focus)
     if (content || focus) {
         video_fill(x + 1, video_rows - 4, 38, 205, attr);
         sprintf(line, " %d entries, %d marked%s ", p->count, p->marks, p->truncated ? " [LIMIT]" : "");
+        if (!browse_active(p) && (p->offset || p->truncated)) {
+            sprintf(line," Page %lu: %d entries%s ",p->offset/(NW_FILES-(strlen(p->path)>3))+1,
+                    p->count,p->truncated ? " [MORE]" : "");
+        }
         video_text(x + 1, video_rows - 4, line, attr);
     }
     text_revision[which] = p->revision; text_cursor[which] = p->cursor; text_top[which] = p->top;
+}
+static void disk_status(char *out)
+{
+    Panel *p=&panes[active];
+    char format[100], suffix[40], left[16], right[16];
+    unsigned directories;
+    unsigned long selected;
+    panel_scroll(p,pane_rows());
+    selected=panel_selected_bytes(p,&directories);
+    if (p->measured_revision==p->revision && p->measured_cursor==p->cursor) { selected=p->measured_bytes; directories=0; }
+    suffix[0]=0;
+    if (directories) feature_label(suffix,FM_DIRS);
+    if (p->free_kib==0xffffffffUL) feature_label(left,FM_UNKNOWN);
+    else sprintf(left,"%luK",p->free_kib);
+    if (panes[1-active].free_kib==0xffffffffUL) feature_label(right,FM_UNKNOWN);
+    else sprintf(right,"%luK",panes[1-active].free_kib);
+    if (toupper(p->path[0])==toupper(panes[1-active].path[0])) {
+        feature_label(format,FM_SAMEFREE); sprintf(out,format,p->path[0],left,selected,suffix);
+    } else {
+        feature_label(format,FM_FREE);
+        sprintf(out,format,p->path[0],left,panes[1-active].path[0],right,selected,suffix);
+    }
 }
 /* Draw the shared desktop through the active renderer. Text mode retains only
  * change-detection state, not a screen buffer; a video generation change forces
@@ -183,10 +214,13 @@ static void draw_panel(int which, int full, int focus)
  */
 static void draw(void)
 {
-    static const char *actions[] = { "Help", "Mode", "View", "Edit", "Copy", "Move", "Mkdir", "Delete", "Path", "Quit" };
-    char line[160];
+    static const char *actions[] = { "Help", "Mode", "View", "Edit", "Copy", "Move", "Mkdir", "Delete", "Drive", "Quit" };
+    char line[160], shown[160];
     int i, full, focus;
-    if (video_mode != VIDEO_TEXT) { graph_draw(panes, active, status, command); return; }
+    if (!strncmp(status,"Tab switches panes.",19)) disk_status(shown);
+    else strcpy(shown,status);
+    graph_command_cursor(command_cursor);
+    if (video_mode != VIDEO_TEXT) { graph_draw(panes, active, shown, command); return; }
     video_desktop_begin(); full = text_generation != video_generation();
     focus = text_active != active;
     if (full) {
@@ -204,14 +238,17 @@ static void draw(void)
         video_text(0, 0, line, COLOR_BAR);
     }
     draw_panel(0, full, focus); draw_panel(1, full, focus);
-    if (full || strcmp(text_status, status)) {
+    if (full || strcmp(text_status, shown)) {
         video_fill(0, video_rows - 3, 80, ' ', COLOR_NORMAL);
-        video_text(0, video_rows - 3, status, COLOR_MARKED); strcpy(text_status, status);
+        video_text(0, video_rows - 3, shown, COLOR_MARKED); strcpy(text_status, shown);
     }
-    if (full || strcmp(text_command, command)) {
+    if (full || strcmp(text_command, command) || text_command_cursor!=command_cursor) {
         video_fill(0, video_rows - 2, 80, ' ', COLOR_NORMAL);
-        sprintf(line, "> %.76s", command);
+        sprintf(line, "> %.76s", command+(command_cursor>75 ? command_cursor-75 : 0));
         video_text(0, video_rows - 2, line, COLOR_ACTIVE); strcpy(text_command, command);
+        video_put(2+(command_cursor>75 ? 75 : command_cursor),video_rows-2,
+                  command[command_cursor] ? command[command_cursor] : '_',COLOR_SELECT);
+        text_command_cursor=command_cursor;
     }
     text_generation = video_generation(); text_active = active;
     video_flush();
@@ -241,21 +278,24 @@ static void notice(const char *message)
  */
 static int prompt(const char *title, char *text, unsigned max)
 {
-    unsigned n = strlen(text), start;
-    int k, y = video_rows / 2;
+    unsigned cursor=strlen(text), start;
+    char visible[68];
+    int k, y=video_rows/2;
+    input_history_reset(0,text);
     for (;;) {
-        dialog(title, "Enter accepts, Esc cancels, Ctrl-U clears");
-        video_fill(5, y + 1, 70, ' ', COLOR_DIALOG);
-        start = n > 67 ? n - 67 : 0;
-        video_text(5, y + 1, text + start, COLOR_DIALOG);
-        video_put(5 + n - start, y + 1, '_', COLOR_DIALOG);
-        video_flush(); k = key_read();
-        if (k == 27) return 0;
-        if (k == 13) return n != 0;
-        if (k == 21) n = 0;
-        else if (k == 8 && n) --n;
-        else if (k >= 32 && k < 127 && n + 1 < max) text[n++] = k;
-        text[n] = 0;
+        dialog(title, "Enter accepts, Esc cancels, Up/Down history, Tab completes");
+        video_fill(5,y+1,70,' ',COLOR_DIALOG);
+        start=cursor>67 ? cursor-67 : 0;
+        strncpy(visible,text+start,67); visible[67]=0;
+        video_text(5,y+1,visible,COLOR_DIALOG);
+        video_put(5+cursor-start,y+1,text[cursor] ? text[cursor] : '_',COLOR_ACTIVE);
+        video_flush(); k=key_read();
+        if (k==27) return 0;
+        if (k==13) { input_history(text,max,&cursor,0,k); return *text!=0; }
+        if (k==9) input_complete(text,max,&cursor,panes[active].path);
+        else if (!input_history(text,max,&cursor,0,k)) {
+            input_key(text,max,&cursor,k); input_history_reset(0,text);
+        }
     }
 }
 /* Accept only Y/y. All other keys, including Escape, cancel the operation.
@@ -314,10 +354,10 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
     unsigned long now = (unsigned long)biostime(0, 0L), elapsed, bytes, seconds, rate_base;
     int changed = strcmp(progress_path, path) != 0, y, i, reset = 0;
     unsigned current, overall;
-    char line[100], eta[32];
+    char line[100], eta[32], format[100];
     while (bioskey(1)) {
         unsigned key = bioskey(0);
-        if ((key & 255) == 27) return 0;
+        if ((key & 255) == 27) { operation_cancelled=1; return 0; }
         if (pending_count < 16) {
             pending_keys[(pending_head + pending_count) & 15] = key;
             ++pending_count;
@@ -349,8 +389,9 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
         if (counting) {
             copy_dialog = 0;
             sprintf(line, "%.70s", path);
-            dialog("Counting files - Esc cancels", line);
-            sprintf(line, "%lu files; %lu bytes found", total_files, total_bytes);
+            dialog(searching ? feature_label(format,FM_SEARCHING) : "Counting files - Esc cancels",line);
+            if (searching) { feature_label(format,FM_MATCHES); sprintf(line,format,total_files); }
+            else sprintf(line,"%lu files; %lu bytes found",total_files,total_bytes);
             video_text(5, video_rows / 2 + 1, line, COLOR_DIALOG);
         } else if (!copy_progress) {
             copy_dialog = 0;
@@ -411,25 +452,69 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
 }
 /* Map overwrite/skip/cancel keys to the backend callback results 1/2/0.
  */
+static void conflict_details(int row, const char *path, unsigned label)
+{
+    Entry e;
+    char line[100], format[100], name[32];
+    if (label==FM_SOURCE && operation_source_info) e=*operation_source_info;
+    else if (!fs_info(path,&e)) return;
+    feature_label(name,label);
+    if (!e.date) { feature_label(format,FM_NODATE); sprintf(line,format,name,e.size); }
+    else {
+        feature_label(format,FM_COMPARE);
+        sprintf(line,format,name,e.size,(e.date>>5)&15,e.date&31,
+                (e.date>>9)+1980,e.time>>11,(e.time>>5)&63);
+    }
+    video_text(5,row,line,COLOR_DIALOG);
+}
 static int conflict_ui(const char *src, const char *dst)
 {
-    int k;
-    (void)src;
-    copy_dialog = 0;
-    dialog("Destination exists", dst);
-    video_text(5, video_rows / 2 + 1, "O overwrite | S skip | Esc cancel", COLOR_DIALOG);
-    video_flush(); k = modal_key_read();
-    /* Exclude time spent answering the conflict prompt from transfer samples. */
-    sample_tick = (unsigned long)biostime(0, 0L);
-    sample_bytes = operation_transferred; transfer_rate = 0; force_progress = 1;
-    if (k == 'o' || k == 'O') return 1;
-    if (k == 's' || k == 'S') return 2;
-    return 0;
+    int k, y=video_rows/2;
+    char title[100], keys[100];
+    if (conflict_policy) return conflict_policy;
+    copy_dialog=0;
+    video_overlay_begin(0);
+    for (k=y-4;k<=y+4;++k) video_fill(3,k,74,' ',COLOR_DIALOG);
+    frame(3,y-4,74,9,COLOR_DIALOG);
+    video_text(5,y-3,feature_label(title,FM_CONFLICT),COLOR_DIALOG);
+    video_text(5,y-2,src,COLOR_DIALOG);
+    conflict_details(y-1,src,FM_SOURCE);
+    video_text(5,y,dst,COLOR_DIALOG);
+    conflict_details(y+1,dst,FM_DEST);
+    video_text(5,y+2,feature_label(keys,FM_CHOICES),COLOR_DIALOG);
+    video_flush(); k=modal_key_read();
+    sample_tick=(unsigned long)biostime(0,0L);
+    sample_bytes=operation_transferred; transfer_rate=0; force_progress=1;
+    if (k=='a' || k=='A') conflict_policy=1;
+    if (k=='k' || k=='K') conflict_policy=2;
+    if (k=='o' || k=='O') return 1;
+    if (k=='s' || k=='S') return 2;
+    if (!conflict_policy) operation_cancelled=1;
+    return conflict_policy;
+}
+static int transfer_error(const char *src, const char *dst, const char *message)
+{
+    char title[100], keys[100], line[100], format[100];
+    int k, y=video_rows/2;
+    (void)dst;
+    if (operation_cancelled) return 0;
+    copy_dialog=0;
+    dialog(feature_label(title,FM_RETRY),message);
+    feature_label(format,FM_RETRYINFO); sprintf(line,format,src);
+    video_text(5,y+1,line,COLOR_DIALOG);
+    video_text(5,y+2,feature_label(keys,FM_RETRYKEYS),COLOR_DIALOG);
+    video_flush(); k=modal_key_read();
+    force_progress=1; sample_tick=(unsigned long)biostime(0,0L);
+    sample_bytes=operation_transferred; transfer_rate=0;
+    if (k=='r' || k=='R') return 1;
+    if (k=='s' || k=='S') return 2;
+    operation_cancelled=1; return 0;
 }
 /* Start per-command counters and install synchronous UI callbacks in the backend.
  */
 static void begin_operation(void)
 {
+    conflict_policy=operation_cancelled=0;
     operation_files = operation_skipped = 0;
     operation_bytes = operation_current_bytes = operation_transferred = 0;
     copy_progress = counting = 0; total_files = total_bytes = 0;
@@ -437,13 +522,13 @@ static void begin_operation(void)
     progress_path[0] = 0; force_progress = 1;
     sample_tick = paint_tick = (unsigned long)biostime(0, 0L);
     sample_bytes = transfer_rate = shown_files = shown_skipped = 0;
-    operation_progress = operation_ui; operation_conflict = conflict_ui;
+    operation_progress = operation_ui; operation_conflict = conflict_ui; operation_error=transfer_error;
 }
 /* Remove UI callbacks so unrelated filesystem calls do not open transfer dialogs.
  */
 static void end_operation(void)
 {
-    operation_progress = NULL; operation_conflict = NULL;
+    operation_progress = NULL; operation_conflict = NULL; operation_error=NULL;
 }
 /* Reuse the last filename pattern: select=0 finds, 1 marks, and 2 unmarks.
  */
@@ -482,6 +567,7 @@ static void surviving_directory(Panel *p)
         if (!cut || (cut == p->path + 2 && !cut[1])) break;
         if (cut == p->path + 2) cut[1] = 0;
         else *cut = 0;
+        p->offset=0;
     }
 }
 /* Reload affected panes (bits 0/1) and clear marks in both panes. Shared paths
@@ -495,13 +581,14 @@ static void refresh_mask(unsigned mask)
     if (mask && !stricmp(panes[0].path, panes[1].path)) mask = 3;
     /* Keep the established refresh behavior: marks clear in both panes. */
     for (i = 0; i < 2; ++i) {
-        if (!(mask & (1 << i))) { panel_mark_all(&panes[i], 0); panes[i].top = 0; }
-        else if (i == 1 && mask == 3 && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
+        if (!(mask & (1 << i))) { panel_mark_all(&panes[i], 0); panes[i].top = 0;
+            if (!browse_active(&panes[i])) panes[i].free_kib=fs_space(panes[i].path); }
+        else if (i == 1 && mask == 3 && panes[0].offset==panes[1].offset && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
             panel_snapshot(&panes[1], &panes[0]);
         } else if (!browse_load(&panes[i])) {
             notice(nw_error);
             /* Do not clone stale/failed data into the second pane. */
-            if (i == 0 && mask == 3 && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
+            if (i == 0 && mask == 3 && panes[0].offset==panes[1].offset && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
                 if (!panel_load(&panes[1])) notice(nw_error);
                 return;
             }
@@ -531,20 +618,31 @@ static unsigned destination_mask(const char *target, int directory)
     for (i = 0; i < 2; ++i) if (!stricmp(full, panes[i].path)) mask |= 1 << i;
     return mask;
 }
-/* Show version and license credits in the common cell overlay on every adapter.
+/* Show version and license credits in a native window or text overlay.
  */
 static void about(void)
 {
     int y = video_rows / 2 - 5, i;
+    static const char *credits[] = {
+        "Two-pane file navigator for MS-DOS",
+        "8088/8086 | Text, CGA, EGA and VGA",
+        "GPLv3 - no warranty. See LICENSE.TXT",
+        "Spleen: BSD-2-Clause (FONTLIC.TXT)",
+        "16pxls: Paul Mackenzie (ICONLIC.TXT)"
+    };
+    if (video_mode != VIDEO_TEXT) {
+        graph_about(NW_VERSION_TAG, NW_BUILD_COMMIT, NW_REPOSITORY, credits);
+        key_read(); return;
+    }
     video_overlay_begin(0);
     for (i = 0; i < 11; ++i) video_fill(13, y + i, 54, ' ', COLOR_DIALOG);
     frame(13, y, 54, 11, COLOR_DIALOG);
     video_text(15, y + 1, "Nightwatch " NW_VERSION_TAG, COLOR_DIALOG);
-    video_text(15, y + 3, "Two-pane file navigator for MS-DOS", COLOR_DIALOG);
-    video_text(15, y + 4, "8088/8086 | Text, CGA, EGA and VGA", COLOR_DIALOG);
-    video_text(15, y + 6, "GPLv3 - no warranty. See LICENSE.TXT", COLOR_DIALOG);
-    video_text(15, y + 7, "Spleen: BSD-2-Clause (FONTLIC.TXT)", COLOR_DIALOG);
-    video_text(15, y + 8, "16pxls: Paul Mackenzie (ICONLIC.TXT)", COLOR_DIALOG);
+    video_text(15, y + 3, credits[0], COLOR_DIALOG);
+    video_text(15, y + 4, credits[1], COLOR_DIALOG);
+    video_text(15, y + 6, credits[2], COLOR_DIALOG);
+    video_text(15, y + 7, credits[3], COLOR_DIALOG);
+    video_text(15, y + 8, credits[4], COLOR_DIALOG);
     video_text(15, y + 9, "Press any key to return", COLOR_DIALOG);
     video_flush(); key_read();
 }
@@ -627,8 +725,8 @@ static void viewer(int hex_mode)
     /* Viewer and recursive transfers never nest. Use the 8 KB stack here
      * to preserve near-heap room for the copy progress state and strings. */
     unsigned char bytes[(NW_ROWS - 3) * 16];
-    char row[80];
-    int n, rows, got, dirty = 1, first = 1;
+    char row[81];
+    int n, rows, columns, native, got, dirty = 1, first = 1;
     long position;
     int page = 0, count = 1, y, x, ch, k, eof;
     FILE *f;
@@ -652,8 +750,10 @@ static void viewer(int hex_mode)
     /* Page offsets are raw file bytes: CRLF conversion would break hex/search. */
     pages[0] = 0;
     location.offset = -1;
-    rows = video_rows - 3;
+    native = video_mode != VIDEO_TEXT;
+    columns = native ? graph_view_columns() : 80;
     for (;;) {
+        rows = native ? graph_view_rows() - hex_mode : video_rows - (hex_mode ? 3 : 2);
         if (dirty) {
 #ifdef NW_DIAGNOSTICS
             ++viewer_pages;
@@ -664,58 +764,78 @@ static void viewer(int hex_mode)
             if (!hex_mode && !view_position(f, pages[page], &location)) {
                 fs_error("View lines"); notice(nw_error); break;
             }
-            video_overlay_begin(first); first = 0;
-            video_clear(COLOR_NORMAL);
+            if (native) graph_view_begin(hex_mode, display, first);
+            else { video_overlay_begin(first); video_clear(COLOR_NORMAL); }
+            first = 0;
             if (hex_mode) sprintf(header, " Hex: %.65s", display);
             else {
                 sprintf(marker, "Line %lu / %lu", location.breaks < location.total ?
                         location.breaks + 1 : location.total, location.total);
                 sprintf(header, " View: %.*s", 71 - (int)strlen(marker), display);
             }
-            video_text(0, 0, header, COLOR_BAR);
-            if (!hex_mode) video_text(79 - strlen(marker), 0, marker, COLOR_BAR);
+            if (!native) {
+                video_text(0, 0, header, COLOR_BAR);
+                if (!hex_mode) video_text(79 - strlen(marker), 0, marker, COLOR_BAR);
+            }
             if (hex_mode) {
-                video_text(0, 1, "Offset    00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F   ASCII", COLOR_ACTIVE);
+                if (!native) video_text(0, 1, "Offset    00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F   ASCII", COLOR_ACTIVE);
                 got = (int)fread(bytes, 1, rows * 16, f);
                 for (y = 2; (y - 2) * 16 < got; ++y) {
                     n = got - (y - 2) * 16; if (n > 16) n = 16;
                     hex_line(row, (unsigned long)(offset + (y - 2) * 16L), bytes + (y - 2) * 16, n);
-                    video_text(0, y, row, COLOR_NORMAL);
-                    for (x = 0; x < 8; ++x) video_put(x, y, row[x], COLOR_MARKED);
-                    for (x = 61; x < 79; ++x) video_put(x, y, row[x], COLOR_ACTIVE);
+                    if (native) graph_view_line(y - 1, row, 1);
+                    else {
+                        video_text(0, y, row, COLOR_NORMAL);
+                        for (x = 0; x < 8; ++x) video_put(x, y, row[x], COLOR_MARKED);
+                        for (x = 61; x < 79; ++x) video_put(x, y, row[x], COLOR_ACTIVE);
+                    }
                 }
                 next = ftell(f);
                 sprintf(header, "%08lX/%08lX PgUp/Dn Home/End F4 Text F7 Find F8 Next ^G Go Esc%s",
                         (unsigned long)offset, (unsigned long)size,
                         next >= size ? " | EOF" : "");
-                video_text(0, video_rows - 1, header, COLOR_BAR);
+                if (native) {
+                    sprintf(header, "Bytes %08lX / %08lX%s", (unsigned long)offset,
+                            (unsigned long)size, next >= size ? " | EOF" : "");
+                    graph_view_footer(header, "PgUp/Dn Home/End | F4 Text F7 Find F8 Next ^G Go | Esc");
+                } else video_text(0, video_rows - 1, header, COLOR_BAR);
             } else {
-                y = 1; x = 0; eof = 0;
-                while (y < video_rows - 1) {
+                y = native ? 0 : 1; x = 0; eof = 0;
+                while (y < (native ? rows : video_rows - 1)) {
                     ch = getc(f);
                     if (ch == EOF) { eof = 1; break; }
                     if (ch == '\r') continue;
-                    if (ch == '\n') { ++y; x = 0; continue; }
-                    if (ch == '\t') {
-                        int spaces = 8 - (x & 7);
-                        while (spaces--) {
-                            video_put(x++, y, ' ', COLOR_NORMAL);
-                            if (x == 80) { x = 0; ++y; }
+                    if (ch == '\n') {
+                        if (native) { row[x] = 0; graph_view_line(y, row, 0); }
+                        ++y; x = 0; continue;
+                    }
+                    n = ch == '\t' ? 8 - (x & 7) : 1;
+                    if (ch == '\t') ch = ' ';
+                    while (n--) {
+                        if (native) row[x] = ch >= 32 && ch < 127 ? ch : '.';
+                        else video_put(x, y, ch >= 32 && ch < 127 ? ch : '.', COLOR_NORMAL);
+                        if (++x == columns) {
+                            if (native) { row[x] = 0; graph_view_line(y, row, 0); }
+                            x = 0; ++y;
+                            if (y == (native ? rows : video_rows - 1)) break;
                         }
-                    } else {
-                        video_put(x++, y, ch >= 32 && ch < 127 ? ch : '.', COLOR_NORMAL);
-                        if (x == 80) { x = 0; ++y; }
                     }
                 }
+                if (native && x) { row[x] = 0; graph_view_line(y, row, 0); }
                 next = ftell(f);
-                video_text(0, video_rows - 1, eof ? "EOF | PgUp Home/End | F4 Hex F7 Find F8 Next Ctrl-G Go | Esc" : "PgUp/Dn Home/End | F4 Hex F7 Find F8 Next Ctrl-G Go | Esc", COLOR_BAR);
+                if (native) {
+                    if (eof) strcat(marker, " | EOF");
+                    graph_view_footer(marker, "PgUp/Dn Home/End | F4 Hex F7 Find F8 Next ^G Go | Esc");
+                } else video_text(0, video_rows - 1, eof ? "EOF | PgUp Home/End | F4 Hex F7 Find F8 Next Ctrl-G Go | Esc" : "PgUp/Dn Home/End | F4 Hex F7 Find F8 Next Ctrl-G Go | Esc", COLOR_BAR);
             }
             if (ferror(f)) { fs_error("View read"); notice(nw_error); break; }
-            video_flush(); dirty = 0;
+            if (!native) video_flush();
+            dirty = 0;
         }
         /* Keep the painted origin for detecting navigation that changes nothing. */
         position = hex_mode ? offset : pages[page];
         k = key_read();
+        if (k == 7 || k == KEY_F7 || k == KEY_F8) first = 1;
         if (k == 27 || k == KEY_F3 || k == KEY_F10) break;
         if (k == 7) {
             if (prompt("Go to byte offset (decimal or 0x hexadecimal)", jump, sizeof(jump))) {
@@ -742,7 +862,7 @@ static void viewer(int hex_mode)
         if (k == KEY_F4) {
             if (hex_mode) { pages[0] = offset; page = 0; count = 1; }
             else offset = pages[page] - pages[page] % 16;
-            hex_mode = !hex_mode; dirty = 1;
+            hex_mode = !hex_mode; dirty = first = 1;
             continue;
         }
         if (hex_mode) {
@@ -759,13 +879,13 @@ static void viewer(int hex_mode)
         if (k == 0x4900) {
             if (page) --page;
             else if (pages[0] > 0) {
-                found = view_previous(f, pages[0], video_rows - 2);
+                found = view_previous_columns(f, pages[0], rows, columns);
                 if (found < 0) { notice("Read previous page failed"); break; }
                 pages[0] = found; count = 1;
             }
         }
         if (k == 0x4f00 && next < size) {
-            found = view_last(f, video_rows - 2);
+            found = view_last_columns(f, rows, columns);
             if (found < 0) { notice("Read last page failed"); break; }
             pages[0] = found; page = 0; count = 1;
         }
@@ -799,7 +919,7 @@ static void run_shell(const char *line)
     setdisk(target);
     if (!getcwd(other, sizeof(other))) { setdisk(drive); notice("Cannot read shell drive directory"); return; }
     if (chdir(panes[active].path)) { setdisk(drive); fs_error("Shell directory"); notice(nw_error); return; }
-    video_restore();
+    video_restore(); drive_guard_end();
     if (line && *line) {
         result = system(line);
         printf("\nCommand returned %d. Press any key to return to Nightwatch.\n", result);
@@ -807,7 +927,7 @@ static void run_shell(const char *line)
     } else system(shell ? shell : "COMMAND.COM");
     if (target != drive) { setdisk(target); chdir(other); }
     setdisk(drive); chdir(old);
-    video_resume(); refresh();
+    drive_guard_begin(); video_resume(); refresh();
 }
 /* Launch EDITOR (or EDIT) on the current file via the same shell/display handoff.
  */
@@ -976,18 +1096,183 @@ static void make_dir(void)
 /* Try an existing directory path. If its listing fails, reload the old directory
  * while retaining the original error for the user.
  */
-static void change_path(void)
+static void open_path(const char *path)
 {
-    char path[NW_PATH], full[NW_PATH], old[NW_PATH], error[160];
-    strcpy(path, panes[active].path); strcpy(old, path);
-    if (!prompt("Directory or drive path (example C:\\)", path, sizeof(path))) return;
-    if (!fs_canonical(path, full)) { notice(nw_error); return; }
-    strcpy(panes[active].path, full);
+    char full[NW_PATH], old[NW_PATH], error[160];
+    unsigned long old_offset=panes[active].offset;
+    strcpy(old,panes[active].path);
+    drive_guard_begin();
+    if (!fs_canonical(path, full)) { drive_guard_end(); notice(nw_error); return; }
+    strcpy(panes[active].path, full); panes[active].offset=0;
     if (!panel_load(&panes[active])) {
-        strcpy(error, nw_error); strcpy(panes[active].path, old);
-        browse_load(&panes[active]); notice(error);
-    } else browse_release(&panes[active]);
+        strcpy(error, nw_error); strcpy(panes[active].path, old); panes[active].offset=old_offset;
+        browse_load(&panes[active]); drive_guard_end(); notice(error);
+    } else { browse_release(&panes[active]); drive_guard_end(); }
     panes[active].cursor = panes[active].top = 0;
+}
+static void selection_size(void)
+{
+    Panel *p=&panes[active];
+    char path[NW_PATH];
+    int i, ok=1;
+    if (browse_active(p)) { archive_message(ARC_BROWSER_READONLY); notice(nw_error); return; }
+    begin_operation(); counting=1;
+    for (i=0;i<p->count;++i) {
+        Entry *e=&p->files[i];
+        if ((p->marks ? !e->marked : i!=p->cursor) || !strcmp(e->name,"..")) continue;
+        if (!path_join(path,p->path,e->name) || !tree_measure(path,&total_files,&total_bytes)) { ok=0; break; }
+    }
+    counting=0; end_operation();
+    if (!ok) notice(nw_error);
+    else {
+        p->measured_bytes=total_bytes; p->measured_revision=p->revision; p->measured_cursor=p->cursor;
+        strcpy(status,"Tab switches panes. F1 shows help. F2 selects display mode.");
+    }
+}
+typedef struct { char selected[NW_PATH]; unsigned long matches; int cancelled; } FindContext;
+static int search_match(const char *path, const Entry *info, void *context)
+{
+    FindContext *found=context;
+    char title[100], keys[100];
+    int k;
+    unsigned length=strlen(path);
+    (void)info;
+    ++found->matches; total_files=found->matches;
+    dialog(feature_label(title,FM_RESULT),path+(length>70 ? length-70 : 0));
+    video_text(5,video_rows/2+2,feature_label(keys,FM_RESULTKEYS),COLOR_DIALOG);
+    video_flush();
+    for (;;) {
+        k=key_read();
+        if (k==13) { strcpy(found->selected,path); return 0; }
+        if (k=='n' || k=='N') return 1;
+        if (k==27) { found->cancelled=1; return -1; }
+    }
+}
+static void recursive_find(void)
+{
+    char root[NW_PATH], full[NW_PATH], pattern[64], label[100], name[13], *cut;
+    FindContext found;
+    int ok, i;
+    if (browse_active(&panes[active])) { archive_message(ARC_BROWSER_READONLY); notice(nw_error); return; }
+    strcpy(root,panes[active].path); strcpy(pattern,"*.*");
+    if (!prompt(feature_label(label,FM_SEARCHROOT),root,sizeof(root)) ||
+        !prompt(feature_label(label,FM_SEARCH),pattern,sizeof(pattern))) return;
+    if (!fs_canonical(root,full)) { notice(nw_error); return; }
+    memset(&found,0,sizeof(found));
+    begin_operation(); counting=searching=1;
+    ok=tree_find(full,pattern,search_match,&found);
+    counting=searching=0; end_operation();
+    if (found.selected[0]) {
+        cut=strrchr(found.selected,'\\');
+        if (!cut) return;
+        strcpy(name,cut+1);
+        if (cut==found.selected+2) cut[1]=0; else *cut=0;
+        open_path(found.selected);
+        for (;;) {
+            Panel *p=&panes[active];
+            for (i=0;i<p->count;++i) if (!stricmp(p->files[i].name,name)) { p->cursor=i; return; }
+            if (!p->truncated || !panel_page(p,1)) break;
+        }
+    } else if (!ok && !found.cancelled && !operation_cancelled) notice(nw_error);
+    feature_label(label,FM_SEARCHDONE); sprintf(status,label,found.matches);
+}
+static void properties(void)
+{
+    Entry *e=current();
+    char path[NW_PATH], label[100], format[100], line[100];
+    unsigned attr;
+    int k, y=video_rows/2;
+    if (!e || !strcmp(e->name,"..") || !current_path(path)) return;
+    if (browse_active(&panes[active])) { archive_message(ARC_BROWSER_READONLY); notice(nw_error); return; }
+    attr=e->attr;
+    for (;;) {
+        dialog(feature_label(label,FM_ATTR),path);
+        feature_label(format,FM_ATTRLINE);
+        sprintf(line,format,attr&1 ? 'X':' ',attr&2 ? 'X':' ',attr&4 ? 'X':' ',attr&32 ? 'X':' ');
+        video_text(5,y+1,line,COLOR_DIALOG);
+        conflict_details(y+2,path,FM_SOURCE);
+        video_flush(); k=key_read();
+        if (k==27) return;
+        if (k==13) {
+            if (attr!=e->attr && !fs_attr(path,attr)) { fs_error(feature_label(label,FM_ATTRFAIL)); notice(nw_error); }
+            refresh_mask(1<<active); return;
+        }
+        if (k=='r' || k=='R') attr^=1;
+        if (k=='h' || k=='H') attr^=2;
+        if (k=='s' || k=='S') attr^=4;
+        if (k=='a' || k=='A') attr^=32;
+    }
+}
+static void directory_page(int forward)
+{
+    Panel *p=&panes[active];
+    char label[100];
+    if (browse_active(p)) { notice(feature_label(label,FM_ARCHPAGE)); return; }
+    if ((forward && !p->truncated) || (!forward && !p->offset)) return;
+    if (p->marks && !confirm(feature_label(label,FM_PAGING))) return;
+    if (!panel_page(p,forward)) notice(nw_error);
+    feature_label(label,FM_OFFSET);
+    sprintf(status,label,p->offset/(NW_FILES-(strlen(p->path)>3))+1);
+}
+/* F9 lists configured drives without opening their roots. Only Enter on a
+ * drive performs filesystem access. The final row and '.' retain direct path
+ * entry, including from a virtual archive pane. Lists fit all 26 letters. */
+static void change_drive(void)
+{
+    Drive drives[26];
+    char path[NW_PATH], label[72], line[40];
+    unsigned count, current, selected=0, i, rows;
+    int k, top, x, y, height;
+    browse_home(&panes[active],path);
+    current=(unsigned)(toupper(path[0])-'A');
+    count=drive_scan(drives,current);
+    for (i=0;i<count;++i) if (drives[i].number==current) selected=i;
+    rows=count<12 ? count+1 : (count+2)/2;
+    height=(int)rows+6; top=(video_rows-height)/2;
+    for (;;) {
+        video_overlay_begin(0);
+        for (y=0;y<height;++y) video_fill(3,top+y,74,' ',COLOR_DIALOG);
+        frame(3,top,74,height,COLOR_DIALOG);
+        video_text(5,top+1,drive_label(label,DL_TITLE),COLOR_DIALOG);
+        for (i=0;i<=count;++i) {
+            unsigned char attr=i==selected ? COLOR_ACTIVE : COLOR_DIALOG;
+            x=6+(int)(i/rows)*35; y=top+3+(int)(i%rows);
+            video_fill(x,y,33,' ',attr);
+            if (i==count) video_text(x+3,y,drive_label(label,DL_PATH),attr);
+            else {
+                drive_label(label,(drives[i].flags&DRIVE_OFFLINE) ? DL_OFFLINE : drives[i].kind);
+                sprintf(line,"%c: %.27s",'A'+drives[i].number,label);
+                video_text(x+3,y,line,attr);
+            }
+        }
+        video_text(5,top+height-2,drive_label(label,DL_KEYS),COLOR_DIALOG);
+        video_flush();
+        for (i=0;i<count;++i) {
+            x=6+(int)(i/rows)*35; y=top+3+(int)(i%rows);
+            video_drive_icon(x*8,y*video_font_height,drives[i].kind);
+        }
+        k=key_read();
+        if (k==27) return;
+        if (k=='.' || (k==13 && selected==count)) {
+            browse_home(&panes[active],path);
+            if (prompt("Directory or drive path (example C:\\)",path,sizeof(path))) open_path(path);
+            return;
+        }
+        if (k==13) {
+            path[0]=(char)('A'+drives[selected].number);
+            path[1]=':'; path[2]='\\'; path[3]=0;
+            open_path(path); return;
+        }
+        if (k==0x4800 && selected) --selected;
+        if (k==0x5000 && selected<count) ++selected;
+        if (k==0x4b00 && selected>=rows) selected-=rows;
+        if (k==0x4d00 && selected+rows<=count) selected+=rows;
+        if (k==0x4700) selected=0;
+        if (k==0x4f00) selected=count;
+        if (k==9) selected=selected<count ? selected+1 : 0;
+        if (k>=0 && k<128 && isalpha(k)) for (i=0;i<count;++i)
+            if (drives[i].number==(unsigned)(toupper(k)-'A')) { selected=i; break; }
+    }
 }
 /* Locate configuration in the launch directory, independent of pane navigation.
  */
@@ -1106,7 +1391,7 @@ static int storage_ui(const char *phase, const char *path,
     unsigned key;
     while (bioskey(1)) {
         key = bioskey(0);
-        if ((key & 255) == 27) return 0;
+        if ((key & 255) == 27) { operation_cancelled=1; return 0; }
         if (pending_count < 16) {
             pending_keys[(pending_head + pending_count) & 15] = key;
             ++pending_count;
@@ -1240,24 +1525,41 @@ int main(int argc, char **argv)
         } else if (paths < 2 && fs_canonical(argv[i], panes[paths].path)) ++paths;
         else { printf("Invalid argument/path: %s\n", argv[i]); return 1; }
     }
-    if (!panel_load(&panes[0])) { puts(nw_error); return 1; }
+    drive_guard_begin();
+    if (!panel_load(&panes[0])) { drive_guard_end(); puts(nw_error); return 1; }
     if (!stricmp(panes[0].path, panes[1].path)) panel_snapshot(&panes[1], &panes[0]);
-    else if (!panel_load(&panes[1])) { puts(nw_error); return 1; }
+    else if (!panel_load(&panes[1])) { drive_guard_end(); puts(nw_error); return 1; }
     video_init();
     /* A stale saved mode falls back to text; an explicit unsupported mode fails. */
     if (!explicit_mode && !video_supported(mode)) mode = VIDEO_TEXT;
-    if (!video_set(mode)) { puts("Requested display mode is unavailable on this adapter."); return 1; }
+    if (!video_set(mode)) { drive_guard_end(); puts("Requested display mode is unavailable on this adapter."); return 1; }
     settings_remember();
     while (!quit) {
         Panel *p = &panes[active];
         Entry *e;
         unsigned n;
         draw(); k = key_read(); e = current(); n = strlen(command);
+        if (k==0x4800 || k==0x5000 || k==0x4900 || k==0x5100 || k==9 ||
+            k==0x5200 || k==' ' || k==16 || k==14 || k==18)
+            strcpy(status,"Tab switches panes. F1 shows help. F2 selects display mode.");
         if ((browse_active(p) && (k == KEY_F4 || k == KEY_F6 || k == KEY_F7 || k == KEY_F8 || k == 20)) ||
             (browse_active(&panes[1-active]) && (k == KEY_F5 || k == KEY_F6 || k == 21))) {
             archive_message(ARC_BROWSER_READONLY); notice(nw_error); continue;
         }
+        if ((n && (k==0x4800 || k==0x5000)) || k==5 || k==24) {
+            input_history(command,sizeof(command),&command_cursor,1,
+                          (k==0x4800 || k==5) ? 0x4800 : 0x5000); continue;
+        }
+        if (k==0x4b00 || k==0x4d00 || k==0x7300 || k==0x7400 || k==0x5300 || (n && (k==0x4700 || k==0x4f00))) {
+            input_key(command,sizeof(command),&command_cursor,k); continue;
+        }
+        if (k==9 && n) { input_complete(command,sizeof(command),&command_cursor,p->path); continue; }
         switch (k) {
+        case 12: selection_size(); break;
+        case 0x6e00: recursive_find(); break;
+        case 1: case 0x1c00: properties(); break;
+        case 0x7600: directory_page(1); break;
+        case 0x8400: directory_page(0); break;
         case KEY_F1: help(); break;
         case KEY_ALT_F1: about(); break;
         case KEY_F2: change_mode(); break;
@@ -1268,7 +1570,7 @@ int main(int argc, char **argv)
         case KEY_F6: operate(1); break;
         case KEY_F7: make_dir(); break;
         case KEY_F8: delete_entries(); break;
-        case KEY_F9: change_path(); break;
+        case KEY_F9: change_drive(); break;
         case KEY_F10: quit = 1; break;
         case 9: active = 1 - active; break;
         case 0x4800: --p->cursor; break;
@@ -1286,17 +1588,21 @@ int main(int argc, char **argv)
         case 21: extract_archive(); break;
         case 20: storage_menu(); break;
         case 15: run_shell(NULL); break;
-        case 27: command[0] = 0; break;
+        case 27: command[0] = 0; command_cursor=0; input_history_reset(1,command); break;
         case 8:
-            if (n) command[n-1] = 0;
+            if (n) { input_key(command,sizeof(command),&command_cursor,8); input_history_reset(1,command); }
             else if (!browse_enter(p, "..")) notice(nw_error);
             break;
         case 13:
-            if (n) { run_shell(command); command[0] = 0; }
+            if (n) { input_history(command,sizeof(command),&command_cursor,1,13); run_shell(command); command[0] = 0; command_cursor=0; input_history_reset(1,command); }
             else if (e && (e->attr & NW_DIR)) { if (!browse_enter(p, e->name)) notice(nw_error); }
             else if (e && browse_type(e->name)) {
                 char source[NW_PATH];
                 if (!current_path(source) || !browse_open(p,source)) notice(nw_error);
+            } else if (e && !browse_active(p) &&
+                       (name_match("*.EXE",e->name) || name_match("*.COM",e->name) || name_match("*.BAT",e->name))) {
+                char program[NW_PATH];
+                if (current_path(program)) run_shell(program);
             } else viewer(0);
             break;
         case 0x5200:
@@ -1308,10 +1614,10 @@ int main(int argc, char **argv)
                 if (e && strcmp(e->name, "..")) { panel_mark(p, p->cursor, !e->marked); ++p->cursor; }
             } else if ((k == '+' || k == '-') && !n) {
                 panel_mark_all(p, k == '+');
-            } else if (k >= 32 && k < 127 && n + 1 < sizeof(command)) { command[n] = k; command[n+1] = 0; }
+            } else if (k>=32 && k<127) { input_key(command,sizeof(command),&command_cursor,k); input_history_reset(1,command); }
             break;
         }
     }
     browse_release(&panes[0]); browse_release(&panes[1]);
-    video_restore(); return 0;
+    input_history_free(); drive_guard_end(); video_restore(); return 0;
 }

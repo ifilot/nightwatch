@@ -8,13 +8,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include "NW.H"
 Panel panes[2];
 char nw_error[160];
 /* Reuse one near-data buffer instead of spending stack space at each depth. */
+#if defined(__TURBOC__) && defined(__MEDIUM__)
+void NW_FAR *asset_copy_buffer(void);
+#define copy_buffer asset_copy_buffer()
+#define COPY_BUFFER_SIZE 2048
+#else
 static char copy_buffer[2048];
+#define COPY_BUFFER_SIZE sizeof(copy_buffer)
+#endif
 int (*operation_progress)(const char *, unsigned long, unsigned long);
 int (*operation_conflict)(const char *, const char *);
+const Entry *operation_source_info;
+int (*operation_error)(const char *, const char *, const char *);
 unsigned long operation_files, operation_skipped;
 unsigned long operation_bytes, operation_current_bytes, operation_transferred;
 static int sort_order, sort_reverse;
@@ -78,6 +88,7 @@ int panel_load(Panel *p)
         }
         return 0;
     }
+    p->free_kib=fs_space(p->path);
     sort_order = p->sort; sort_reverse = p->reverse;
     qsort(p->files, p->count, sizeof(Entry), compare);
     p->cursor = 0;
@@ -103,6 +114,7 @@ void panel_snapshot(Panel *p, const Panel *source)
         strcpy(selected, p->files[p->cursor].name);
     memcpy(p->files, source->files, source->count * sizeof(Entry));
     p->count = source->count; p->truncated = source->truncated;
+    p->offset=source->offset; p->free_kib=source->free_kib;
     if (p->sort != source->sort || p->reverse != source->reverse) {
         sort_order = p->sort; sort_reverse = p->reverse;
         qsort(p->files, p->count, sizeof(Entry), compare);
@@ -197,6 +209,7 @@ int panel_enter(Panel *p, const char *name)
 {
     char path[NW_PATH], full[NW_PATH], old[NW_PATH];
     int old_cursor = p->cursor, parent = !strcmp(name, "..");
+    unsigned long old_offset=p->offset;
     char child[13], *cut;
     child[0] = 0;
     if (parent) {
@@ -207,8 +220,8 @@ int panel_enter(Panel *p, const char *name)
         if (cut) strcpy(child, cut + 1);
     }
     if (!path_join(path, p->path, name) || !fs_canonical(path, full)) return 0;
-    strcpy(old, p->path); strcpy(p->path, full);
-    if (!panel_load(p)) { strcpy(p->path, old); panel_load(p); p->cursor = old_cursor; return 0; }
+    strcpy(old, p->path); strcpy(p->path, full); p->offset=0;
+    if (!panel_load(p)) { strcpy(p->path, old); p->offset=old_offset; panel_load(p); p->cursor = old_cursor; return 0; }
     p->cursor = p->top = 0;
     if (parent && child[0]) {
         int i;
@@ -280,7 +293,7 @@ int file_copy(const char *src, const char *dst)
     Entry source, exists;
     char tmp[NW_PATH], dir[NW_PATH], name[13];
     char *cut;
-    int in, out = -1, n, i, ok = 1;
+    int in, out = -1, n, i, ok = 1, saved_errno;
     FsCopyBuffer buffer;
     unsigned long copied = 0;
     if (!fs_info(src, &source)) { fs_error("Read source"); return 0; }
@@ -305,13 +318,13 @@ int file_copy(const char *src, const char *dst)
         if (!fs_info(tmp, &exists)) break;
     }
     if (out < 0) { fs_close(in); fs_error("Create temporary file"); return 0; }
-    fs_copy_buffer_init(&buffer, copy_buffer, sizeof(copy_buffer));
+    fs_copy_buffer_init(&buffer, copy_buffer, COPY_BUFFER_SIZE);
     /* A short write is legal: finish this block before reading another. */
     while ((n = fs_copy_read(in, &buffer)) > 0) {
         int at = 0, written;
         while (at < n) {
             written = fs_copy_write(out, &buffer, at, n - at);
-            if (written <= 0) { ok = 0; break; }
+            if (written <= 0) { if (!written) errno=ENOSPC; ok = 0; break; }
             at += written;
         }
         if (!ok) break;
@@ -323,15 +336,16 @@ int file_copy(const char *src, const char *dst)
     /* ok: 1 success, 0 I/O failure, -1 cancellation, -2 length mismatch. */
     if (n < 0 && ok == 1) ok = 0;
     if (ok == 1 && copied != source.size) ok = -2;
+    saved_errno=errno;
     fs_copy_buffer_free(&buffer);
     /* Stamp the still-open handle; closing can itself reveal a write error. */
-    if (ok == 1 && !fs_stamp(out, &source)) ok = 0;
-    if (fs_close(out) < 0 && ok == 1) ok = 0;
+    if (ok == 1 && !fs_stamp(out, &source)) { ok = 0; saved_errno=errno; }
+    if (fs_close(out) < 0 && ok == 1) { ok = 0; saved_errno=errno; }
     fs_close(in);
     if (ok != 1) {
         if (ok == -1) strcpy(nw_error, "Operation cancelled");
         else if (ok == -2) strcpy(nw_error, "Source size changed or unexpected end of file");
-        else fs_error("Copy failed");
+        else { errno=saved_errno; fs_error("Copy failed"); }
         operation_discard(tmp); return 0;
     }
     /* Do not propagate directory/volume flags; 32 is DOS archive. */
@@ -494,7 +508,14 @@ static int copy_tree(char *src, char *dst, int move, unsigned depth)
     unsigned a = strlen(src), b = strlen(dst);
     unsigned long skipped = operation_skipped;
     int result, ok = 1, exists;
-    if (!fs_info(src, &e)) { fs_error("Read source"); return 0; }
+retry_file:
+    if (!fs_info(src, &e)) {
+        fs_error("Read source");
+        result=operation_error ? operation_error(src,dst,nw_error) : 0;
+        if (result==1) goto retry_file;
+        if (result==2) { ++operation_skipped; return 1; }
+        return 0;
+    }
     if ((e.attr & NW_DIR) && depth > 32) { strcpy(nw_error, "Directory nesting exceeds 32 levels"); return 0; }
     operation_current_bytes = 0;
     if (!progress(src, 0, e.size)) return 0;
@@ -502,7 +523,9 @@ static int copy_tree(char *src, char *dst, int move, unsigned depth)
     if (!(e.attr & NW_DIR)) {
         if (exists) {
             if (existing.attr & NW_DIR) { strcpy(nw_error, "File destination is a directory"); return 0; }
+            operation_source_info=&e;
             result = operation_conflict ? operation_conflict(src, dst) : 0;
+            operation_source_info=NULL;
             if (result == 2) {
                 ++operation_skipped; operation_bytes += e.size; return 1;
             }
@@ -511,6 +534,11 @@ static int copy_tree(char *src, char *dst, int move, unsigned depth)
             if (ok && move && !fs_delete(src, 0)) { fs_error("Remove moved source"); ok = 0; }
         } else ok = move ? file_move(src, dst) : file_copy(src, dst);
         if (ok) { ++operation_files; operation_bytes += e.size; }
+        else if (operation_error) {
+            result=operation_error(src,dst,nw_error);
+            if (result==1) goto retry_file;
+            if (result==2) { ++operation_skipped; operation_bytes+=e.size; ok=1; }
+        }
         operation_current_bytes = 0;
         return ok;
     }
@@ -578,7 +606,13 @@ int tree_copy(const char *src, const char *dst, int move)
 {
     char a[NW_PATH], b[NW_PATH];
     unsigned n, m, i;
-    if (!canonical_target(src, a) || !canonical_target(dst, b)) return 0;
+retry_resolve:
+    if (!canonical_target(src,a) || !canonical_target(dst,b)) {
+        int choice=operation_error ? operation_error(src,dst,nw_error) : 0;
+        if (choice==1) goto retry_resolve;
+        if (choice==2) { ++operation_skipped; return 1; }
+        return 0;
+    }
     n = strlen(a); m = strlen(b);
     for (i = 0; i < n && i < m; ++i) {
 #ifdef NW_HOST
@@ -638,4 +672,77 @@ int tree_delete(const char *path)
         strcpy(nw_error, "Cannot delete a drive root"); return 0;
     }
     return delete_tree(full, 0);
+}
+
+int panel_page(Panel *p, int forward)
+{
+    unsigned long old=p->offset;
+    unsigned capacity=NW_FILES-(strlen(p->path)>3);
+    if (forward) {
+        if (!p->truncated || old>0xffffffffUL-capacity) return 1;
+        p->offset+=capacity;
+    } else p->offset=old>=capacity ? old-capacity : 0;
+    if (p->offset==old) return 1;
+    if (!panel_load(p)) { p->offset=old; panel_load(p); return 0; }
+    if (p->count<=(int)(strlen(p->path)>3) && p->offset) {
+        p->offset=0; return panel_load(p);
+    }
+    p->cursor=p->top=0; return 1;
+}
+
+unsigned long panel_selected_bytes(const Panel *p, unsigned *directories)
+{
+    unsigned long bytes=0;
+    int i, first=p->marks ? 0 : p->cursor, last=p->marks ? p->count : p->cursor+1;
+    *directories=0;
+    if (first<0 || first>=p->count) return 0;
+    for (i=first;i<last;++i) {
+        const Entry *e=&p->files[i];
+        if (p->marks ? !e->marked : i!=p->cursor) continue;
+        if (!strcmp(e->name,"..")) continue;
+        if (e->attr&NW_DIR) ++*directories;
+        else if (e->size>0xffffffffUL-bytes) bytes=0xffffffffUL;
+        else bytes+=e->size;
+    }
+    return bytes;
+}
+
+static int find_tree(char *path, const char *pattern, TreeVisit visit, void *context,
+                     unsigned depth)
+{
+    FsSearch search;
+    Entry e;
+    unsigned length=strlen(path), join=length;
+    int result, action=1;
+    if (join && (path[join-1]=='\\' || path[join-1]=='/')) --join;
+    if (depth>32) { strcpy(nw_error,"Directory nesting exceeds 32 levels"); return 0; }
+    if (!progress(path,0,0)) return 0;
+    result=fs_first(&search,path,&e);
+    while (result>0) {
+        if (join+strlen(e.name)+1>=NW_PATH) { strcpy(nw_error,"Recursive path is too long"); action=0; break; }
+#ifdef NW_HOST
+        path[join]='/';
+#else
+        path[join]='\\';
+#endif
+        strcpy(path+join+1,e.name);
+        if (name_match(pattern,e.name)) {
+            int choice=visit(path,&e,context);
+            if (choice<=0) { action=choice==0 ? 2 : 0; path[length]=0; break; }
+        }
+        if (e.attr&NW_DIR) action=find_tree(path,pattern,visit,context,depth+1);
+        path[length]=0;
+        if (action!=1) break;
+        result=fs_next(&search,&e);
+    }
+    fs_end(&search);
+    return result<0 ? 0 : action;
+}
+
+int tree_find(const char *root, const char *pattern, TreeVisit visit, void *context)
+{
+    char path[NW_PATH];
+    if (strlen(root)>=NW_PATH) { strcpy(nw_error,"Path is too long"); return 0; }
+    strcpy(path,root);
+    return find_tree(path,pattern,visit,context,0)!=0;
 }

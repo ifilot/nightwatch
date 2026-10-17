@@ -47,7 +47,16 @@ python3 tests/test_package.py
 python3 tests/test_version.py
 python3 tests/test_build_metadata.py
 python3 tests/test_assets.py
+python3 tests/test_drive_icons.py
 python3 tests/test_site.py
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc \
+    -fsanitize=address,undefined -fno-omit-frame-pointer -g \
+    src/DRIVE.C tests/test_drive.c -o build/test_drive
+ASAN_OPTIONS=detect_leaks=0 build/test_drive
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -Itests \
+    -fsanitize=address,undefined -fno-omit-frame-pointer -g \
+    src/CORE.C src/FEATURE.C tests/fs_host.c tests/test_features.c -o build/test_features
+ASAN_OPTIONS=detect_leaks=0 build/test_features
 python3 tests/zip.py
 python3 tests/arj.py
 python3 tests/browse.py

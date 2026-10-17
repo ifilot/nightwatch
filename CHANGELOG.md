@@ -4,6 +4,54 @@ Notable changes to Nightwatch, newest first. This history was reconstructed
 from the repository's commits and release tags. Release dates follow the tags;
 changes without a release tag are marked unreleased.
 
+## v1.4.0 — Unreleased
+
+### Added
+
+- F9 drive picker for the active pane, with arrow-key or drive-letter selection,
+  current-drive highlighting, and an "Enter a path..." option (also the `.` key).
+  Enter opens the selected drive's root; Escape preserves the pane and marks.
+- Original 16x16 VGA icons for 3.5-inch floppy, 5.25-inch floppy, fixed disk and
+  SD card. Unsupported device queries fall back to generic icons; all display
+  modes show drive-type descriptions.
+- DOS-version-aware drive detection and Slot-otter identification through its
+  existing OTTERSD discovery interface, including offline status. Discovery is
+  performed once per picker opening and does not mount or unmount the card.
+- Host classification tests and DOS picker coverage for drive types, OTTERSD,
+  active-pane changes, cancellation, direct paths and critical-error handling.
+
+- Enter launches selected EXE/COM/BAT programs in the active directory.
+- Free-space and selected-byte information, with Ctrl-L recursive folder totals.
+- Overwrite-all/skip-all choices and source/destination metadata in conflicts.
+- Bounded directory pages beyond 512 entries, using Ctrl-PgUp/Ctrl-PgDn.
+- Streaming recursive filename search through Alt-F7.
+- Cursor editing, session histories and local filename completion for input.
+- Ctrl-A properties with editable DOS Read-only/Hidden/System/Archive flags.
+- Per-file retry/skip/cancel recovery for copy/move and archive extraction errors.
+
+### Changed
+
+- Graphics viewers and About now share Help's window frame, title bar and
+  white document area. Viewers keep position information and controls visible;
+  graphical hex rows group pairs while retaining 16 bytes and ASCII.
+- Graphical panels reach the screen edges, with selection bars spanning each
+  panel's interior.
+
+- `make run` now includes persistent A: (3.5-inch, 1.44 MB), B: (5.25-inch,
+  360 KB) and S: (simulated SD card) alongside D: and E:. A demo-only launcher
+  supplies drive identities so F9 displays the corresponding icons.
+
+- The F9 footer label is now Drive. Direct path entry remains available inside
+  the picker, including when leaving an archive pane.
+- VGA pane headers use the detected drive's icon, matching the F9 picker.
+- Drive enumeration avoids opening drive roots. Picker filesystem access fails
+  back to Nightwatch on DOS critical errors and restores the previous handler.
+
+### Fixed
+
+- Browser keyboard forwarding handles shifted punctuation and modifier release
+  during path entry, including colons entered without separate Shift events.
+
 ## v1.3.0 — Unreleased
 
 ### Added

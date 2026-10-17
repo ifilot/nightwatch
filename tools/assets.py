@@ -7,6 +7,7 @@ VGA uses color planes and transparency; EGA/CGA retain their native masks.
 from pathlib import Path
 import re
 from icons_v130 import quickmenu_icon
+from drive_icons import drive_icon
 from vram import palette
 root = Path(__file__).resolve().parents[1]
 
@@ -96,9 +97,39 @@ for i, (key, value) in enumerate(storage_rows):
     data = value.encode('ascii') + b'\0'
     for at in range(0, len(data), 16):
         assembly.append('    db ' + ','.join(f'0{n:02x}h' for n in data[at:at+16]))
+# Drive-picker labels and approved 16x16 sprites share immutable FONTDATA.
+# Keep them out of the near heap (already dominated by the two pane caches).
+drive_labels = ('Drive', 'Fixed disk', 'Removable disk', '3.5-inch floppy',
+                '5.25-inch floppy', 'Slot-otter SD', 'Remote drive',
+                'Change drive - active pane', 'Enter a path...',
+                'Arrows/letter select | Enter opens | . path | Esc cancels',
+                'Slot-otter SD (offline)')
+assembly.append('drive_labels label word')
+for i in range(len(drive_labels)):
+    assembly.append(f'    dw offset drive_label_{i}')
+for i, label in enumerate(drive_labels):
+    assembly += [f'drive_label_{i} label byte', '    db '+','.join(f'0{n:02x}h' for n in label.encode('ascii')+b'\0')]
+assembly.append('drive_icons label word')
+for i in range(4): assembly.append(f'    dw offset drive_icon_{i}')
+for i, kind in enumerate(('floppy-35','floppy-525','hard-disk','sd-card')):
+    image = drive_icon(kind)
+    data = []
+    for plane in range(-1,4):
+        for y in range(16):
+            bits = 0
+            for x in range(16):
+                pixel=image.getpixel((x,y))
+                color=palette.index(pixel[:3]) if pixel[3] else 0
+                bit=bool(pixel[3]) if plane==-1 else bool((color>>plane)&1)
+                bits=(bits<<1)|bit
+            data.extend((bits>>8,bits&255))
+    assembly.append(f'drive_icon_{i} label byte')
+    for at in range(0,len(data),16):
+        assembly.append('    db '+','.join(f'0{n:02x}h' for n in data[at:at+16]))
 # The medium-model C ABI returns a far pointer as DX:AX and passes mode at BP+6.
 # All fonts share FONTDATA, so only the offset changes; mode 1/2 selects CGA/EGA,
 # and the remaining path selects VGA. Keep the generated explanation with it.
+assembly += ["; Writable copy fallback; immutable fonts and messages remain separate.", "copy_fallback label byte", "    db 2048 dup(0)"]
 assembly += ["FONTDATA ends", "_TEXT segment byte public 'CODE'", "assume cs:_TEXT",
              "; C medium-model far call: mode at [BP+6], far result in DX:AX.",
              "; Modes 1/2 select 5x8/6x12; otherwise use 8x16. BP is preserved.",
@@ -116,7 +147,19 @@ assembly += ["FONTDATA ends", "_TEXT segment byte public 'CODE'", "assume cs:_TE
              "public _asset_stmsg", "_asset_stmsg proc far", "push bp", "mov bp,sp",
              "push bx", "push ds", "mov ax,seg storage_offsets", "mov ds,ax",
              "mov bx,[bp+6]", "shl bx,1", "mov ax,storage_offsets[bx]", "mov dx,ds",
-             "pop ds", "pop bx", "pop bp", "ret", "_asset_stmsg endp", "_TEXT ends", "end"]
+             "pop ds", "pop bx", "pop bp", "ret", "_asset_stmsg endp"]
+for name, table_name in (('drive_label','drive_labels'),('drive_icon','drive_icons')):
+    assembly += [f'public _asset_{name}', f'_asset_{name} proc far',
+                 'push bp', 'mov bp,sp', 'push bx', 'push ds',
+                 f'mov ax,seg {table_name}', 'mov ds,ax', 'mov bx,[bp+6]', 'shl bx,1',
+                 f'mov ax,{table_name}[bx]', 'mov dx,ds',
+                 'pop ds', 'pop bx', 'pop bp', 'ret', f'_asset_{name} endp']
+assembly += ['public _asset_copy_buffer', '_asset_copy_buffer proc far',
+    'mov ax,seg copy_fallback', 'mov dx,ax', 'mov ax,offset copy_fallback',
+    'ret', '_asset_copy_buffer endp']
+assembly += ['; INT 24h: Fail the current DOS request, without calling DOS.',
+             'public _drive_fail', '_drive_fail proc far', 'mov al,3', 'iret',
+             '_drive_fail endp', '_TEXT ends', 'end']
 font_source = '\n'.join(assembly)+'\n'
 font_path = root/'src/FONT.ASM'
 if not font_path.exists() or font_path.read_text() != font_source: font_path.write_text(font_source)
@@ -149,6 +192,24 @@ archive_asm += ['ARCDATA ends', "_TEXT segment byte public 'CODE'", 'assume cs:_
 for path, content in ((root/'src/ARCMSG.H',archive_header),
                       (root/'src/ARCMSG.ASM','\n'.join(archive_asm)+'\n')):
     if not path.exists() or path.read_text() != content: path.write_text(content)
+# Feature labels use the same far-message layout as archive diagnostics.
+feature_rows = re.findall(r'X\((FM_[A-Z]+),"([^"\n]*)"\)', (root/'src/FEATURE.H').read_text())
+assert feature_rows
+feature_asm = [line.replace('ARCDATA','FEATDATA') for line in archive_asm[:4]]
+feature_asm.append('feature_offsets label word')
+feature_asm += [f'    dw offset feature_{i}' for i in range(len(feature_rows))]
+for i, (key, value) in enumerate(feature_rows):
+    feature_asm.append(f'feature_{i} label byte')
+    data=value.encode('ascii')+b'\0'
+    for at in range(0,len(data),16):
+        feature_asm.append('    db '+','.join(f'0{n:02x}h' for n in data[at:at+16]))
+start=archive_asm.index('ARCDATA ends')
+feature_asm += [line.replace('ARCDATA','FEATDATA').replace('archive_offsets','feature_offsets')
+                    .replace('_asset_arcmsg','_asset_feature_label') for line in archive_asm[start:]]
+feature_asm[1]='; Generated by tools/assets.py from FEATURE.H.'
+path=root/'src/FEATMSG.ASM'
+content='\n'.join(feature_asm)+'\n'
+if not path.exists() or path.read_text()!=content: path.write_text(content)
 for index,(name,rows) in enumerate(icons.items()):
     assert len(rows)==16 and all(len(row)==16 for row in rows),(name,rows)
     assert all(c in 'X.' for row in rows for c in row), ('Monochrome icon', name)

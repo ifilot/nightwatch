@@ -69,7 +69,7 @@ for mode,fixture in [('vga',fixtures[0]),('vga',fixtures[1]),('text',fixtures[0]
     press(23,8); frame('root-again')
     press(0x3f00,13); frame('extracted-tree')
     press(8); frame('closed')
-    press(13,0x4300); text('D:\\RIGHT'); frame('physical-path')
+    press(13,0x4300,ord('.')); text('D:\\RIGHT'); frame('physical-path')
     press(0x4400)
     (work/'KEYS.TXT').write_text('\n'.join(f'{key:x}' for key in keys)+'\n')
     execute(work,[f'UITEST /{mode} D:\\LEFT D:\\RIGHT'])

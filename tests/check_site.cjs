@@ -69,6 +69,29 @@ async function main(){
     const desktop=await until(page,s=>s.width===640&&s.height===480&&s.colors>=10,'VGA file browser');
     await page.locator('#screen').screenshot({path:path.join(diagnostics,'running.png')});
     console.log('PASS: native VGA application boot');
+    await key(page,'F9');await until(page,s=>s.hash!==desktop.hash,'F9 drive picker');
+    await page.locator('#screen').screenshot({path:path.join(diagnostics,'drive-picker.png')});
+    await key(page,'Escape');await until(page,s=>s.hash===desktop.hash,'picker cancellation');
+    await key(page,'F9');await key(page,'e');await key(page,'Enter');
+    await until(page,s=>s.hash!==desktop.hash,'select backup drive');
+    await key(page,'F9');await key(page,'.');await key(page,'Control+u');
+    await page.keyboard.type('D:'+String.fromCharCode(92),{delay:60});
+    await page.waitForTimeout(180);
+    await page.locator('#screen').screenshot({path:path.join(diagnostics,'drive-path.png')});
+    await key(page,'Enter');
+    await until(page,s=>s.hash===desktop.hash,'picker direct-path entry');
+    console.log('PASS: browser F9 picker, drive selection, direct path and Escape');
+    await key(page,'Control+a');await until(page,s=>s.hash!==desktop.hash,'file properties');
+    await key(page,'r');await key(page,'Escape');
+    await until(page,s=>s.hash===desktop.hash,'attribute edits cancel');
+    await key(page,'Alt+F7');await until(page,s=>s.hash!==desktop.hash,'recursive search prompt');
+    await key(page,'Escape');await until(page,s=>s.hash===desktop.hash,'search cancels');
+    // The Size button bypasses the browser-reserved Ctrl-L shortcut.
+    await page.click('[data-combo="341,76"]');
+    await until(page,s=>s.hash!==desktop.hash,'recursive folder byte total');
+    await key(page,'Control+r');await until(page,s=>s.hash===desktop.hash,'refresh clears measured selection');
+    console.log('PASS: properties cancellation, Alt-F7 and recursive selection totals');
+
     if(await page.locator('#fullscreen').isVisible()){
       await page.click('#fullscreen');await page.waitForFunction(()=>document.fullscreenElement?.id==='player');
       await page.evaluate(()=>document.exitFullscreen());
