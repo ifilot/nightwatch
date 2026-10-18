@@ -143,7 +143,7 @@ void graph_copy_begin(int unpacking)
     unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
     y = document_window(unpacking ? "Unpacking archive" : "Copying files",
                         unpacking ? "UNPACK" : "COPY", height,
-                        unpacking ? ICON_ARCHIVE : ICON_DOCUMENT, 604);
+                        unpacking ? ICON_ARCHIVE : MODAL_ICON(ICON_COPY, ICON_DOCUMENT), 604);
     body = y + f + 16;
     video_rect(32, body, 576, 7 * (f + 2) + 8, 15);
     outline(32, body, 576, 7 * (f + 2) + 8, muted);
@@ -288,7 +288,7 @@ void graph_about(const char *version, const char *commit, const char *repository
     height = 3 * f + 46 + paper_height;
     x = (640 - width) / 2;
     sprintf(text, "Nightwatch %s", version);
-    y = document_window(text, "ABOUT", height, ICON_DRIVE, width);
+    y = document_window(text, "ABOUT", height, MODAL_ICON(ICON_ABOUT, ICON_DRIVE), width);
     document_text(x + 14, y + f + 14, repository, (width - 28) / video_font_width, 0, bg);
     body = y + 2 * f + 24;
     video_rect(x + 14 + image_width, body, width - 28 - image_width, paper_height, 15);
@@ -428,7 +428,7 @@ void graph_help(const char *version, const char *commit, const char *repository,
     video_overlay_begin(0);
     if (full) {
         sprintf(text, "Nightwatch %s", version);
-        document_window(text, "HELP", height, ICON_DRIVE, 604);
+        document_window(text, "HELP", height, MODAL_ICON(ICON_HELP, ICON_DRIVE), 604);
         video_label(x + 14, y + f + 14, repository, 0, bg, 0);
         sprintf(text, "Commit: %s", commit);
         video_label(x + 330, y + f + 14, text, 0, bg, 0);

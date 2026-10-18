@@ -65,6 +65,7 @@ static unsigned pending_keys[16];
 static unsigned pending_head, pending_count;
 static int copy_progress, counting, force_progress;
 static int copy_dialog;
+static int operation_icon = ICON_DOCUMENT;
 static unsigned copy_generation, file_percent, overall_percent;
 static unsigned long total_files, total_bytes;
 static unsigned long sample_tick, paint_tick, sample_bytes, transfer_rate;
@@ -317,14 +318,14 @@ static void notice(const char *message)
  * Return nonzero for a nonempty Enter submission, zero for Escape/empty Enter.
  * Edits survive cancellation; callers must copy first if rollback is required.
  */
-static int prompt(const char *title, char *text, unsigned max)
+static int prompt_icon(const char *title, char *text, unsigned max, int icon)
 {
     unsigned cursor=strlen(text), start;
     char visible[68];
     int k, y=video_rows/2;
     input_history_reset(0,text);
     for (;;) {
-        dialog(title, "Enter accepts, Esc cancels, Up/Down history, Tab completes", ICON_DOCUMENT);
+        dialog(title, "Enter accepts, Esc cancels, Up/Down history, Tab completes", icon);
         video_fill(5,y+1,70,' ',dialog_color());
         start=cursor>67 ? cursor-67 : 0;
         strncpy(visible,text+start,67); visible[67]=0;
@@ -339,14 +340,22 @@ static int prompt(const char *title, char *text, unsigned max)
         }
     }
 }
+static int prompt(const char *title, char *text, unsigned max)
+{
+    return prompt_icon(title, text, max, ICON_DOCUMENT);
+}
 /* Accept only Y/y. All other keys, including Escape, cancel the operation.
  */
-static int confirm(const char *message)
+static int confirm_icon(const char *message, int icon)
 {
     int k;
-    dialog("Confirm", message, ICON_DOCUMENT);
+    dialog("Confirm", message, icon);
     video_text(5, video_rows / 2 + 2, "Y = yes; any other key = cancel", dialog_color());
     modal_flush(); k = key_read(); return k == 'y' || k == 'Y';
+}
+static int confirm(const char *message)
+{
+    return confirm_icon(message, ICON_DOCUMENT);
 }
 /* BIOS ticks wrap at midnight; intervals here are always less than one day. */
 static unsigned long tick_elapsed(unsigned long now, unsigned long before)
@@ -436,13 +445,13 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
         if (counting) {
             copy_dialog = 0;
             sprintf(line, "%.70s", path);
-            dialog(searching ? feature_label(format,FM_SEARCHING) : "Counting files - Esc cancels",line, ICON_FOLDER);
+            dialog(searching ? feature_label(format,FM_SEARCHING) : "Counting files - Esc cancels",line, searching ? MODAL_ICON(ICON_SEARCH, ICON_FOLDER) : ICON_FOLDER);
             if (searching) { feature_label(format,FM_MATCHES); sprintf(line,format,total_files); }
             else sprintf(line,"%lu files; %lu bytes found",total_files,total_bytes);
             video_text(5, video_rows / 2 + 1, line, dialog_color());
         } else if (!copy_progress) {
             copy_dialog = 0;
-            dialog("File operation - Esc cancels", path, ICON_DOCUMENT);
+            dialog("File operation - Esc cancels", path, MODAL_ICON(operation_icon, ICON_DOCUMENT));
             sprintf(line, "%lu / %lu bytes; %lu completed, %lu skipped", done, total,
                     operation_files, operation_skipped);
             video_text(5, video_rows / 2 + 1, line, dialog_color());
@@ -525,7 +534,7 @@ static int conflict_ui(const char *src, const char *dst)
     char title[100], keys[100];
     if (conflict_policy) return conflict_policy;
     copy_dialog=0;
-    modal_open(feature_label(title,FM_CONFLICT), y-4, 9, ICON_DOCUMENT);
+    modal_open(feature_label(title,FM_CONFLICT), y-4, 9, MODAL_ICON(ICON_WARNING, ICON_DOCUMENT));
     modal_message(y-2,src);
     conflict_details(y-1,src,FM_SOURCE);
     modal_message(y,dst);
@@ -548,7 +557,7 @@ static int transfer_error(const char *src, const char *dst, const char *message)
     (void)dst;
     if (operation_cancelled) return 0;
     copy_dialog=0;
-    dialog(feature_label(title,FM_RETRY),message, ICON_DOCUMENT);
+    dialog(feature_label(title,FM_RETRY),message, MODAL_ICON(ICON_WARNING, ICON_DOCUMENT));
     feature_label(format,FM_RETRYINFO); sprintf(line,format,src);
     video_text(5,y+1,line,dialog_color());
     video_text(5,y+2,feature_label(keys,FM_RETRYKEYS),dialog_color());
@@ -564,6 +573,7 @@ static int transfer_error(const char *src, const char *dst, const char *message)
 static void begin_operation(void)
 {
     conflict_policy=operation_cancelled=0;
+    operation_icon = ICON_DOCUMENT;
     operation_files = operation_skipped = 0;
     operation_bytes = operation_current_bytes = operation_transferred = 0;
     copy_progress = counting = 0; total_files = total_bytes = 0;
@@ -585,7 +595,7 @@ static void end_operation(void)
 static void find_name(int select)
 {
     static char pattern[64] = "*";
-    if (!prompt(select == 2 ? "Unmark filename pattern (* and ?)" : (select ? "Mark filename pattern (* and ?)" : "Find filename pattern (* and ?)" ), pattern, sizeof(pattern))) return;
+    if (!prompt_icon(select == 2 ? "Unmark filename pattern (* and ?)" : (select ? "Mark filename pattern (* and ?)" : "Find filename pattern (* and ?)" ), pattern, sizeof(pattern), MODAL_ICON(ICON_SEARCH, ICON_DOCUMENT))) return;
     if (select) panel_pattern(&panes[active], pattern, select == 1);
     else if (!panel_find(&panes[active], pattern)) notice("No matching entry in this pane");
 }
@@ -930,7 +940,7 @@ static void viewer(int hex_mode)
         }
         if (k == KEY_F7 || k == KEY_F8) {
             if (k == KEY_F7 || !needle_length) {
-                if (!prompt("Search ASCII, or hex:DE AD 00 (F8 finds next)", search, sizeof(search))) { dirty = 1; continue; }
+                if (!prompt_icon("Search ASCII, or hex:DE AD 00 (F8 finds next)", search, sizeof(search), MODAL_ICON(ICON_SEARCH, ICON_DOCUMENT))) { dirty = 1; continue; }
                 if (!view_pattern(search, needle, &needle_length, &needle_hex)) {
                     needle_length = 0; notice("Invalid search pattern"); dirty = 1; continue;
                 }
@@ -1030,7 +1040,7 @@ static void change_mode(void)
     int k, mode = -1;
     char old;
     dialog(remember_mode ? "Display mode (R remember: ON)" : "Display mode (R remember: OFF)",
-        "T text | C CGA | E EGA | V VGA | R remember mode", ICON_IMAGE);
+        "T text | C CGA | E EGA | V VGA | R remember mode", MODAL_ICON(ICON_DISPLAY, ICON_IMAGE));
     modal_flush(); k = key_read();
     if (k == 't' || k == 'T') mode = VIDEO_TEXT;
     if (k == 'c' || k == 'C') mode = VIDEO_CGA;
@@ -1063,7 +1073,7 @@ static void operate(int move)
     unsigned affected;
     if (!p->count || (!marked && !strcmp(current()->name, ".."))) return;
     strcpy(target, panes[1-active].path);
-    if (!prompt(move ? "Move/rename to absolute path" : "Copy to absolute path", target, sizeof(target))) return;
+    if (!prompt_icon(move ? "Move/rename to absolute path" : "Copy to absolute path", target, sizeof(target), MODAL_ICON(move ? ICON_MOVE : ICON_COPY, ICON_DOCUMENT))) return;
     if (target[1] != ':' || (target[2] != '\\' && target[2] != '/')) { notice("Use an absolute DOS path, such as C:\\FILES"); return; }
     directory = fs_info(target, &info) && (info.attr & NW_DIR);
     if (marked > 1 && !directory) { notice("Multiple files require an existing destination directory"); return; }
@@ -1076,6 +1086,7 @@ static void operate(int move)
     }
     affected = destination_mask(target, directory) | (move ? 1 << active : 0);
     begin_operation();
+    operation_icon = move ? ICON_MOVE : ICON_COPY;
     copy_progress = !move;
     if (!move) {
         counting = 1; ok = 1;
@@ -1152,8 +1163,8 @@ static void delete_entries(void)
     if (!p->count || (!marked && !strcmp(current()->name, ".."))) return;
     if (marked) sprintf(message, "Delete %d marked entries and directory contents?", marked);
     else sprintf(message, "Delete %s and all its contents?", current()->name);
-    if (!confirm(message)) return;
-    begin_operation();
+    if (!confirm_icon(message, MODAL_ICON(ICON_DELETE, ICON_DOCUMENT))) return;
+    begin_operation(); operation_icon = ICON_DELETE;
     for (i = 0; i < p->count; ++i) {
         Entry *e = &p->files[i];
         if (marked ? !e->marked : i != p->cursor) continue;
@@ -1220,7 +1231,7 @@ static int search_match(const char *path, const Entry *info, void *context)
     unsigned length=strlen(path);
     (void)info;
     ++found->matches; total_files=found->matches;
-    dialog(feature_label(title,FM_RESULT),path+(length>70 ? length-70 : 0), ICON_DOCUMENT);
+    dialog(feature_label(title,FM_RESULT),path+(length>70 ? length-70 : 0), MODAL_ICON(ICON_SEARCH, ICON_DOCUMENT));
     video_text(5,video_rows/2+2,feature_label(keys,FM_RESULTKEYS),dialog_color());
     modal_flush();
     for (;;) {
@@ -1237,8 +1248,8 @@ static void recursive_find(void)
     int ok, i;
     if (browse_active(&panes[active])) { archive_message(ARC_BROWSER_READONLY); notice(nw_error); return; }
     strcpy(root,panes[active].path); strcpy(pattern,"*.*");
-    if (!prompt(feature_label(label,FM_SEARCHROOT),root,sizeof(root)) ||
-        !prompt(feature_label(label,FM_SEARCH),pattern,sizeof(pattern))) return;
+    if (!prompt_icon(feature_label(label,FM_SEARCHROOT),root,sizeof(root),MODAL_ICON(ICON_SEARCH,ICON_DOCUMENT)) ||
+        !prompt_icon(feature_label(label,FM_SEARCH),pattern,sizeof(pattern),MODAL_ICON(ICON_SEARCH,ICON_DOCUMENT))) return;
     if (!fs_canonical(root,full)) { notice(nw_error); return; }
     memset(&found,0,sizeof(found));
     begin_operation(); counting=searching=1;
@@ -1268,7 +1279,7 @@ static void properties(void)
     if (browse_active(&panes[active])) { archive_message(ARC_BROWSER_READONLY); notice(nw_error); return; }
     attr=e->attr;
     for (;;) {
-        dialog(feature_label(label,FM_ATTR),path, ICON_DOCUMENT);
+        dialog(feature_label(label,FM_ATTR),path, MODAL_ICON(ICON_PROPERTIES, ICON_DOCUMENT));
         feature_label(format,FM_ATTRLINE);
         sprintf(line,format,attr&1 ? 'X':' ',attr&2 ? 'X':' ',attr&4 ? 'X':' ',attr&32 ? 'X':' ');
         video_text(5,y+1,line,dialog_color());
@@ -1528,7 +1539,7 @@ static void storage_menu(void)
     char target[NW_PATH], local[NW_PATH], manifest[NW_PATH], seed_text[16], line[80], title[80];
     unsigned long seed;
     int k, ok, extended, target_missing, local_missing;
-    dialog(storage_label(title, ST_UITITLE), storage_label(line, ST_UIMENU), ICON_DRIVE);
+    dialog(storage_label(title, ST_UITITLE), storage_label(line, ST_UIMENU), MODAL_ICON(ICON_STORAGE, ICON_DRIVE));
     modal_flush(); k = key_read();
     if (k >= 'A' && k <= 'Z') k += 'a' - 'A';
     if (k != 'q' && k != 'l' && k != 'v' && k != 'c') return;

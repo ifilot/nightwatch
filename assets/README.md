@@ -62,6 +62,14 @@ Nightwatch code and the original CGA icons are GPL-3.0-only (see ../LICENSE).
 The 16pxls artwork and bitmap adaptations retain CC-BY-SA-4.0. Spleen fonts
 and derived glyph data retain BSD-2-Clause.
 
+## VGA modal icons
+
+Ten approved 16×16 [modal icons](modal-icon-studies/README.md) distinguish
+Help, About, Search, Properties, Copy, Move, Delete, Warning, Storage test and
+Display settings. `tools/modal_icon_studies.py` authors the pixels; `make assets`
+compiles the sprites into far FONTDATA. EGA and CGA keep their existing icons.
+The [modal inventory](../docs/modals.md) records their assignments.
+
 ## Quick Menu launcher icon
 
 [quickmenu/NIGHT.ICC](quickmenu/NIGHT.ICC) is an original 32x32, 16-color EGA

@@ -9,6 +9,7 @@ import re
 from PIL import Image
 from icons_v130 import quickmenu_icon
 from drive_icons import drive_icon
+from modal_icon_studies import ITEMS as modal_items, artwork as modal_artwork
 from vram import palette
 root = Path(__file__).resolve().parents[1]
 
@@ -127,6 +128,25 @@ for i, kind in enumerate(('floppy-35','floppy-525','hard-disk','sd-card')):
     assembly.append(f'drive_icon_{i} label byte')
     for at in range(0,len(data),16):
         assembly.append('    db '+','.join(f'0{n:02x}h' for n in data[at:at+16]))
+# Modal sprites also live outside DGROUP; order matches VIDEO.H.
+assembly.append('modal_icons label word')
+for i in range(len(modal_items)):
+    assembly.append(f'    dw offset modal_icon_{i}')
+for i, (name, _, _) in enumerate(modal_items):
+    image = modal_artwork(name)
+    data = []
+    for plane in range(-1, 4):
+        for y in range(16):
+            bits = 0
+            for x in range(16):
+                pixel = image.getpixel((x, y))
+                color = palette.index(pixel[:3]) if pixel[3] else 0
+                bit = bool(pixel[3]) if plane == -1 else bool((color >> plane) & 1)
+                bits = (bits << 1) | bit
+            data.extend((bits >> 8, bits & 255))
+    assembly.append(f'modal_icon_{i} label byte')
+    for at in range(0, len(data), 16):
+        assembly.append('    db ' + ','.join(f'0{n:02x}h' for n in data[at:at+16]))
 # About artwork is opaque, with four 144x176 native EGA color planes.
 # Like the fonts it lives outside DGROUP, with no runtime image decoder.
 image = Image.open(root/'assets/about/gentlemen.png').convert('RGB')
@@ -163,7 +183,8 @@ assembly += ["FONTDATA ends", "_TEXT segment byte public 'CODE'", "assume cs:_TE
              "push bx", "push ds", "mov ax,seg storage_offsets", "mov ds,ax",
              "mov bx,[bp+6]", "shl bx,1", "mov ax,storage_offsets[bx]", "mov dx,ds",
              "pop ds", "pop bx", "pop bp", "ret", "_asset_stmsg endp"]
-for name, table_name in (('drive_label','drive_labels'),('drive_icon','drive_icons')):
+for name, table_name in (('drive_label','drive_labels'),('drive_icon','drive_icons'),
+                         ('modal_icon','modal_icons')):
     assembly += [f'public _asset_{name}', f'_asset_{name} proc far',
                  'push bp', 'mov bp,sp', 'push bx', 'push ds',
                  f'mov ax,seg {table_name}', 'mov ds,ax', 'mov bx,[bp+6]', 'shl bx,1',

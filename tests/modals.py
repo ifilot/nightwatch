@@ -2,9 +2,10 @@
 """Check common native title strips, icons and repeated modal restoration."""
 import shutil
 import sys
+from PIL import Image
 from ui_build import root, base, dos, require_prebuilt
 sys.path.insert(0,str(root/'tools'))
-from vram import decode
+from vram import decode, palette
 
 require_prebuilt()
 for machine,mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga')]:
@@ -57,6 +58,19 @@ for machine,mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga'
         icon={pixel(data,x,y) for y in range(top+3,top+3+(8 if mode=='cga' else 16))
               for x in range(34,50)}
         assert len(icon)>1,(mode,name,'missing title icon')
+        if mode == 'vga':
+            assigned = {'mode':'display-settings', 'find':'search', 'mark':'search',
+                        'unmark':'search', 'copy':'copy', 'move':'move', 'delete':'delete',
+                        'properties':'properties', 'storage':'storage-test',
+                        'recursive':'search', 'conflict':'warning'}
+            if name in assigned:
+                with Image.open(root/'assets/modal-icon-studies'/(assigned[name]+'.png')) as approved:
+                    approved = approved.convert('RGBA')
+                for y in range(16):
+                    for x in range(16):
+                        expected = approved.getpixel((x,y))
+                        color = palette.index(expected[:3]) if expected[3] else bar
+                        assert pixel(data,34+x,top+3+y)==color,(name,x,y,'VGA icon differs from approved art')
         assert any(pixel(data,x,y)==15 for y in range(top+4,top+4+font)
                    for x in range(56,200)),(mode,name,'missing white title')
     for name in ('mode','drive','properties'):

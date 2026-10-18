@@ -1858,6 +1858,127 @@ drive_icon_3 label byte
     db 008h,000h,00bh,0a8h,008h,0a8h,00eh,0a8h,008h,098h,008h,000h,000h,000h,000h,000h
     db 000h,000h,000h,000h,00fh,0e0h,007h,0f0h,007h,0f8h,002h,0bch,007h,0fch,007h,0fch
     db 000h,09ch,003h,0ach,000h,0ach,006h,0ach,000h,09ch,007h,0fch,000h,000h,000h,000h
+modal_icons label word
+    dw offset modal_icon_0
+    dw offset modal_icon_1
+    dw offset modal_icon_2
+    dw offset modal_icon_3
+    dw offset modal_icon_4
+    dw offset modal_icon_5
+    dw offset modal_icon_6
+    dw offset modal_icon_7
+    dw offset modal_icon_8
+    dw offset modal_icon_9
+modal_icon_0 label byte
+    db 000h,000h,003h,0e0h,07fh,0f8h,07fh,0fch,07fh,0fch,07fh,0fch,07fh,0fch,07fh,0fch
+    db 07fh,0fch,07fh,0fch,07fh,0fch,07fh,0fch,07fh,0fch,03fh,0fch,01fh,0fch,000h,000h
+    db 000h,000h,000h,000h,000h,000h,00fh,0f0h,000h,000h,003h,0c0h,000h,020h,000h,020h
+    db 000h,0c0h,000h,080h,000h,000h,000h,080h,000h,000h,01fh,0f0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,000h,000h,00fh,0f0h,000h,000h,003h,0c0h,000h,020h,000h,020h
+    db 000h,0c0h,000h,080h,000h,000h,000h,080h,000h,000h,01fh,0f0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,000h,000h,02fh,0f0h,02fh,0f0h,02fh,0f0h,02fh,0f0h,02fh,0f0h
+    db 02fh,0f0h,02fh,0f0h,02fh,0f0h,02fh,0f0h,020h,000h,01fh,0f8h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,000h,000h,00fh,0f0h,00fh,0f0h,00fh,0f0h,00fh,0f0h,00fh,0f0h
+    db 00fh,0f0h,00fh,0f0h,00fh,0f0h,00fh,0f0h,000h,000h,01fh,0f0h,000h,000h,000h,000h
+modal_icon_1 label byte
+    db 000h,000h,003h,0c0h,00fh,0f0h,01fh,0f8h,03fh,0fch,03fh,0fch,07fh,0feh,07fh,0feh
+    db 07fh,0feh,07fh,0feh,03fh,0fch,03fh,0fch,01fh,0f8h,00fh,0f0h,003h,0c0h,000h,000h
+    db 000h,000h,000h,000h,007h,0c0h,00fh,0f0h,01fh,0f8h,01fh,0f8h,03fh,0fch,03fh,0fch
+    db 03fh,0fch,03fh,0fch,01fh,0f8h,01fh,0f8h,00fh,0f0h,003h,0c0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,004h,000h,008h,000h,011h,080h,011h,080h,000h,000h,003h,080h
+    db 001h,080h,001h,080h,001h,080h,003h,0c0h,000h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,004h,000h,008h,000h,011h,080h,011h,080h,000h,000h,003h,080h
+    db 001h,080h,001h,080h,001h,080h,003h,0c0h,000h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,007h,0c0h,00fh,0f0h,01fh,0f8h,01fh,0f8h,03fh,0fch,03fh,0fch
+    db 03fh,0fch,03fh,0fch,01fh,0f8h,01fh,0f8h,00fh,0f0h,003h,0c0h,000h,000h,000h,000h
+modal_icon_2 label byte
+    db 000h,000h,00fh,080h,01fh,0c0h,03fh,0e0h,07fh,0f0h,07fh,0f0h,07fh,0f0h,07fh,0f0h
+    db 07fh,0f0h,03fh,0f0h,01fh,0f8h,00fh,0fch,000h,03eh,000h,01fh,000h,00eh,000h,004h
+    db 000h,000h,000h,000h,00fh,080h,018h,0c0h,03fh,060h,02fh,0a0h,02fh,0a0h,02fh,0a0h
+    db 037h,060h,018h,0c0h,00fh,080h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,00fh,080h,018h,0c0h,03fh,060h,02fh,0a0h,02fh,0a0h,02fh,0a0h
+    db 037h,060h,018h,0c0h,00fh,090h,000h,038h,000h,01ch,000h,00eh,000h,004h,000h,000h
+    db 000h,000h,000h,000h,00fh,080h,018h,0c0h,03eh,060h,028h,020h,028h,020h,020h,020h
+    db 030h,060h,018h,0c0h,00fh,090h,000h,038h,000h,01ch,000h,00eh,000h,004h,000h,000h
+    db 000h,000h,000h,000h,000h,000h,007h,000h,00fh,080h,01fh,0c0h,01fh,0c0h,01fh,0c0h
+    db 00fh,080h,007h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+modal_icon_3 label byte
+    db 000h,000h,03fh,0c0h,03fh,0fch,03fh,0f9h,03fh,0fbh,03fh,0fbh,03fh,0ffh,03fh,0ffh
+    db 03fh,0feh,03fh,0f8h,03fh,0f8h,03fh,0f8h,03fh,0f8h,03fh,0f8h,03fh,0f8h,000h,000h
+    db 000h,000h,000h,000h,01fh,084h,01fh,090h,011h,080h,01fh,0a0h,010h,0b2h,01fh,0deh
+    db 01fh,0e8h,01fh,0e0h,01fh,0c0h,01fh,090h,01dh,030h,01eh,070h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,01fh,084h,01fh,090h,011h,080h,01fh,0a0h,010h,0b2h,01fh,0deh
+    db 01fh,0e8h,01fh,0e0h,01fh,0c0h,01fh,090h,01dh,030h,01eh,070h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,01fh,084h,01fh,090h,011h,080h,01fh,0a0h,010h,0b2h,01fh,0deh
+    db 01fh,0e8h,01fh,0e0h,01fh,0c0h,01fh,090h,01dh,030h,01eh,070h,000h,000h,000h,000h
+    db 000h,000h,000h,040h,01fh,0c0h,01fh,0c0h,01fh,0c8h,01fh,080h,01fh,080h,01fh,0c0h
+    db 01fh,080h,01fh,000h,01eh,000h,01ch,010h,018h,030h,01ch,070h,000h,000h,000h,000h
+modal_icon_4 label byte
+    db 000h,000h,007h,0feh,007h,0feh,007h,0feh,07fh,0feh,07fh,0feh,07fh,0feh,07fh,0feh
+    db 07fh,0feh,07fh,0feh,07fh,0feh,07fh,0feh,07fh,0e0h,07fh,0e0h,07fh,0e0h,000h,000h
+    db 000h,000h,000h,000h,003h,0fch,003h,0fch,000h,004h,03fh,0dch,03fh,0c4h,020h,05ch
+    db 03fh,0c4h,020h,05ch,03fh,0dch,020h,040h,03fh,0c0h,03fh,0c0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,003h,0fch,003h,0fch,000h,004h,03fh,0dch,020h,044h,020h,05ch
+    db 03fh,0c4h,020h,05ch,03fh,0dch,020h,040h,03fh,0c0h,03fh,0c0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,003h,0fch,003h,0fch,000h,004h,03fh,0dch,020h,044h,020h,05ch
+    db 03fh,0c4h,020h,05ch,03fh,0dch,020h,040h,03fh,0c0h,03fh,0c0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,003h,0fch,003h,0fch,000h,01ch,03fh,0dch,020h,05ch,03fh,0dch
+    db 03fh,0dch,03fh,0dch,03fh,0dch,03fh,0c0h,03fh,0c0h,03fh,0c0h,000h,000h,000h,000h
+modal_icon_5 label byte
+    db 000h,000h,07fh,0e0h,07fh,0e0h,07fh,0f0h,07fh,0f8h,07fh,0fch,07fh,0fch,07fh,0feh
+    db 07fh,0ffh,07fh,0feh,07fh,0fch,07fh,0f8h,07fh,0f0h,07fh,0e0h,07fh,0e0h,000h,000h
+    db 000h,000h,000h,000h,03fh,0c0h,03fh,0c0h,020h,040h,03fh,0c0h,020h,000h,03fh,078h
+    db 020h,000h,03fh,000h,020h,040h,03fh,0c0h,020h,040h,03fh,0c0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,03fh,0c0h,03fh,0c0h,020h,040h,03fh,0c8h,020h,008h,03fh,07ch
+    db 020h,07eh,03fh,00ch,020h,048h,03fh,0c0h,020h,040h,03fh,0c0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,03fh,0c0h,03fh,0c0h,020h,040h,03fh,0c0h,020h,000h,03fh,078h
+    db 020h,000h,03fh,000h,020h,040h,03fh,0c0h,020h,040h,03fh,0c0h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,03fh,0c0h,03fh,0c0h,03fh,0c0h,03fh,0c8h,03fh,008h,03fh,07ch
+    db 03fh,07eh,03fh,00ch,03fh,0c8h,03fh,0c0h,03fh,0c0h,03fh,0c0h,000h,000h,000h,000h
+modal_icon_6 label byte
+    db 00fh,0e0h,00fh,0f0h,00fh,0f8h,00fh,0f8h,00fh,0f8h,00fh,0f8h,00fh,0f8h,07fh,0feh
+    db 07fh,0feh,07fh,0feh,07fh,0feh,07fh,0feh,00fh,0f8h,00fh,0f8h,00fh,0c0h,001h,0c0h
+    db 000h,000h,007h,0c0h,007h,0c0h,004h,030h,007h,0f0h,004h,010h,007h,0f0h,000h,000h
+    db 03fh,0fch,030h,00ch,03fh,0f8h,000h,000h,004h,090h,004h,090h,004h,080h,000h,080h
+    db 000h,000h,007h,0c0h,007h,0c0h,004h,030h,007h,0f0h,004h,010h,007h,0f0h,000h,000h
+    db 03fh,0fch,030h,00ch,03fh,0f8h,000h,000h,004h,090h,004h,090h,004h,080h,000h,080h
+    db 000h,000h,007h,0c0h,007h,0c0h,004h,030h,007h,0f0h,004h,010h,007h,0f0h,000h,000h
+    db 03fh,0fch,030h,00ch,03fh,0fch,000h,000h,004h,090h,004h,090h,004h,080h,000h,080h
+    db 000h,020h,007h,0e0h,007h,0f8h,007h,0f0h,007h,0f0h,007h,0f0h,007h,0f0h,000h,000h
+    db 03fh,0fch,000h,000h,000h,004h,000h,000h,004h,090h,004h,090h,004h,080h,000h,080h
+modal_icon_7 label byte
+    db 001h,000h,001h,080h,003h,080h,003h,0c0h,007h,0c0h,007h,0e0h,00fh,0e0h,00fh,0f0h
+    db 01fh,0f8h,01fh,0f8h,03fh,0fch,03fh,0fch,07fh,0feh,07fh,0feh,0ffh,0ffh,000h,000h
+    db 000h,000h,000h,000h,000h,000h,001h,000h,002h,000h,002h,000h,004h,000h,004h,000h
+    db 008h,000h,008h,000h,010h,000h,010h,000h,020h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,001h,000h,001h,080h,003h,080h,002h,040h,006h,040h,006h,060h
+    db 00eh,070h,00eh,070h,01fh,0f8h,01eh,078h,03eh,07ch,03fh,0fch,000h,000h,000h,000h
+    db 000h,000h,000h,000h,001h,000h,001h,080h,003h,080h,002h,040h,006h,040h,006h,060h
+    db 00eh,070h,00eh,070h,01fh,0f8h,01eh,078h,03eh,07ch,03fh,0fch,000h,000h,000h,000h
+    db 000h,000h,000h,000h,001h,000h,001h,080h,003h,080h,002h,040h,006h,040h,006h,060h
+    db 00eh,070h,00eh,070h,01fh,0f8h,01eh,078h,03eh,07ch,03fh,0fch,000h,000h,000h,000h
+modal_icon_8 label byte
+    db 000h,000h,000h,000h,01fh,0f0h,03fh,0f8h,03fh,0fch,07fh,0feh,07fh,0feh,07fh,0feh
+    db 07fh,0feh,07fh,0ffh,07fh,0feh,07fh,0feh,007h,0f8h,003h,0f0h,000h,0e0h,000h,040h
+    db 000h,000h,000h,000h,000h,000h,01fh,0f0h,01fh,0f8h,03fh,0fch,03fh,0fch,03fh,0f8h
+    db 020h,070h,03fh,0e0h,03eh,0e0h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,000h,000h,01fh,0f0h,01fh,0f8h,03fh,0fch,03fh,0fch,03fh,0f8h
+    db 020h,074h,03fh,0eeh,03eh,0ech,001h,018h,003h,0b0h,000h,0e0h,000h,040h,000h,000h
+    db 000h,000h,000h,000h,000h,000h,01fh,0f0h,01fh,0f8h,03fh,0fch,03fh,0fch,03fh,0f8h
+    db 020h,070h,03fh,0e0h,03eh,0e0h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,000h,000h,00fh,0e0h,000h,000h,000h,000h,03fh,0fch,000h,000h
+    db 000h,004h,000h,00eh,000h,00ch,001h,018h,003h,0b0h,000h,0e0h,000h,040h,000h,000h
+modal_icon_9 label byte
+    db 000h,000h,07fh,0feh,07fh,0feh,07fh,0feh,07fh,0feh,07fh,0feh,07fh,0feh,07fh,0feh
+    db 07fh,0feh,07fh,0feh,07fh,0feh,07fh,0feh,003h,0c0h,00fh,0f0h,00fh,0f0h,000h,000h
+    db 000h,000h,000h,000h,03fh,0fch,020h,004h,020h,0c4h,020h,0c4h,020h,0c4h,020h,0c4h
+    db 020h,0c4h,020h,004h,03fh,0fch,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,03fh,0fch,020h,004h,023h,034h,023h,034h,023h,034h,023h,034h
+    db 023h,034h,020h,004h,03fh,0fch,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,03fh,0fch,020h,004h,02ch,034h,02ch,034h,02ch,034h,02ch,034h
+    db 02ch,034h,020h,004h,03fh,0fch,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+    db 000h,000h,000h,000h,000h,000h,000h,000h,00fh,0f0h,00fh,0f0h,00fh,0f0h,00fh,0f0h
+    db 00fh,0f0h,000h,000h,000h,000h,000h,000h,003h,0c0h,000h,000h,000h,000h,000h,000h
 about_image label byte
     db 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
     db 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
@@ -2746,6 +2867,23 @@ pop bx
 pop bp
 ret
 _asset_drive_icon endp
+public _asset_modal_icon
+_asset_modal_icon proc far
+push bp
+mov bp,sp
+push bx
+push ds
+mov ax,seg modal_icons
+mov ds,ax
+mov bx,[bp+6]
+shl bx,1
+mov ax,modal_icons[bx]
+mov dx,ds
+pop ds
+pop bx
+pop bp
+ret
+_asset_modal_icon endp
 public _asset_copy_buffer
 _asset_copy_buffer proc far
 mov ax,seg copy_fallback

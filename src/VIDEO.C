@@ -9,6 +9,7 @@
 #include "DRIVE.H"
 const unsigned char far *asset_font(int mode);
 const unsigned char far *asset_about(void);
+const unsigned char far *asset_modal_icon(unsigned index);
 /* All mutable buffers live in the near data segment. Keeping
  * full pixel frames here would exhaust its 64K budget; graphics instead go
  * directly to far VRAM. screen is desired cell state, previous is last sent
@@ -376,6 +377,10 @@ void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigne
 {
     const unsigned char *mask;
     int height;
+    if (icon >= ICON_HELP && icon <= ICON_DISPLAY) {
+        if (video_mode == VIDEO_VGA) color_icon(x, y, asset_modal_icon(icon - ICON_HELP));
+        return;
+    }
     if (icon < 0 || icon > ICON_DRIVE) return;
     if (video_mode == VIDEO_VGA) { color_icon(x, y, vga_icon_sprites[icon]); return; }
     height = video_mode == VIDEO_CGA ? 8 : 16;

@@ -15,7 +15,7 @@ void video_flush(void) {}
 void video_icon(int x, int y, int icon, unsigned body, unsigned edge, unsigned light)
 {
     (void)x; (void)y; (void)body; (void)edge; (void)light;
-    assert(icon == ICON_DRIVE); ++calls;
+    assert(icon == (video_mode == VIDEO_VGA ? ICON_STORAGE : ICON_DRIVE)); ++calls;
 }
 void video_rect(int x, int y, int w, int h, unsigned color)
 {

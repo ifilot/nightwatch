@@ -136,7 +136,7 @@ static void graphics(const char *phase, const char *path, unsigned long done,
         video_rect(16, y, 608, h, mono ? 15 : 7);
         video_rect(24, y + f + 12, 592, h - f - 20, paper);
         graph_window_frame(16, y, 608, h,
-                            storage_label(line, ST_DASHTITLE), "", ICON_DRIVE);
+                            storage_label(line, ST_DASHTITLE), "", MODAL_ICON(ICON_STORAGE, ICON_DRIVE));
         subtitle(line); video_label(32, y + f + 12, line, blue, paper, 0);
         if (storage_report.state != STORAGE_RUNNING) {
             badge(584, y + f + 12, size, storage_report.state == STORAGE_PASSED ? 2 :

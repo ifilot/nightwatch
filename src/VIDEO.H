@@ -26,6 +26,18 @@
 #define ICON_ARCHIVE 5
 #define ICON_IMAGE 6
 #define ICON_DRIVE 7
+#define ICON_HELP 8
+#define ICON_ABOUT 9
+#define ICON_SEARCH 10
+#define ICON_PROPERTIES 11
+#define ICON_COPY 12
+#define ICON_MOVE 13
+#define ICON_DELETE 14
+#define ICON_WARNING 15
+#define ICON_STORAGE 16
+#define ICON_DISPLAY 17
+/* New modal artwork targets VGA; other adapters keep their existing icons. */
+#define MODAL_ICON(vga, fallback) (video_mode == VIDEO_VGA ? (vga) : (fallback))
 extern int video_rows, video_mode;
 extern int video_height, video_font_height, video_font_width;
 extern unsigned long video_bytes;
