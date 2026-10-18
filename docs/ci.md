@@ -5,8 +5,10 @@ be started manually. All jobs use GitHub-hosted Ubuntu 24.04 machines.
 Pull requests run host regression tests. Pushes and manual runs also compile and
 test DOS in the standalone [build environment](../buildenv/README.md).
 
-Pushes to `master` also build the browser emulator and screenshot gallery from
-the tested DOS package. Chromium checks real VGA boot, keyboard/modifier input,
+Pushes to `master` also package the browser emulator with the tested DOS
+executable and the checked-in screenshot gallery. Screenshot capture is a
+separate maintenance step; deployment does not recapture it. Chromium checks
+real VGA boot, keyboard/modifier input,
 file viewing/copying, pause/reset/exit, mobile controls and gallery navigation
 under the `/nightwatch/` URL subpath before GitHub Pages deployment. Other
 branches, tags, pull requests and manual runs do not deploy the site. Set
@@ -24,8 +26,9 @@ Compiler inputs come from this checkout; no emulator is compiled during image
 creation. The Docker image is saved in the Actions cache, keyed by runner
 OS/architecture and every file in `buildenv/`. A cache miss rebuilds it normally.
 Changing those files invalidates the cache; deleting the Actions cache or bumping
-`dosenv-v1` in the environment action forces a package/base-image refresh. Git generates the build commit in `src/BUILD.H`, which is refreshed at
-build time and excluded from version control.
+`dosenv-v1` in the environment action forces a package/base-image refresh.
+`tools/build_metadata.py` reads Git to generate `src/BUILD.H`, which is refreshed
+at build time and excluded from version control.
 No self-hosted runner, compiler secret or Actions variable is required.
 
 To reproduce the CI environment locally:
@@ -34,7 +37,9 @@ To reproduce the CI environment locally:
 docker build -t nightwatch-build buildenv
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD:/workspace" nightwatch-build \
-  bash -c 'make clean && make build && make test-dos && make test-zip-dos && make test-video && make benchmark && make package'
+  bash -c 'make clean && make build && make test && make test-dos &&
+    make test-zip-dos && make test-arj-dos && make test-browse-dos &&
+    make test-video && make benchmark && make package'
 ```
 
 The image build needs Debian's base image and package mirrors. Original Borland
@@ -45,8 +50,9 @@ remain available for manual source builds and earlier benchmark reproduction.
 The workflow removes old output, compiles `NW.EXE`, checks the 64 KB near-data/stack
 budget, and prepares one scripted navigator shared by the UI suites. It then
 runs independent DOS/FAT12, ZIP, progress, display/keyboard, feature/settings,
-storage and rendering-benchmark jobs in parallel. Host tests enforce C89 warnings and address/undefined sanitizers.
-Every test script has a named, timed Actions step. All matrix jobs finish even
+storage and rendering-benchmark jobs in parallel. Host tests enforce C89
+warnings and address/undefined sanitizers. Tests have named Actions steps;
+jobs have timeouts. All matrix jobs finish even
 if one fails, and any failure blocks packaging and publishing. Diagnostic logs,
 linker maps and screen-state records are retained per suite.
 
@@ -69,6 +75,12 @@ requires matching source/header bytes, compiler/assembler/library inputs,
 compiler flags, and object checksums. Fresh test executables are still linked
 and checked by the DOS compiler gate.
 
+Production and test linking use TLINK response files with explicit object lists.
+`tools/dos_link.py` generates the production list from `src/MAKEFILE`; the
+test compiler gate includes both existing objects and planned compiler outputs.
+This avoids Turbo C's long wildcard object-list limit. Linker failures cannot
+certify an old executable: output files and completion markers must be fresh.
+
 Packaging uses the original tested executable from that same workflow's build
 artifact. It runs only after the host checks and every DOS suite pass. It does
 not rebuild the executable after testing. Runtime artifacts contain neither the
@@ -87,14 +99,16 @@ shared inputs without starting DOSBox.
 
 ## Tag releases
 
-The project version lives in `VERSION`. Run `python3 tools/version.py --set v1.0.1`
-to update it, the committed DOS header and README badge together. Commit those
+The project version lives in `VERSION`. Run `python3 tools/version.py --set vX.Y.Z`
+with the intended numeric version in place of `X.Y.Z` to update it, the
+committed DOS header and README badge together. Commit those
 changes, then push the matching tag. A tag must match the packaged version;
 otherwise publishing fails before a release is created.
 
 ```sh
-git tag v1.0.0
-git push origin v1.0.0
+version="v$(cat VERSION)"
+git tag "$version"
+git push origin "$version"
 ```
 
 The release waits for the fully gated package job and downloads that run's DOS artifact.
@@ -103,9 +117,10 @@ It verifies SHA-256 hashes before publishing:
 - `NW.EXE`: one 8088 executable containing every display mode.
 - `NIGHT.ICC`: the transparent 32x32 EGA Quick Menu launcher icon.
 - `LICENSE.TXT`: GNU GPL version 3 for Nightwatch.
-- `VERSION.TXT`: the built version, such as `v1.0.0`.
+- `VERSION.TXT`: the built version from `VERSION`, prefixed with `v`.
 - `FONTLIC.TXT`: the embedded font license.
 - `ICONLIC.TXT`: 16pxls icon attribution and CC-BY-SA-4.0 license.
+- `ZLIBLIC.TXT`: the embedded zlib inflate subset's license.
 - `NIGHTWATCH-DOS.zip`: executable, all licenses, version and a DOS README.
 - `SHA256SUMS.txt`: hashes for the executable, Quick Menu icon, licenses, version and ZIP.
 

@@ -2,6 +2,7 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 #include "NW.H"
+#include "MINE.H"
 /* Native graphics desktop, sharing Panel data and navigation with text mode.
  * Call only after selecting a graphics mode. graph_rows() is the current
  * listing capacity; graph_draw() clamps panel scrolling to that capacity.
@@ -24,6 +25,8 @@ void graph_view_line(int row, const char *text, int hex);
 void graph_view_footer(const char *position, const char *controls);
 void graph_about(const char *version, const char *commit, const char *repository,
                  const char **credits);
+/* Null previous paints the full game; otherwise repaint changed tiles only. */
+void graph_mine(const Mine *game, const Mine *previous);
 /* Native copy/unpack modal with cached text fields and differential tracks.
  * End releases its small far cache. Track row 0 is file, row 1 is overall.
  * Reset initializes a new/covered track; percentages are clipped. */

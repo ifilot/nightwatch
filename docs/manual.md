@@ -19,19 +19,18 @@ to 80-column color text, or monochrome text when launched from mode 07h.
 
 ## Build and run
 
-Turbo C 2.0 and its DOS MAKE run inside DOSBox. The code uses C89, the medium
-memory model, and `-1-` to explicitly disable 80186/286 instructions. A small 8086 assembly module embeds font
-resources outside the near-data segment; no Borland BGI driver is used.
-Turbo Assembler 2.0 is also required.
+Turbo C 2.0, DOS MAKE, Turbo Link and Turbo Assembler 2.0.1 run inside DOSBox.
+The code uses C89, the medium memory model, and `-1-` to disable 80186/286
+instructions. Assembly modules keep immutable resources outside the near-data
+segment; no Borland BGI driver is used.
 
-Host prerequisites: GNU Make, Bash, Python 3 and DOSBox. Provide Turbo C 2.0 in
-an external directory with `TC/TCC.EXE`, `TC/MAKE.EXE`, `TC/INCLUDE`, `TC/LIB`,
-and `TASM/TASM.EXE`. The toolchain is proprietary and its binaries are not
-copied into this repository. Set `DOS_TOOLCHAIN` to their installation directory
-(or place them in `toolchain/`):
+Host prerequisites: GNU Make, Bash, Python 3 and DOSBox. The supplied proprietary
+Borland tools are in `buildenv/`, the default `DOS_TOOLCHAIN`; they retain their
+own notices and are separate from Nightwatch's GPL code. No compiler download
+or sibling project is required. See [the build environment](../buildenv/README.md)
+for the Docker setup and provenance.
 
 ```sh
-export DOS_TOOLCHAIN=/path/to/toolchain
 make
 make run                 # VGA with sample hard disks, floppies and an SD card
 make run MODE=text
@@ -40,7 +39,9 @@ make run MODE=ega
 make run MODE=vga
 ```
 
-Override the location or emulator when needed:
+An alternative toolchain directory must contain `TC/TCC.EXE`, `TC/MAKE.EXE`,
+`TC/TLINK.EXE`, `TC/INCLUDE`, `TC/LIB` and `TASM/TASM.EXE`. Override its location
+or the interactive emulator when needed:
 
 ```sh
 make DOS_TOOLCHAIN=/path/to/buildenv
@@ -49,8 +50,11 @@ make run MODE=vga DOSBOX=dosbox-x
 
 The executable is **`build/NW.EXE`**. Compile logs and a linker map also
 appear in `build/`. Sources are staged there with DOS line endings and DOS
-filenames. The source directory and toolchain are not modified by
-compilation. `make clean` removes generated build artifacts.
+filenames. Make compiles the objects, then exits before linking to free its
+conventional memory. TLINK reads the complete object list from `NW.RSP`, generated
+from `src/MAKEFILE` by `tools/dos_link.py`; it avoids Turbo C's long wildcard
+object-list limit. Version/build headers are refreshed before staging; the
+toolchain is mounted read-only. `make clean` removes generated build artifacts.
 
 `make run` mounts `build/` as DOS C: and starts with D: (work) and E:
 (backup/transfer) in the two panes. Press F9 to choose another drive:
@@ -89,9 +93,9 @@ NW /vga D:\SOURCE D:\DEST
 
 Use `NW /?` for startup syntax. Optional arguments give the left and right
 pane directories. Without them both panes start in the current directory. On DOS
-hardware, copy `NW.EXE`, `FONTLIC.TXT` and `ICONLIC.TXT` to a disk and run it directly. The
-license file accompanies redistributed font data; the executable needs no
-external font or icon files.
+hardware, extract the complete DOS release ZIP into a folder and run `NW.EXE`.
+Keep the included GPL, font, icon and zlib license notices with redistributed
+copies. The executable needs no external font or icon files.
 
 ## Drive picker
 
@@ -123,7 +127,7 @@ mount/unmount controls. An offline resident is labelled accordingly.
 | Tab | Switch pane |
 | Up / Down, Home / End | Move selection |
 | PgUp / PgDn | Scroll selection by a page |
-| Enter | Enter a directory; view a file; run a typed command |
+| Enter | Open a directory or ZIP/ARJ archive; run EXE/COM/BAT or a typed command; view other files |
 | Backspace | Parent directory when command line is empty; otherwise erase a character |
 | Insert / Space | Mark a file or directory and advance |
 | + / - | Mark all entries except `..` / clear marks, when command line is empty |
@@ -141,6 +145,11 @@ mount/unmount controls. An offline resident is labelled accordingly.
 | Ctrl-F | Find the next filename matching a pattern (`*`, `?`), wrapping within the pane |
 | Ctrl-P / Ctrl-N | Mark / unmark entries matching a filename pattern |
 | Ctrl-S | Sort active pane: name, size, date/time, extension, or reverse |
+| Ctrl-PgDn / Ctrl-PgUp | Next / previous physical-directory page (512 entries per page) |
+| Alt-F7 | Recursive filename search |
+| Ctrl-A / Alt-Enter | File properties and DOS attributes (Alt-Enter requires BIOS support) |
+| Ctrl-L | Calculate recursive selected-byte totals |
+| Ctrl-U | Extract a selected ZIP/ARJ, or selected members inside an archive pane |
 | Ctrl-T | Storage integrity tests: quick / long / verify / cleanup |
 | Ctrl-W | Save display mode, pane paths and sorting in the startup directory’s `NIGHT.CFG` |
 | Ctrl-O | Open DOS shell; `EXIT` returns to the navigator |
@@ -159,9 +168,11 @@ to regenerate it. Authored lines are checked against the narrowest viewport.
 
 Prompts accept Enter, Escape and Ctrl-U (clear). Copy/move targets must be
 absolute DOS paths; multiple marked entries require an existing destination
-directory. Existing files prompt for **O** overwrite, **S** skip, or Escape to
-cancel. Existing directories merge recursively; conflicting files still prompt.
-Batch operations stop at the first error and retain completed work. Copy uses an
+directory. Existing files prompt for **O** overwrite, **A** overwrite all,
+**S** skip, **K** skip all, or Escape to cancel. Existing directories merge
+recursively; conflicting files still prompt. Copy/move transfer errors offer
+retry, skip or cancellation; completed work is retained. Delete stops on an
+error. Copy uses an
 exclusive temporary file in the destination directory, closes it, then renames
 it into place. DOS timestamps and readonly/hidden/system/archive attributes are
 preserved. Cross-drive moves copy first and remove each source only after
@@ -221,6 +232,8 @@ window style as Help: a blue title bar, gray frame and white document area.
 The viewer keeps the file path and navigation controls visible while paging.
 Text wraps to the document width; hex view retains 16 bytes per row, grouped
 in pairs. Line counts and byte offsets appear below the document.
+In EGA and VGA, About places the two foreground figures from *The Night Watch*
+in a separate inset beside the credits. CGA and text retain text-only credits.
 
 Both viewers offer **F7** search, **F8** next match and **Ctrl-G** byte-offset
 jump. Search accepts case-insensitive literal ASCII or exact binary patterns
@@ -404,15 +417,20 @@ content revisions avoid directory scans and entry comparisons on ordinary input.
 Text mode retains its cell buffer and updates affected rows instead of
 rebuilding the desktop.
 
-Two 512-entry pane caches occupy about 25 KB. The copy fallback buffer occupies
-2 KB outside DGROUP, cell buffers total 9,600 bytes, and the runtime stack is 8 KB. Font/help
+Two 512-entry pane caches occupy about 25 KiB. The copy fallback buffer occupies
+2 KiB outside DGROUP, cell buffers total 9,600 bytes, and the runtime stack is
+8 KiB. Fonts, Help, About artwork, drive sprites, message tables
 and fixed Huffman tables live in immutable segments outside DGROUP; there is
 no duplicate font cache. The medium memory model permits separate code
-segments while retaining near pointers for ordinary data. The ZIP-enabled
-executable is about 161 KB. **Allow 256 KB free conventional memory**, including
-roughly 40 KB of far allocations during inflation. Shells/editors need
-additional memory. The build checks that near data plus the actual stack leave
-at least 2 KB of the 64 KB data segment for stdio and other heap use.
+segments while retaining near pointers for ordinary data. Executable size and
+near-heap headroom vary by build; inspect `build/NW.EXE` and run
+`python3 tools/check_memory.py build/NW.MAP` for the linked build's figures.
+**Allow at least 256 KiB free conventional memory.** Archive browsing, codecs
+and external shells/editors can need additional memory; ZIP inflation alone
+allocates roughly 40 KiB in the far heap. The build checks that near data plus
+the actual stack leave at least 2 KiB of the 64 KiB data segment for stdio and
+other near-heap use. This check does not certify the total conventional-memory
+requirement of every operation.
 Detailed VRAM/cell/refresh counters are enabled only in diagnostic test builds.
 The instruction target is 8086/8088; physical 4.77 MHz IBM 5150 performance and
 CGA snow behavior still need hardware testing.
@@ -424,7 +442,7 @@ redraws with a fixed file fixture, DOSBox-X's 8086 core, and 3,000 cycles.
 Results are BIOS ticks (about 55 ms each); small results have one-tick
 quantization. The original renderer measured 6/39/53 ticks for the initial
 CGA/EGA/VGA screens and 23/49/55 ticks for ten moves. See
-[docs/rendering.md](rendering.md) for current measurements and method.
+[rendering measurements](rendering.md) for historical measurements and the method.
 These compare the old and new interfaces, rather than claiming physical hardware
 timing.
 

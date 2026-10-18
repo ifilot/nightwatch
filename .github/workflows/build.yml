@@ -105,6 +105,9 @@ jobs:
       - name: Test Help in every display mode
         if: matrix.suite == 'features'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/help.py
+      - name: Test keyboard-only Minefield in graphics modes
+        if: matrix.suite == 'features'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/mine.py
       - name: Test navigator features and saved settings
         if: matrix.suite == 'features'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/features.py

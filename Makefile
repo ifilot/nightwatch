@@ -14,8 +14,10 @@ src/BUILD.H: build-metadata tools/build_metadata.py
 	python3 tools/build_metadata.py
 src/VERSION.H: VERSION tools/version.py
 	python3 tools/version.py --write
+src/NW.RSP: src/MAKEFILE tools/dos_link.py
+	python3 tools/dos_link.py src/MAKEFILE src/NW.RSP
 build: build/NW.EXE
-build/NW.EXE: src/BUILD.H $(wildcard src/*.C src/*.H src/*.ASM vendor/zlib/*) src/MAKEFILE VERSION LICENSE assets/ICON-LICENSE.txt build.sh tools/version.py tools/build_metadata.py tools/stage.py tools/check_memory.py tools/dosbox.conf
+build/NW.EXE: src/BUILD.H src/NW.RSP $(wildcard src/*.C src/*.H src/*.ASM vendor/zlib/*) src/MAKEFILE VERSION LICENSE assets/ICON-LICENSE.txt build.sh tools/version.py tools/build_metadata.py tools/stage.py tools/dos_link.py tools/check_memory.py tools/dosbox.conf
 	bash ./build.sh
 demo:
 	python3 tools/prepare_demo.py
@@ -36,6 +38,7 @@ test-video: build
 	python3 tests/progress.py
 	python3 tests/video.py
 	python3 tests/help.py
+	python3 tests/mine.py
 	python3 tests/features.py
 	python3 tests/drive_dos.py
 	python3 tests/demo_dos.py

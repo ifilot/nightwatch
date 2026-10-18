@@ -296,6 +296,108 @@ void graph_about(const char *version, const char *commit, const char *repository
     document_text(text_x, text_y + 5 * (f + 2), text, (width - 44 - image_width) / video_font_width, 0, 15);
     line(x + 14, y + height - f - 15, width - 28, video_mode == VIDEO_CGA ? 0 : 8);
     video_label(x + 14, y + height - f - 8, "Press any key to return", 0, bg, 0);
+    video_label(x + width - 14 - 11 * video_font_width, y + height - f - 8,
+                "G: OFF WORK", 0, bg, 0);
+}
+/* Original geometric tiles use the desktop palette and remain readable in
+ * one-bit CGA. No framebuffer, sprites or Windows assets are needed. */
+static void mine_tile(const Mine *game, int at, int x, int y, int height)
+{
+    unsigned char cell = game->cells[at];
+    int mono = video_mode == VIDEO_CGA, cx = 12, cy = height / 2, row;
+    int ended = game->state >= MINE_WON;
+    int open = (cell & MINE_OPEN) || (ended && (cell & MINE_BOMB));
+    unsigned face = open ? 15 : (mono ? 0 : 7);
+    unsigned fg;
+    char number[2];
+    static const unsigned colors[] = {0,1,2,4,5,6,3,0,8};
+    /* Fill the selected tile as well as outlining it: a one-pixel edge
+     * disappears into the white grid. CGA reverses the tile's polarity. */
+    if (at == game->cursor) face = mono ? (open ? 0 : 15) : 7;
+    fg = mono && face == 0 ? 15 : 0;
+    video_rect(x, y, 24, height, mono ? 0 : 8);
+    video_rect(x + 1, y + 1, 22, height - 2, face);
+    if (!open) {
+        line(x + 1, y + 1, 22, 15);
+        video_rect(x + 1, y + 1, 1, height - 2, 15);
+    }
+    if (at == game->hit) {
+        face = mono ? 15 : 12;
+        fg = 0;
+        video_rect(x + 1, y + 1, 22, height - 2, face);
+    }
+    if ((cell & MINE_FLAG) && !(game->state == MINE_LOST && (cell & MINE_BOMB))) {
+        if (game->state == MINE_LOST && !(cell & MINE_BOMB)) {
+            video_label(x + (24-video_font_width)/2, y + (height-video_font_height)/2,
+                        "X", fg, face, 0);
+        } else {
+            video_rect(x + cx - 2, y + cy - 4, 1, 8, fg);
+            line(x + cx - 4, y + cy + 3, 6, fg);
+            for (row = 0; row < 4; ++row)
+                line(x + cx - 1, y + cy - 4 + row, 4-row, mono ? fg : 4);
+        }
+    } else if (open && (cell & MINE_BOMB)) {
+        video_rect(x + cx - 2, y + cy - 2, 5, 5, fg);
+        line(x + cx - 4, y + cy, 9, fg);
+        video_rect(x + cx, y + cy - 4, 1, 9, fg);
+        video_rect(x + cx - 1, y + cy - 1, 1, 1, fg ? 0 : 15);
+    } else if (open && (cell & 15)) {
+        number[0] = '0' + (cell & 15); number[1] = 0;
+        video_label(x + (24-video_font_width)/2, y + (height-video_font_height)/2,
+                    number, mono ? fg : colors[cell & 15], face, 0);
+    }
+    if (at == game->cursor) {
+        outline(x, y, 24, height, 0);
+        outline(x + 1, y + 1, 22, height - 2, mono ? 15 : 1);
+    }
+}
+void graph_mine(const Mine *game, const Mine *previous)
+{
+    int f = video_font_height, size = video_mode == VIDEO_CGA ? 12 :
+                                 (video_mode == VIDEO_EGA ? 20 : 24);
+    int height = 9 * size + 3 * f + 54;
+    int y = (video_height - height) / 2, bx = 72, by = y + 2 * f + 28;
+    int sx = bx + 216 + 24, i;
+    unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
+    unsigned accent = video_mode == VIDEO_CGA ? 0 : 1;
+    char text[48];
+    if (video_mode == VIDEO_TEXT) return;
+    if (!previous) {
+        document_window("Nightwatch Minefield", "OFF DUTY", height, ICON_IMAGE, 540);
+        video_label(64, y + f + 14, "9 x 9 field / 10 mines", 0, bg, 0);
+        /* Tall CGA/EGA pixels need wider tiles to approach square cells on
+         * a 4:3 display. The board keeps a shared 216-pixel width. */
+        outline(bx - 2, by - 2, 220, 9 * size + 4, video_mode == VIDEO_CGA ? 0 : 8);
+        outline(bx - 1, by - 1, 218, 9 * size + 2, 15);
+        video_label(sx, by + 3*(f+4), "Arrows   Move", 0, bg, 0);
+        video_label(sx, by + 4*(f+4), "Enter    Reveal / chord", 0, bg, 0);
+        video_label(sx, by + 5*(f+4), "F        Flag / unflag", 0, bg, 0);
+        video_label(sx, by + 6*(f+4), "N        New game", 0, bg, 0);
+        video_label(sx, by + 7*(f+4), "Match adjacent flags", 0, bg, 0);
+        video_label(sx, by + 8*(f+4), "to a number to chord.", 0, bg, 0);
+        line(64, y + height - f - 15, 512, video_mode == VIDEO_CGA ? 0 : 8);
+        video_label(64, y + height - f - 8, "Space also reveals | Esc returns to About", 0, bg, 0);
+    }
+    for (i = 0; i < MINE_CELLS; ++i)
+        if (!previous || previous->cells[i] != game->cells[i] ||
+            previous->state != game->state ||
+            (previous->cursor != game->cursor && (i == previous->cursor || i == game->cursor)))
+            mine_tile(game, i, bx + i%9*24, by + i/9*size, size);
+    if (!previous || previous->flags != game->flags || previous->opened != game->opened ||
+        previous->turns != game->turns || previous->state != game->state) {
+        video_rect(sx, by, 576-sx, 3*(f+4), bg);
+        sprintf(text, "Flags: %2d / 10", game->flags);
+        video_label(sx, by, text, accent, bg, 0);
+        sprintf(text, "Safe:  %2d / 71", game->opened);
+        video_label(sx, by + f+4, text, 0, bg, 0);
+        sprintf(text, "Turns: %d", game->turns);
+        video_label(sx, by + 2*(f+4), text, 0, bg, 0);
+        video_rect(248, y + f + 14, 328, f, bg);
+        video_label(256, y + f + 14,
+            game->state == MINE_READY ? "First reveal is safe" :
+            (game->state == MINE_WON ? "Field cleared! N plays again" :
+            (game->state == MINE_LOST ? "Mine hit. N tries again" : "Clear every safe square")), accent, bg, 0);
+    }
 }
 void graph_help(const char *version, const char *commit, const char *repository,
                 unsigned first, int full)

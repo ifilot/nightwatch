@@ -42,6 +42,12 @@ def compile_app(work, run, name, commands, outputs, logs):
     font.write_bytes(text.replace('\n','\r\n').encode('ascii'))
     changed = []
     logs = list(logs)
+    if '"MINE.H"' in (work/'MAIN.C').read_text():
+        for asset_name in ('MINE.C', 'MINE.H'):
+            (work/asset_name).write_bytes((ROOT/'src'/asset_name).read_text().replace('\n','\r\n').encode('ascii'))
+        changed += [r'set PATH=C:\TC;C:\TASM', r'set INCLUDE=C:\TC\INCLUDE',
+                    'tcc -1- -mm -O -Z -c MINE.C > MINECOMP.LOG']
+        logs.append('MINECOMP.LOG')
     if '"DRIVE.H"' in (work/'MAIN.C').read_text():
         for asset_name in ('DRIVE.C','DRIVE.H','DRIVEDOS.C','FEATURE.C','FEATURE.H','FEATMSG.ASM'):
             (work/asset_name).write_bytes((ROOT/'src'/asset_name).read_text().replace('\n','\r\n').encode('ascii'))

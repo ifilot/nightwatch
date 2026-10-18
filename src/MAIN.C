@@ -26,6 +26,7 @@
 #include "STORMSG.H"
 #include "VIDEO.H"
 #include "GRAPH.H"
+#include "MINE.H"
 #include "HELP.H"
 #include "BUILD.H"
 #include "HEX.H"
@@ -629,8 +630,36 @@ static unsigned destination_mask(const char *target, int directory)
     for (i = 0; i < 2; ++i) if (!stricmp(full, panes[i].path)) mask |= 1 << i;
     return mask;
 }
-/* Show version and license credits in a native window or text overlay.
- */
+/* The off-duty game owns only a pair of small stack records. */
+static void minefield(void)
+{
+    Mine game, previous;
+    unsigned seed = (unsigned)biostime(0, 0L);
+    int key;
+    if (video_mode == VIDEO_TEXT) return;
+    mine_new(&game, seed);
+    graph_mine(&game, NULL);
+    for (;;) {
+        key = key_read();
+        if (key == 27) return;
+        previous = game;
+        switch (key) {
+        case 0x4b00: mine_move(&game, -1, 0); break;
+        case 0x4d00: mine_move(&game, 1, 0); break;
+        case 0x4800: mine_move(&game, 0, -1); break;
+        case 0x5000: mine_move(&game, 0, 1); break;
+        case 'f': case 'F': mine_flag(&game); break;
+        case 13: case ' ': mine_reveal(&game); break;
+        case 'n': case 'N':
+            seed = seed * 25173U + 13849U;
+            mine_new(&game, seed);
+            graph_mine(&game, NULL); continue;
+        default: continue;
+        }
+        graph_mine(&game, &previous);
+    }
+}
+/* Show version and license credits in a native window or text overlay. */
 static void about(void)
 {
     int y = video_rows / 2 - 5, i;
@@ -642,8 +671,13 @@ static void about(void)
         "16pxls: Paul Mackenzie (ICONLIC.TXT)"
     };
     if (video_mode != VIDEO_TEXT) {
-        graph_about(NW_VERSION_TAG, NW_BUILD_COMMIT, NW_REPOSITORY, credits);
-        key_read(); return;
+        for (;;) {
+            graph_about(NW_VERSION_TAG, NW_BUILD_COMMIT, NW_REPOSITORY, credits);
+            i = key_read();
+            if (i != 'g' && i != 'G') return;
+            minefield();
+            draw();
+        }
     }
     video_overlay_begin(0);
     for (i = 0; i < 11; ++i) video_fill(13, y + i, 54, ' ', COLOR_DIALOG);

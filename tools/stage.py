@@ -7,7 +7,7 @@ source, target = map(Path, sys.argv[1:])
 # A build must not reuse an earlier executable or completion marker. Only the
 # staged directory is cleaned; the source tree and external toolchain are intact.
 for old in target.iterdir():
-    if old.is_file() and old.suffix.upper() in {'.OBJ', '.EXE', '.MAP', '.LOG', '.OK', '.FAIL'}:
+    if old.is_file() and old.suffix.upper() in {'.OBJ', '.EXE', '.MAP', '.LOG', '.OK', '.FAIL', '.ERR', '.FAI'}:
         old.unlink()
 # Turbo C/TASM consume DOS CRLF and 8.3 uppercase names. Reject non-ASCII
 # source here, rather than silently corrupting comments or string literals.

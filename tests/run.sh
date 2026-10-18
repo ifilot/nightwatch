@@ -4,6 +4,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build
 python3 tools/version.py --check
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -Isrc \
+    -fsanitize=address,undefined -fno-omit-frame-pointer -g \
+    src/MINE.C tests/test_mine.c -o build/test_mine
+ASAN_OPTIONS=detect_leaks=0 build/test_mine
 # Host builds enforce the DOS language subset and exercise memory/error paths
 # under sanitizers. Hardware-specific VIDEO.C/MAIN.C compile in the DOS suite.
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -Isrc -fsyntax-only src/GRAPH.C

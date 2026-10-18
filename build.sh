@@ -4,8 +4,8 @@ set -euo pipefail
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 # Mount the repository's compiler and assembler read-only.
 toolchain=${DOS_TOOLCHAIN:-$repo/buildenv}
-if [[ ! -f "$toolchain/TC/TCC.EXE" || ! -f "$toolchain/TASM/TASM.EXE" ]]; then
-    echo "Set DOS_TOOLCHAIN to a directory containing TC/TCC.EXE, TC/INCLUDE, TC/LIB and TASM/TASM.EXE." >&2
+if [[ ! -f "$toolchain/TC/TCC.EXE" || ! -f "$toolchain/TC/TLINK.EXE" || ! -f "$toolchain/TASM/TASM.EXE" ]]; then
+    echo "Set DOS_TOOLCHAIN to a directory containing TC/TCC.EXE, TC/TLINK.EXE, TC/INCLUDE, TC/LIB and TASM/TASM.EXE." >&2
     exit 1
 fi
 mkdir -p "$repo/build"
@@ -16,6 +16,7 @@ cp "$repo/assets/ICON-LICENSE.txt" "$repo/build/ICONLIC.TXT"
 cp "$repo/LICENSE" "$repo/build/LICENSE.TXT"
 cp "$repo/vendor/zlib/LICENSE" "$repo/build/ZLIBLIC.TXT"
 python3 "$repo/tools/stage.py" "$repo/src" "$repo/build"
+python3 "$repo/tools/dos_link.py" "$repo/src/MAKEFILE" "$repo/build/NW.RSP"
 # DOSBox process success alone does not prove compiler success. The batch file
 # checks DOS errorlevel and emits a fresh marker only after NW.EXE exists.
 cat > "$repo/build/BUILD.BAT" <<'BAT'
@@ -25,7 +26,7 @@ D:
 make -fMAKEFILE objects > COMPILE.LOG
 if errorlevel 1 goto failed
 rem Link after Make exits, freeing its conventional DOS memory.
-tcc -1- -mm -LC:\TC\LIB -M -eNW.EXE *.OBJ >> COMPILE.LOG
+tlink /m /c @NW.RSP >> COMPILE.LOG
 if errorlevel 1 goto failed
 if not exist NW.EXE goto failed
 echo OK>BUILD.OK

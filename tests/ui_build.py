@@ -37,6 +37,9 @@ def build_ui():
         if src.suffix in {'.C', '.H', '.ASM'}:
             text = src.read_text()
             if src.name == 'MAIN.C':
+                # Reproducible hidden-game boards, confined to staged tests.
+                text = text.replace('unsigned seed = (unsigned)biostime(0, 0L);',
+                                    'unsigned seed = 123;')
                 begin = text.index('static int key_read(void)')
                 end = text.index('static int pane_rows', begin)
                 text = text[:begin] + ('#include "UITEST.H"\n'
