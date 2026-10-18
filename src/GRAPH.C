@@ -85,20 +85,35 @@ int graph_help_rows(void)
 }
 /* Shared native window chrome: Help, documents and credits use the same
  * title strip, inset paper and shadow instead of BIOS-sized cell dialogs. */
-static int document_window(const char *title, const char *badge, int height, int icon,
-                           int width)
+void graph_window_frame(int x, int y, int width, int height,
+                        const char *title, const char *badge, int icon)
 {
-    int f = video_font_height, x = (640 - width) / 2, y = (video_height - height) / 2;
-    unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
+    int f = video_font_height, columns, length = strlen(badge);
     unsigned bar = video_mode == VIDEO_CGA ? 0 : 1;
-    video_native_overlay();
-    video_rect(x + 3, y + 3, width, height, 0);
-    video_rect(x, y, width, height, bg); outline(x, y, width, height, 0);
+    char clipped[80];
+    /* Narrow shadow strips also let cell-backed dialogs share this chrome
+     * after flushing their body, without erasing the body or its selection. */
+    video_rect(x + width, y + 3, 3, height, 0);
+    video_rect(x + 3, y + height, width, 3, 0);
+    outline(x, y, width, height, 0);
     line(x + 1, y + 1, width - 2, 15);
     video_rect(x + 2, y + 2, width - 4, f + 6, bar);
     video_icon(x + 10, y + 3, icon, video_mode == VIDEO_CGA ? 0 : 7, 15, 15);
-    video_label(x + 32, y + 4, title, 15, bar, 0);
-    video_label(x + width - 4 - strlen(badge) * video_font_width, y + 4, badge, 15, bar, 0);
+    columns = (width - 40) / video_font_width - length;
+    if (length) columns -= 2;
+    if (columns > 79) columns = 79;
+    if (columns < 0) columns = 0;
+    strncpy(clipped, title, columns); clipped[columns] = 0;
+    video_label(x + 32, y + 4, clipped, 15, bar, 0);
+    video_label(x + width - 4 - length * video_font_width, y + 4, badge, 15, bar, 0);
+}
+static int document_window(const char *title, const char *badge, int height, int icon,
+                           int width)
+{
+    int x = (640 - width) / 2, y = (video_height - height) / 2;
+    video_native_overlay();
+    video_rect(x, y, width, height, video_mode == VIDEO_CGA ? 15 : 7);
+    graph_window_frame(x, y, width, height, title, badge, icon);
     return y;
 }
 static void document_text(int x, int y, const char *text, int columns, unsigned fg, unsigned bg)

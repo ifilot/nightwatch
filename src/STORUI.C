@@ -9,6 +9,7 @@
 #include "STORMSG.H"
 #include "STORUI.H"
 #include "VIDEO.H"
+#include "GRAPH.H"
 
 static const unsigned char checks[3][6] = {
     { ST_DASHPREPARE, ST_DASHWRITE, ST_DASHREAD, ST_DASHREUSE, ST_DASHMUTATE, ST_DASHAUDIT },
@@ -122,7 +123,7 @@ static void graphics(const char *phase, const char *path, unsigned long done,
     int barheight = f < 12 ? 6 : 10;
     int mono = video_mode == VIDEO_CGA;
     unsigned paper = mono ? 0 : 7, ink = mono ? 15 : 0, blue = mono ? 15 : 1;
-    unsigned white = mono ? 0 : 15, fg, state, part = 576 / storage_report.stages;
+    unsigned fg, state, part = 576 / storage_report.stages;
     unsigned long seconds = ticks * 10UL / 182UL;
     unsigned percent = portion(done, total, 100), fill = portion(done, total, right - 2);
     int full;
@@ -132,14 +133,13 @@ static void graphics(const char *phase, const char *path, unsigned long done,
         prior.passed != storage_report.passed || prior.state != storage_report.state ||
         prior.seed != storage_report.seed || prior.extended != storage_report.extended;
     if (full) {
-        video_rect(20, y + 4, 608, h, mono ? 0 : 8);
-        video_rect(16, y, 608, h, blue);
-        video_rect(17, y + 1, 606, h - 2, paper);
-        video_rect(17, y + 1, 606, 2 * f + 16, blue);
-        video_label(32, y + 7, storage_label(line, ST_DASHTITLE), white, blue, 0);
-        subtitle(line); video_label(32, y + f + 12, line, mono ? 0 : 11, blue, 0);
+        video_rect(16, y, 608, h, mono ? 15 : 7);
+        video_rect(24, y + f + 12, 592, h - f - 20, paper);
+        graph_window_frame(16, y, 608, h,
+                            storage_label(line, ST_DASHTITLE), "", ICON_DRIVE);
+        subtitle(line); video_label(32, y + f + 12, line, blue, paper, 0);
         if (storage_report.state != STORAGE_RUNNING) {
-            badge(584, y + 9, size, storage_report.state == STORAGE_PASSED ? 2 :
+            badge(584, y + f + 12, size, storage_report.state == STORAGE_PASSED ? 2 :
                   storage_report.state == STORAGE_CANCELLED ? 4 : 3, mono);
         }
         video_label(32, body, storage_label(line, ST_DASHCHECKLIST), blue, paper, 0);

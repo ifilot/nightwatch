@@ -255,24 +255,63 @@ static void draw(void)
     text_generation = video_generation(); text_active = active;
     video_flush();
 }
-/* Paint a centered, non-clearing overlay. Callers add controls and flush it.
- */
-static void dialog(const char *title, const char *message)
+/* Cell bodies retain their keyboard layout. Paint native chrome after flushing
+ * so the cell renderer cannot overwrite the shared title strip or icon. */
+static int modal_top, modal_height, modal_icon;
+static char modal_title[96];
+static unsigned char dialog_color(void)
 {
-    int y = video_rows / 2 - 3, i;
+    return video_mode == VIDEO_TEXT || video_mode == VIDEO_CGA ? COLOR_DIALOG : 0xf0;
+}
+static void modal_open(const char *title, int top, int height, int icon)
+{
+    int row;
     video_overlay_begin(0);
-    for (i = 0; i < 7; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
-    frame(3, y, 74, 7, COLOR_DIALOG);
-    video_text(5, y + 1, title, COLOR_DIALOG);
-    video_text(5, y + 3, message, COLOR_DIALOG);
+    modal_top = top; modal_height = height; modal_icon = icon;
+    strncpy(modal_title, title, sizeof(modal_title)-1);
+    modal_title[sizeof(modal_title)-1] = 0;
+    for (row = 0; row < height; ++row)
+        video_fill(3, top + row, 74, ' ', COLOR_DIALOG);
+    if (video_mode == VIDEO_TEXT) {
+        frame(3, top, 74, height, COLOR_DIALOG);
+        video_text(5, top + 1, title, COLOR_DIALOG);
+    } else {
+        for (row = 2; row < height - 1; ++row)
+            video_fill(4, top + row, 72, ' ', dialog_color());
+    }
+}
+static void modal_flush(void)
+{
+    video_flush();
+    if (video_mode != VIDEO_TEXT)
+        graph_window_frame(24, modal_top * (video_height/video_rows), 592,
+                            modal_height * (video_height/video_rows),
+                            modal_title, "", modal_icon);
+}
+static void modal_message(int row, const char *message)
+{
+    char text[71];
+    unsigned length = strlen(message);
+    if (video_mode == VIDEO_TEXT) {
+        video_text(5, row, message, COLOR_DIALOG); return;
+    }
+    if (length > 70) { strcpy(text, "..."); strcpy(text+3, message+length-67); }
+    else strcpy(text, message);
+    video_text(5, row, text, dialog_color());
+}
+static void dialog(const char *title, const char *message, int icon)
+{
+    int y = video_rows / 2 - 3;
+    modal_open(title, y, 7, icon);
+    modal_message(y + 3, message);
 }
 /* Display a message until any key; the main loop restores the desktop afterward.
  */
 static void notice(const char *message)
 {
-    dialog("Nightwatch", message);
-    video_text(5, video_rows / 2 + 2, "Press any key", COLOR_DIALOG);
-    video_flush(); key_read();
+    dialog("Nightwatch", message, ICON_DOCUMENT);
+    video_text(5, video_rows / 2 + 2, "Press any key", dialog_color());
+    modal_flush(); key_read();
 }
 /* Edit a caller-owned NUL-terminated buffer of max bytes, including the terminator.
  * Return nonzero for a nonempty Enter submission, zero for Escape/empty Enter.
@@ -285,13 +324,13 @@ static int prompt(const char *title, char *text, unsigned max)
     int k, y=video_rows/2;
     input_history_reset(0,text);
     for (;;) {
-        dialog(title, "Enter accepts, Esc cancels, Up/Down history, Tab completes");
-        video_fill(5,y+1,70,' ',COLOR_DIALOG);
+        dialog(title, "Enter accepts, Esc cancels, Up/Down history, Tab completes", ICON_DOCUMENT);
+        video_fill(5,y+1,70,' ',dialog_color());
         start=cursor>67 ? cursor-67 : 0;
         strncpy(visible,text+start,67); visible[67]=0;
-        video_text(5,y+1,visible,COLOR_DIALOG);
+        video_text(5,y+1,visible,dialog_color());
         video_put(5+cursor-start,y+1,text[cursor] ? text[cursor] : '_',COLOR_ACTIVE);
-        video_flush(); k=key_read();
+        modal_flush(); k=key_read();
         if (k==27) return 0;
         if (k==13) { input_history(text,max,&cursor,0,k); return *text!=0; }
         if (k==9) input_complete(text,max,&cursor,panes[active].path);
@@ -305,9 +344,9 @@ static int prompt(const char *title, char *text, unsigned max)
 static int confirm(const char *message)
 {
     int k;
-    dialog("Confirm", message);
-    video_text(5, video_rows / 2 + 2, "Y = yes; any other key = cancel", COLOR_DIALOG);
-    video_flush(); k = key_read(); return k == 'y' || k == 'Y';
+    dialog("Confirm", message, ICON_DOCUMENT);
+    video_text(5, video_rows / 2 + 2, "Y = yes; any other key = cancel", dialog_color());
+    modal_flush(); k = key_read(); return k == 'y' || k == 'Y';
 }
 /* BIOS ticks wrap at midnight; intervals here are always less than one day. */
 static unsigned long tick_elapsed(unsigned long now, unsigned long before)
@@ -342,7 +381,7 @@ static void progress_bar(int row, const char *label, unsigned long done,
     sprintf(line, "%-8s [", label);
     for (i = 0; i < 40; ++i) line[10 + i] = i < filled ? '#' : '-';
     sprintf(line + 50, "] %3u%%", fraction(done, total, 100));
-    video_text(5, row, line, COLOR_DIALOG);
+    video_text(5, row, line, dialog_color());
 }
 /* Each renderer clears shortened fields without disturbing progress tracks. */
 static void progress_text(unsigned field, const char *text)
@@ -352,8 +391,8 @@ static void progress_text(unsigned field, const char *text)
     char clipped[71];
     if (video_mode != VIDEO_TEXT) { graph_copy_text(field,text); return; }
     strncpy(clipped,text,70); clipped[70]=0;
-    video_fill(5,row,70,' ',COLOR_DIALOG);
-    video_text(5,row,clipped,COLOR_DIALOG);
+    video_fill(5,row,70,' ',dialog_color());
+    video_text(5,row,clipped,dialog_color());
 }
 /* Poll every transfer block, retaining unrelated keys. Painting and rate samples
  * use BIOS time so slow disks update without repeatedly repainting on an 8088. */
@@ -397,16 +436,16 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
         if (counting) {
             copy_dialog = 0;
             sprintf(line, "%.70s", path);
-            dialog(searching ? feature_label(format,FM_SEARCHING) : "Counting files - Esc cancels",line);
+            dialog(searching ? feature_label(format,FM_SEARCHING) : "Counting files - Esc cancels",line, ICON_FOLDER);
             if (searching) { feature_label(format,FM_MATCHES); sprintf(line,format,total_files); }
             else sprintf(line,"%lu files; %lu bytes found",total_files,total_bytes);
-            video_text(5, video_rows / 2 + 1, line, COLOR_DIALOG);
+            video_text(5, video_rows / 2 + 1, line, dialog_color());
         } else if (!copy_progress) {
             copy_dialog = 0;
-            dialog("File operation - Esc cancels", path);
+            dialog("File operation - Esc cancels", path, ICON_DOCUMENT);
             sprintf(line, "%lu / %lu bytes; %lu completed, %lu skipped", done, total,
                     operation_files, operation_skipped);
-            video_text(5, video_rows / 2 + 1, line, COLOR_DIALOG);
+            video_text(5, video_rows / 2 + 1, line, dialog_color());
         } else {
             y = video_rows / 2 - 5;
             reset = !copy_dialog || copy_generation != video_generation();
@@ -415,9 +454,9 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
             } else {
                 video_overlay_begin(0);
                 if (reset) {
-                    for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', COLOR_DIALOG);
-                    frame(3, y, 74, 11, COLOR_DIALOG);
-                    video_text(5, y + 1, copy_progress == 2 ? "Unpacking archive - Esc cancels" : "Copying - Esc cancels", COLOR_DIALOG);
+                    for (i = 0; i < 11; ++i) video_fill(3, y + i, 74, ' ', dialog_color());
+                    frame(3, y, 74, 11, dialog_color());
+                    video_text(5, y + 1, copy_progress == 2 ? "Unpacking archive - Esc cancels" : "Copying - Esc cancels", dialog_color());
                 }
             }
             copy_dialog = 1; copy_generation = video_generation();
@@ -444,7 +483,8 @@ static int operation_ui(const char *path, unsigned long done, unsigned long tota
             sprintf(line, "Overall: %lu / %lu bytes processed", operation_bytes + operation_current_bytes, total_bytes);
             progress_text(3,line);
         }
-        if (video_mode == VIDEO_TEXT || !copy_progress || counting) video_flush();
+        if (!copy_progress || counting) modal_flush();
+        else if (video_mode == VIDEO_TEXT) video_flush();
         if (copy_progress && !counting && video_mode != VIDEO_TEXT) {
             current = fraction(done, total, 100);
             overall = total_bytes ?
@@ -477,7 +517,7 @@ static void conflict_details(int row, const char *path, unsigned label)
         sprintf(line,format,name,e.size,(e.date>>5)&15,e.date&31,
                 (e.date>>9)+1980,e.time>>11,(e.time>>5)&63);
     }
-    video_text(5,row,line,COLOR_DIALOG);
+    video_text(5,row,line,dialog_color());
 }
 static int conflict_ui(const char *src, const char *dst)
 {
@@ -485,16 +525,13 @@ static int conflict_ui(const char *src, const char *dst)
     char title[100], keys[100];
     if (conflict_policy) return conflict_policy;
     copy_dialog=0;
-    video_overlay_begin(0);
-    for (k=y-4;k<=y+4;++k) video_fill(3,k,74,' ',COLOR_DIALOG);
-    frame(3,y-4,74,9,COLOR_DIALOG);
-    video_text(5,y-3,feature_label(title,FM_CONFLICT),COLOR_DIALOG);
-    video_text(5,y-2,src,COLOR_DIALOG);
+    modal_open(feature_label(title,FM_CONFLICT), y-4, 9, ICON_DOCUMENT);
+    modal_message(y-2,src);
     conflict_details(y-1,src,FM_SOURCE);
-    video_text(5,y,dst,COLOR_DIALOG);
+    modal_message(y,dst);
     conflict_details(y+1,dst,FM_DEST);
-    video_text(5,y+2,feature_label(keys,FM_CHOICES),COLOR_DIALOG);
-    video_flush(); k=modal_key_read();
+    video_text(5,y+2,feature_label(keys,FM_CHOICES),dialog_color());
+    modal_flush(); k=modal_key_read();
     sample_tick=(unsigned long)biostime(0,0L);
     sample_bytes=operation_transferred; transfer_rate=0; force_progress=1;
     if (k=='a' || k=='A') conflict_policy=1;
@@ -511,11 +548,11 @@ static int transfer_error(const char *src, const char *dst, const char *message)
     (void)dst;
     if (operation_cancelled) return 0;
     copy_dialog=0;
-    dialog(feature_label(title,FM_RETRY),message);
+    dialog(feature_label(title,FM_RETRY),message, ICON_DOCUMENT);
     feature_label(format,FM_RETRYINFO); sprintf(line,format,src);
-    video_text(5,y+1,line,COLOR_DIALOG);
-    video_text(5,y+2,feature_label(keys,FM_RETRYKEYS),COLOR_DIALOG);
-    video_flush(); k=modal_key_read();
+    video_text(5,y+1,line,dialog_color());
+    video_text(5,y+2,feature_label(keys,FM_RETRYKEYS),dialog_color());
+    modal_flush(); k=modal_key_read();
     force_progress=1; sample_tick=(unsigned long)biostime(0,0L);
     sample_bytes=operation_transferred; transfer_rate=0;
     if (k=='r' || k=='R') return 1;
@@ -558,8 +595,8 @@ static void sort_menu(void)
 {
     int k, order = -1;
     Panel *p = &panes[active];
-    dialog("Sort active pane", "N name | S size | D date | E extension | R reverse");
-    video_flush(); k = key_read();
+    dialog("Sort active pane", "N name | S size | D date | E extension | R reverse", ICON_FOLDER);
+    modal_flush(); k = key_read();
     if (k == 'n' || k == 'N') order = 0;
     if (k == 's' || k == 'S') order = 1;
     if (k == 'd' || k == 'D') order = 2;
@@ -680,15 +717,15 @@ static void about(void)
         }
     }
     video_overlay_begin(0);
-    for (i = 0; i < 11; ++i) video_fill(13, y + i, 54, ' ', COLOR_DIALOG);
-    frame(13, y, 54, 11, COLOR_DIALOG);
-    video_text(15, y + 1, "Nightwatch " NW_VERSION_TAG, COLOR_DIALOG);
-    video_text(15, y + 3, credits[0], COLOR_DIALOG);
-    video_text(15, y + 4, credits[1], COLOR_DIALOG);
-    video_text(15, y + 6, credits[2], COLOR_DIALOG);
-    video_text(15, y + 7, credits[3], COLOR_DIALOG);
-    video_text(15, y + 8, credits[4], COLOR_DIALOG);
-    video_text(15, y + 9, "Press any key to return", COLOR_DIALOG);
+    for (i = 0; i < 11; ++i) video_fill(13, y + i, 54, ' ', dialog_color());
+    frame(13, y, 54, 11, dialog_color());
+    video_text(15, y + 1, "Nightwatch " NW_VERSION_TAG, dialog_color());
+    video_text(15, y + 3, credits[0], dialog_color());
+    video_text(15, y + 4, credits[1], dialog_color());
+    video_text(15, y + 6, credits[2], dialog_color());
+    video_text(15, y + 7, credits[3], dialog_color());
+    video_text(15, y + 8, credits[4], dialog_color());
+    video_text(15, y + 9, "Press any key to return", dialog_color());
     video_flush(); key_read();
 }
 /* Scroll the same documentation in a native modal or text screen. The title,
@@ -993,8 +1030,8 @@ static void change_mode(void)
     int k, mode = -1;
     char old;
     dialog(remember_mode ? "Display mode (R remember: ON)" : "Display mode (R remember: OFF)",
-        "T text | C CGA | E EGA | V VGA | R remember mode");
-    video_flush(); k = key_read();
+        "T text | C CGA | E EGA | V VGA | R remember mode", ICON_IMAGE);
+    modal_flush(); k = key_read();
     if (k == 't' || k == 'T') mode = VIDEO_TEXT;
     if (k == 'c' || k == 'C') mode = VIDEO_CGA;
     if (k == 'e' || k == 'E') mode = VIDEO_EGA;
@@ -1183,9 +1220,9 @@ static int search_match(const char *path, const Entry *info, void *context)
     unsigned length=strlen(path);
     (void)info;
     ++found->matches; total_files=found->matches;
-    dialog(feature_label(title,FM_RESULT),path+(length>70 ? length-70 : 0));
-    video_text(5,video_rows/2+2,feature_label(keys,FM_RESULTKEYS),COLOR_DIALOG);
-    video_flush();
+    dialog(feature_label(title,FM_RESULT),path+(length>70 ? length-70 : 0), ICON_DOCUMENT);
+    video_text(5,video_rows/2+2,feature_label(keys,FM_RESULTKEYS),dialog_color());
+    modal_flush();
     for (;;) {
         k=key_read();
         if (k==13) { strcpy(found->selected,path); return 0; }
@@ -1231,12 +1268,12 @@ static void properties(void)
     if (browse_active(&panes[active])) { archive_message(ARC_BROWSER_READONLY); notice(nw_error); return; }
     attr=e->attr;
     for (;;) {
-        dialog(feature_label(label,FM_ATTR),path);
+        dialog(feature_label(label,FM_ATTR),path, ICON_DOCUMENT);
         feature_label(format,FM_ATTRLINE);
         sprintf(line,format,attr&1 ? 'X':' ',attr&2 ? 'X':' ',attr&4 ? 'X':' ',attr&32 ? 'X':' ');
-        video_text(5,y+1,line,COLOR_DIALOG);
+        video_text(5,y+1,line,dialog_color());
         conflict_details(y+2,path,FM_SOURCE);
-        video_flush(); k=key_read();
+        modal_flush(); k=key_read();
         if (k==27) return;
         if (k==13) {
             if (attr!=e->attr && !fs_attr(path,attr)) { fs_error(feature_label(label,FM_ATTRFAIL)); notice(nw_error); }
@@ -1275,12 +1312,9 @@ static void change_drive(void)
     rows=count<12 ? count+1 : (count+2)/2;
     height=(int)rows+6; top=(video_rows-height)/2;
     for (;;) {
-        video_overlay_begin(0);
-        for (y=0;y<height;++y) video_fill(3,top+y,74,' ',COLOR_DIALOG);
-        frame(3,top,74,height,COLOR_DIALOG);
-        video_text(5,top+1,drive_label(label,DL_TITLE),COLOR_DIALOG);
+        modal_open(drive_label(label,DL_TITLE), top, height, ICON_DRIVE);
         for (i=0;i<=count;++i) {
-            unsigned char attr=i==selected ? COLOR_ACTIVE : COLOR_DIALOG;
+            unsigned char attr=i==selected ? COLOR_ACTIVE : dialog_color();
             x=6+(int)(i/rows)*35; y=top+3+(int)(i%rows);
             video_fill(x,y,33,' ',attr);
             if (i==count) video_text(x+3,y,drive_label(label,DL_PATH),attr);
@@ -1290,8 +1324,8 @@ static void change_drive(void)
                 video_text(x+3,y,line,attr);
             }
         }
-        video_text(5,top+height-2,drive_label(label,DL_KEYS),COLOR_DIALOG);
-        video_flush();
+        video_text(5,top+height-2,drive_label(label,DL_KEYS),dialog_color());
+        modal_flush();
         for (i=0;i<count;++i) {
             x=6+(int)(i/rows)*35; y=top+3+(int)(i%rows);
             video_drive_icon(x*8,y*video_font_height,drives[i].kind);
@@ -1479,10 +1513,10 @@ static int storage_create_confirm(const char *path)
     unsigned n = strlen(path);
     int k, y = video_rows / 2 - 3;
     strncpy(line, path, 70); line[70] = 0;
-    dialog(storage_label(title, ST_UICREATEDIR), line);
-    if (n > 70) video_text(5, y + 4, path + 70, COLOR_DIALOG);
-    video_text(5, y + 5, storage_label(line, ST_UICREATEKEY), COLOR_DIALOG);
-    video_flush(); k = key_read();
+    dialog(storage_label(title, ST_UICREATEDIR), line, ICON_FOLDER);
+    if (n > 70) video_text(5, y + 4, path + 70, dialog_color());
+    video_text(5, y + 5, storage_label(line, ST_UICREATEKEY), dialog_color());
+    modal_flush(); k = key_read();
     return k == 'y' || k == 'Y';
 }
 /* Keep run creation, saved verification and recorded-file cleanup distinct.
@@ -1494,8 +1528,8 @@ static void storage_menu(void)
     char target[NW_PATH], local[NW_PATH], manifest[NW_PATH], seed_text[16], line[80], title[80];
     unsigned long seed;
     int k, ok, extended, target_missing, local_missing;
-    dialog(storage_label(title, ST_UITITLE), storage_label(line, ST_UIMENU));
-    video_flush(); k = key_read();
+    dialog(storage_label(title, ST_UITITLE), storage_label(line, ST_UIMENU), ICON_DRIVE);
+    modal_flush(); k = key_read();
     if (k >= 'A' && k <= 'Z') k += 'a' - 'A';
     if (k != 'q' && k != 'l' && k != 'v' && k != 'c') return;
     if (k == 'q' || k == 'l') {

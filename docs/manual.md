@@ -234,6 +234,9 @@ Text wraps to the document width; hex view retains 16 bytes per row, grouped
 in pairs. Line counts and byte offsets appear below the document.
 In EGA and VGA, About places the two foreground figures from *The Night Watch*
 in a separate inset beside the credits. CGA and text retain text-only credits.
+Other graphics menus and prompts share Help's native title bar, frame and icon,
+including overwrite/retry dialogs, file properties, the drive picker and storage
+screens. See [the modal inventory](modals.md) for the full public list.
 
 Both viewers offer **F7** search, **F8** next match and **Ctrl-G** byte-offset
 jump. Search accepts case-insensitive literal ASCII or exact binary patterns

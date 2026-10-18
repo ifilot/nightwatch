@@ -13,6 +13,10 @@
 int graph_rows(void);
 void graph_command_cursor(unsigned cursor);
 void graph_draw(Panel *panels, int active, const char *status, const char *command);
+/* Shared native modal chrome. Coordinates are pixels. Paint body first;
+ * this adds only shadow, frame, title strip and icon, preserving body pixels. */
+void graph_window_frame(int x, int y, int width, int height,
+                        const char *title, const char *badge, int icon);
 /* Native Help keeps its chrome fixed while scrolling the embedded document. */
 int graph_help_rows(void);
 void graph_help(const char *version, const char *commit, const char *repository,

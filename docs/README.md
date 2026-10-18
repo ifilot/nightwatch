@@ -6,6 +6,7 @@ limits and validation commands.
 | Reference | Contents |
 | --- | --- |
 | [CI and releases](ci.md) | Build environment, test jobs, packaging and publishing |
+| [Modal inventory](modals.md) | Dialogs, prompts, progress windows and shared title-bar styling |
 | [ZIP support](zip-support.md) | Supported ZIP formats, integrity checks and decoder integration |
 | [ARJ support](arj-support.md) | Supported ARJ methods, metadata and recovery behavior |
 | [Storage integrity tests](storage-test.md) | Test profiles, saved verification and cleanup |

@@ -38,6 +38,7 @@ test-video: build
 	python3 tests/progress.py
 	python3 tests/video.py
 	python3 tests/help.py
+	python3 tests/modals.py
 	python3 tests/mine.py
 	python3 tests/features.py
 	python3 tests/drive_dos.py

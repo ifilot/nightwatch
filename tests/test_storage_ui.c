@@ -12,6 +12,11 @@ static unsigned generation = 1, calls, touched_left, opening_text, entries_text;
 unsigned video_generation(void) { return generation; }
 void video_overlay_begin(int clear) { (void)clear; }
 void video_flush(void) {}
+void video_icon(int x, int y, int icon, unsigned body, unsigned edge, unsigned light)
+{
+    (void)x; (void)y; (void)body; (void)edge; (void)light;
+    assert(icon == ICON_DRIVE); ++calls;
+}
 void video_rect(int x, int y, int w, int h, unsigned color)
 {
     (void)color;

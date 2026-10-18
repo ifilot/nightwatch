@@ -31,6 +31,10 @@ changes without a release tag are marked unreleased.
 
 ### Changed
 
+- Graphics menus, prompts, conflicts, file properties, the drive picker and
+  storage dashboard now share Help's native frame, title strip and icon.
+  Text-mode dialogs retain their character layout and keyboard controls.
+
 - Copy and archive-unpacking progress share Help's graphical window frame,
   blue title bar and white content area, with native labels, transfer speed,
   time remaining and an Escape hint. Incremental updates preserve responsiveness.
