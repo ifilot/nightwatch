@@ -79,6 +79,8 @@ The demo-drive suite builds its launcher in a fresh directory of its own on
 every run. It does not depend on `make demo`, another suite, or local demo media.
 Host regressions cover missing build directories, cached builds, failed rebuilds
 and empty compiler outputs, so preparation errors are caught before DOS CI runs.
+The large-directory workflow inserts fixture files into its FAT image in
+filename order, keeping page-boundary checks independent of the host filesystem.
 
 Production and test linking use TLINK response files with explicit object lists.
 `tools/dos_link.py` generates the production list from `src/MAKEFILE`; the

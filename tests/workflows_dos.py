@@ -70,7 +70,14 @@ for mode in ('text','vga'):
     (work/'KEYS.TXT').write_text('\n'.join(f'{k:x}' for k in keys)+'\n')
     raw=BASE/(mode+'.FAT'); raw.unlink(missing_ok=True)
     sp.run(['mformat','-C','-i',str(raw),'-t','256','-h','16','-s','32','-r','64','-c','4','::'],check=True)
-    sp.run(['mcopy','-s','-i',str(raw),*map(str,work.iterdir()),'::'],check=True)
+    sp.run(['mcopy','-s','-i',str(raw),
+            *map(str,sorted(p for p in work.iterdir() if p.name!='BIG')),'::'],check=True)
+    # mcopy -s follows the host's directory enumeration order. ext4 and NTFS
+    # differ, so recursive copying can put F1099.TXT on any DOS page. Insert
+    # BIG's children explicitly in filename order to exercise page 3 everywhere.
+    sp.run(['mmd','-i',str(raw),'::BIG'],check=True)
+    sp.run(['mcopy','-s','-i',str(raw),
+            *map(str,sorted((work/'BIG').iterdir())),'::BIG'],check=True)
     payload=bytearray(raw.read_bytes()); struct.pack_into('<I',payload,28,63)
     prefix=bytearray(63*512)
     prefix[446:462]=struct.pack('<B3sB3sII',0,b'\x01\x20\x00',6,b'\xfe\xff\xff',63,len(payload)//512)
