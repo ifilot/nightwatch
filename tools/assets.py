@@ -6,6 +6,7 @@ VGA uses color planes and transparency; EGA/CGA retain their native masks.
 """
 from pathlib import Path
 import re
+from PIL import Image
 from icons_v130 import quickmenu_icon
 from drive_icons import drive_icon
 from vram import palette
@@ -126,6 +127,20 @@ for i, kind in enumerate(('floppy-35','floppy-525','hard-disk','sd-card')):
     assembly.append(f'drive_icon_{i} label byte')
     for at in range(0,len(data),16):
         assembly.append('    db '+','.join(f'0{n:02x}h' for n in data[at:at+16]))
+# About artwork is opaque, with four 144x176 native EGA color planes.
+# Like the fonts it lives outside DGROUP, with no runtime image decoder.
+image = Image.open(root/'assets/about/gentlemen.png').convert('RGB')
+assert image.size == (144, 176)
+pixels = [palette.index(rgb) for rgb in image.getdata()]
+assembly.append('about_image label byte')
+data = []
+for plane in range(4):
+    for y in range(176):
+        for x in range(0, 144, 8):
+            data.append(sum(((pixels[y*144+x+bit] >> plane) & 1) << (7-bit)
+                            for bit in range(8)))
+for at in range(0, len(data), 16):
+    assembly.append('    db '+','.join(f'0{n:02x}h' for n in data[at:at+16]))
 # The medium-model C ABI returns a far pointer as DX:AX and passes mode at BP+6.
 # All fonts share FONTDATA, so only the offset changes; mode 1/2 selects CGA/EGA,
 # and the remaining path selects VGA. Keep the generated explanation with it.
@@ -157,6 +172,9 @@ for name, table_name in (('drive_label','drive_labels'),('drive_icon','drive_ico
 assembly += ['public _asset_copy_buffer', '_asset_copy_buffer proc far',
     'mov ax,seg copy_fallback', 'mov dx,ax', 'mov ax,offset copy_fallback',
     'ret', '_asset_copy_buffer endp']
+assembly += ['public _asset_about', '_asset_about proc far',
+    'mov ax,seg about_image', 'mov dx,ax', 'mov ax,offset about_image',
+    'ret', '_asset_about endp']
 assembly += ['; INT 24h: Fail the current DOS request, without calling DOS.',
              'public _drive_fail', '_drive_fail proc far', 'mov al,3', 'iret',
              '_drive_fail endp', '_TEXT ends', 'end']

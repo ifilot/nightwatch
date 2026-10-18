@@ -248,7 +248,9 @@ void graph_about(const char *version, const char *commit, const char *repository
                  const char **credits)
 {
     int f = video_font_height, paper_height = 6 * (f + 2) + 8;
-    int height = 2 * f + 24 + paper_height + f + 22, x, y, i, body, width, needed;
+    int portrait = video_mode == VIDEO_EGA || video_mode == VIDEO_VGA;
+    int image_width = portrait ? 160 : 0, image_x, text_x, text_y;
+    int height, x, y, i, body, width, needed;
     unsigned bg = video_mode == VIDEO_CGA ? 15 : 7;
     char text[80];
     sprintf(text, "Nightwatch %s", version);
@@ -265,19 +267,33 @@ void graph_about(const char *version, const char *commit, const char *repository
     sprintf(text, "Commit: %s", commit);
     needed = strlen(text) * video_font_width + 44;
     if (needed > width) width = needed;
+    width += image_width;
     if (width > 604) width = 604;
+    if (portrait && paper_height < 184) paper_height = 184;
+    height = 3 * f + 46 + paper_height;
     x = (640 - width) / 2;
     sprintf(text, "Nightwatch %s", version);
     y = document_window(text, "ABOUT", height, ICON_DRIVE, width);
     document_text(x + 14, y + f + 14, repository, (width - 28) / video_font_width, 0, bg);
     body = y + 2 * f + 24;
-    video_rect(x + 14, body, width - 28, paper_height, 15);
-    outline(x + 14, body, width - 28, paper_height, video_mode == VIDEO_CGA ? 0 : 8);
+    video_rect(x + 14 + image_width, body, width - 28 - image_width, paper_height, 15);
+    outline(x + 14 + image_width, body, width - 28 - image_width, paper_height,
+            video_mode == VIDEO_CGA ? 0 : 8);
+    if (portrait) {
+        image_x = (x + 23) & ~7;
+        /* Two single-pixel rings inset the unscaled artwork into the gray
+         * dialog surface, separately from the white credits paper. */
+        outline(image_x - 2, body + 2, 148, 180, 15);
+        outline(image_x - 1, body + 3, 146, 178, 8);
+        video_about_image(image_x, body + 4);
+    }
+    text_x = x + 22 + image_width;
+    text_y = body + (paper_height - 6 * (f + 2)) / 2;
     for (i = 0; i < 5; ++i)
-        document_text(x + 22, body + 4 + i * (f + 2), credits[i], (width - 44) / video_font_width,
+        document_text(text_x, text_y + i * (f + 2), credits[i], (width - 44 - image_width) / video_font_width,
                       i < 2 && video_mode != VIDEO_CGA ? 1 : 0, 15);
     sprintf(text, "Commit: %s", commit);
-    document_text(x + 22, body + 4 + 5 * (f + 2), text, (width - 44) / video_font_width, 0, 15);
+    document_text(text_x, text_y + 5 * (f + 2), text, (width - 44 - image_width) / video_font_width, 0, 15);
     line(x + 14, y + height - f - 15, width - 28, video_mode == VIDEO_CGA ? 0 : 8);
     video_label(x + 14, y + height - f - 8, "Press any key to return", 0, bg, 0);
 }

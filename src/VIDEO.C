@@ -8,6 +8,7 @@
 #include "ASSETS.H"
 #include "DRIVE.H"
 const unsigned char far *asset_font(int mode);
+const unsigned char far *asset_about(void);
 /* All mutable buffers live in the near data segment. Keeping
  * full pixel frames here would exhaust its 64K budget; graphics instead go
  * directly to far VRAM. screen is desired cell state, previous is last sent
@@ -397,6 +398,23 @@ void video_drive_icon(int x, int y, unsigned kind)
         default: color_icon(x,y,vga_icon_sprites[ICON_DRIVE]); return;
     }
     color_icon(x,y,asset_drive_icon(index));
+}
+void video_about_image(int x, int y)
+{
+    const unsigned char far *source;
+    int plane, row;
+    if (video_mode != VIDEO_EGA && video_mode != VIDEO_VGA) return;
+    if (x < 0 || (x & 7) || x + 144 > 640 || y < 0 || y + 176 > video_height) return;
+    source = asset_about();
+    gc(1, 0, &reg_enable); gc(8, 255, &reg_mask);
+    for (plane = 0; plane < 4; ++plane) {
+        planes(1 << plane);
+        for (row = 0; row < 176; ++row) {
+            movedata(FP_SEG(source), FP_OFF(source) + plane * 3168 + row * 18,
+                     FP_SEG(pixels), offset_at(x >> 3, y + row), 18);
+        }
+    }
+    COUNT_VIDEO(12672UL);
 }
 /* Copy whole-byte listing interiors; callers repaint the scrollbar afterwards.
  * Gutters inside rounded edge bytes are constant throughout the listing. */

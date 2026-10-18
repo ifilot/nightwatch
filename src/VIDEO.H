@@ -46,6 +46,9 @@ void video_label(int x, int y, const char *s, unsigned fg, unsigned bg, int bold
 void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigned highlight);
 /* Native VGA drive-picker sprite. Other modes use textual drive types. */
 void video_drive_icon(int x, int y, unsigned kind);
+/* Opaque 144x176 EGA-palette About artwork. Origin must be byte aligned;
+ * only EGA/VGA accept this primitive. Asset data remains outside DGROUP. */
+void video_about_image(int x, int y);
 /* Scroll moves the overlapping interior by signed pixel dy. It rounds x
  * outward to byte boundaries: callers must keep those edge gutters uniform,
  * repaint exposed rows and any scrollbar. Returns zero when unsupported. */

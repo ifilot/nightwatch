@@ -379,6 +379,35 @@ for machine, mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga
     else:
         image=decode(work/'F001.BIN')
         assert image.getbbox(),mode
+        if mode in ('ega', 'vga'):
+            portrait=Image.open(root/'assets/about/gentlemen.png').convert('RGB')
+            # Find a distinctive middle scanline, then compare every pixel
+            # in actual four-plane VRAM to the authored 16-color artwork.
+            at=image.tobytes().find(portrait.crop((0,88,144,89)).tobytes())
+            assert at >= 0 and at % 3 == 0, (mode,'missing About artwork')
+            px,py=(at//3)%640,(at//3)//640-88
+            assert image.crop((px,py,px+144,py+176)).tobytes()==portrait.tobytes(), (mode,'About artwork planes')
+            assert set(portrait.getdata()) <= set(palette)
+            # Both border rings are exactly one pixel thick and touch the
+            # unscaled image. Gray separates this inlay from the paper.
+            for inset,color in ((1,8),(2,15)):
+                for left,top,right,bottom in (
+                        (px-inset,py-inset,px+144+inset,py-inset+1),
+                        (px-inset,py+175+inset,px+144+inset,py+176+inset),
+                        (px-inset,py-inset,px-inset+1,py+176+inset),
+                        (px+143+inset,py-inset,px+144+inset,py+176+inset)):
+                    assert image.crop((left,top,right,bottom)).getcolors()==[
+                        ((right-left)*(bottom-top),palette[color])], (mode,'About inlay border')
+            assert image.getpixel((px+146,py+88))==palette[7], (mode,'About inlay gutter')
+            f={'ega':12,'vga':16}[mode]
+            advance={'ega':7,'vga':8}[mode]
+            width=max((len('Nightwatch v'+version)+5)*advance+52,
+                      len('github.com/ifilot/nightwatch')*advance+28,
+                      len('GPLv3 - no warranty. See LICENSE.TXT')*advance+44)+160
+            # Credits must fit to the right of the portrait without overlap.
+            native_label(image,mode,(640-width)//2+182,
+                         py-4+(184-6*(f+2))//2,
+                         'Two-pane file navigator for MS-DOS',1)
     print('PASS:',machine,mode,'About via Alt-F1 and Help/A; version/licenses and exact desktop restoration',flush=True)
 
 # Query version from the actual executable without opening the UI.

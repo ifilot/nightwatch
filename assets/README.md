@@ -68,3 +68,10 @@ and derived glyph data retain BSD-2-Clause.
 launcher icon with a binary transparency mask. A 4-bit PNG and preview are
 included beside it. See [the format and import notes](quickmenu/README.md).
 Regenerate with `python3 tools/quickmenu_icon.py`. This icon is GPL-3.0-only.
+
+## About artwork
+
+EGA and VGA display a shared 144x176 image of the two foreground gentlemen
+from *The Night Watch*, using the standard 16-color EGA palette. See
+[the artwork and generation notes](about/README.md). `make assets` embeds
+its four color planes in `src/FONT.ASM`, outside DGROUP.
