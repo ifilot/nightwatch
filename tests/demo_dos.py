@@ -19,13 +19,15 @@ try:
     require_prebuilt()
 except (AssertionError, FileNotFoundError):
     build_ui()
-build_launcher()
 work = ROOT / 'build/demo-test'
 if work.exists():
     shutil.rmtree(work)
+launcher = work / 'launcher'
+# Every run exercises the same cold start as a fresh Actions matrix worker.
+build_launcher(launcher)
 media = work / 'demo'
 prepare_media(media)
-shutil.copy2(ROOT / 'build/demo/DEMODRV.EXE', media / 'DEMODRV.EXE')
+shutil.copy2(launcher / 'DEMODRV.EXE', media / 'DEMODRV.EXE')
 shutil.copy2(ROOT / 'build/video/UITEST.EXE', work / 'UITEST.EXE')
 (work / 'FAST.CONF').write_text('[cpu]\ncycles=100000\n')
 keys = [0x4300, 27]

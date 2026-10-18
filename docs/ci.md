@@ -75,6 +75,11 @@ requires matching source/header bytes, compiler/assembler/library inputs,
 compiler flags, and object checksums. Fresh test executables are still linked
 and checked by the DOS compiler gate.
 
+The demo-drive suite builds its launcher in a fresh directory of its own on
+every run. It does not depend on `make demo`, another suite, or local demo media.
+Host regressions cover missing build directories, cached builds, failed rebuilds
+and empty compiler outputs, so preparation errors are caught before DOS CI runs.
+
 Production and test linking use TLINK response files with explicit object lists.
 `tools/dos_link.py` generates the production list from `src/MAKEFILE`; the
 test compiler gate includes both existing objects and planned compiler outputs.

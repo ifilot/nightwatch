@@ -48,20 +48,24 @@ def prepare_media(destination):
             temporary.unlink(missing_ok=True)
 
 
-def build_launcher():
-    directory = ROOT / 'build/demo'
+def build_launcher(directory=None):
+    directory = Path(directory) if directory is not None else ROOT / 'build/demo'
+    directory.mkdir(parents=True, exist_ok=True)
     toolchain = Path(os.environ.get('DOS_TOOLCHAIN', str(ROOT / 'buildenv'))).resolve()
     sources = [ROOT / 'tools' / name for name in ('DEMODRV.C', 'DRVMETA.ASM')]
     digest = hashlib.sha256(b''.join(p.read_bytes() for p in sources) +
                             (toolchain / 'TC/TCC.EXE').read_bytes() +
                             (toolchain / 'TASM/TASM.EXE').read_bytes()).hexdigest()
     stamp = directory / 'launcher.sha256'
-    if (directory / 'DEMODRV.EXE').is_file() and stamp.exists() and stamp.read_text() == digest:
+    executable = directory / 'DEMODRV.EXE'
+    if executable.is_file() and executable.stat().st_size and stamp.exists() and stamp.read_text() == digest:
         return
+    # A failed rebuild must invalidate both the output and its old cache stamp.
+    for name in ('DEMODRV.EXE', 'DRVMETA.OBJ', 'DEMO.OK', 'launcher.sha256',
+                 'META.LOG', 'DEMO.LOG', 'DOSBOX.LOG'):
+        (directory / name).unlink(missing_ok=True)
     for source in sources:
         (directory / source.name).write_bytes(source.read_text().replace('\n', '\r\n').encode('ascii'))
-    for name in ('DEMODRV.EXE', 'DEMO.OK'):
-        (directory / name).unlink(missing_ok=True)
     commands = [r'set PATH=C:\TC;C:\TASM', r'set INCLUDE=C:\TC\INCLUDE',
                 r'set LIB=C:\TC\LIB', 'tasm /mx DRVMETA.ASM > META.LOG',
                 'tcc -1- -mm -O -Z -eDEMODRV.EXE DEMODRV.C DRVMETA.OBJ > DEMO.LOG']
@@ -79,10 +83,11 @@ def build_launcher():
     with (directory / 'DOSBOX.LOG').open('w') as log:
         sp.run(args, env=dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy'),
                stdout=log, stderr=log, check=True, timeout=90)
-    if not (directory / 'DEMO.OK').exists() or not (directory / 'DEMODRV.EXE').is_file():
-        raise RuntimeError('\n'.join((directory / name).read_text(errors='replace')
-                                     for name in ('META.LOG', 'DEMO.LOG')
-                                     if (directory / name).exists()))
+    if not (directory / 'DEMO.OK').exists() or not executable.is_file() or not executable.stat().st_size:
+        transcript = '\n'.join((directory / name).read_text(errors='replace')
+                               for name in ('META.LOG', 'DEMO.LOG')
+                               if (directory / name).exists())
+        raise RuntimeError(f'Demo launcher compilation failed in {directory}\n{transcript}')
     stamp.write_text(digest)
     print('Built demo drive identity launcher')
 

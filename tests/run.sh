@@ -46,6 +46,7 @@ ASAN_OPTIONS=detect_leaks=0 build/test_navigation
 python3 tests/test_dosbuild.py
 python3 tests/test_object_cache.py
 python3 tests/test_ui_build.py
+python3 tests/test_prepare_demo.py
 python3 tests/test_memory.py
 python3 tests/test_package.py
 python3 tests/test_version.py
