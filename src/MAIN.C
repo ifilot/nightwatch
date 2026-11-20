@@ -644,7 +644,14 @@ static void refresh_mask(unsigned mask)
         if (!(mask & (1 << i))) { panel_mark_all(&panes[i], 0); panes[i].top = 0; }
         else if (i == 1 && mask == 3 && panes[0].offset==panes[1].offset && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
             panel_snapshot(&panes[1], &panes[0]);
-        } else if (!browse_load(&panes[i])) {
+        } else if (browse_load(&panes[i])) {
+            Panel *q = &panes[i];
+            /* Deleting or moving a whole later page can leave it empty. */
+            while (!browse_active(q) && q->offset && q->count <= (int)(strlen(q->path) > 3)) {
+                unsigned long old = q->offset;
+                if (!panel_page(q, 0) || q->offset >= old) break;
+            }
+        } else {
             notice(nw_error);
             /* Do not clone stale/failed data into the second pane. */
             if (i == 0 && mask == 3 && panes[0].offset==panes[1].offset && !browse_active(&panes[0]) && !browse_active(&panes[1]) && !stricmp(panes[0].path, panes[1].path)) {
@@ -1117,6 +1124,8 @@ static void operate(int move)
     }
     if (copy_progress && progress_path[0] &&
         operation_files + operation_skipped == total_files) {
+        /* A source skipped after a failed read has no known size. */
+        operation_bytes = total_bytes; operation_current_bytes = 0;
         force_progress = 1;
         operation_ui(progress_path, last_total, last_total);
     }
@@ -1189,19 +1198,21 @@ static void make_dir(void)
 /* Try an existing directory path. If its listing fails, reload the old directory
  * while retaining the original error for the user.
  */
-static void open_path(const char *path)
+static int open_path(const char *path)
 {
     char full[NW_PATH], old[NW_PATH], error[160];
     unsigned long old_offset=panes[active].offset;
+    int ok=1;
     strcpy(old,panes[active].path);
     drive_guard_begin();
-    if (!fs_canonical(path, full)) { drive_guard_end(); notice(nw_error); return; }
+    if (!fs_canonical(path, full)) { drive_guard_end(); notice(nw_error); return 0; }
     strcpy(panes[active].path, full); panes[active].offset=0;
     if (!panel_load(&panes[active])) {
         strcpy(error, nw_error); strcpy(panes[active].path, old); panes[active].offset=old_offset;
-        browse_load(&panes[active]); drive_guard_end(); notice(error);
+        browse_load(&panes[active]); drive_guard_end(); notice(error); ok=0;
     } else { browse_release(&panes[active]); drive_guard_end(); }
     panes[active].cursor = panes[active].top = 0;
+    return ok;
 }
 static void selection_size(void)
 {
@@ -1260,7 +1271,7 @@ static void recursive_find(void)
         if (!cut) return;
         strcpy(name,cut+1);
         if (cut==found.selected+2) cut[1]=0; else *cut=0;
-        open_path(found.selected);
+        if (!open_path(found.selected)) return;
         for (;;) {
             Panel *p=&panes[active];
             for (i=0;i<p->count;++i) if (!stricmp(p->files[i].name,name)) { p->cursor=i; return; }
@@ -1277,7 +1288,7 @@ static void properties(void)
     int k, y=video_rows/2;
     if (!e || !strcmp(e->name,"..") || !current_path(path)) return;
     if (browse_active(&panes[active])) { archive_message(ARC_BROWSER_READONLY); notice(nw_error); return; }
-    attr=e->attr;
+    attr=e->attr&(NW_READONLY|NW_HIDDEN|NW_SYSTEM|32);
     for (;;) {
         dialog(feature_label(label,FM_ATTR),path, MODAL_ICON(ICON_PROPERTIES, ICON_DOCUMENT));
         feature_label(format,FM_ATTRLINE);
@@ -1287,7 +1298,7 @@ static void properties(void)
         modal_flush(); k=key_read();
         if (k==27) return;
         if (k==13) {
-            if (attr!=e->attr && !fs_attr(path,attr)) { fs_error(feature_label(label,FM_ATTRFAIL)); notice(nw_error); }
+            if (attr!=(e->attr&(NW_READONLY|NW_HIDDEN|NW_SYSTEM|32)) && !fs_attr(path,attr)) { fs_error(feature_label(label,FM_ATTRFAIL)); notice(nw_error); }
             refresh_mask(1<<active); return;
         }
         if (k=='r' || k=='R') attr^=1;

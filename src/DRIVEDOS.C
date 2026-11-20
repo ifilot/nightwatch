@@ -6,9 +6,20 @@
 void interrupt drive_fail(void);
 static void interrupt (*old_critical)(void);
 static unsigned guard_depth;
+static int guard_installed;
+/* The handler answers Fail (AL=3), which DOS accepts only from version 3.1. */
 void drive_guard_begin(void)
-{ if (!guard_depth++) { old_critical=getvect(0x24); setvect(0x24,drive_fail); } }
-void drive_guard_end(void) { if (guard_depth && !--guard_depth) setvect(0x24,old_critical); }
+{
+    if (!guard_depth++ && drive_dos_version()>=0x030a) {
+        old_critical=getvect(0x24); setvect(0x24,drive_fail); guard_installed=1;
+    }
+}
+void drive_guard_end(void)
+{
+    if (guard_depth && !--guard_depth && guard_installed) {
+        setvect(0x24,old_critical); guard_installed=0;
+    }
+}
 
 unsigned drive_dos_version(void)
 {

@@ -101,11 +101,13 @@ void panel_space(Panel *p, int refresh)
 int panel_load(Panel *p)
 {
     char selected[13];
+    unsigned long free_kib=p->free_kib;
     p->free_kib=0xffffffffUL;
     selected[0] = 0;
     if (p->cursor >= 0 && p->cursor < p->count)
         strcpy(selected, p->files[p->cursor].name);
     if (!fs_list(p)) {
+        p->free_kib=free_kib;
         /* The adapter empties a failed partial scan. Preserve a valid old
          * cache if failure happened before scanning; otherwise clear its UI
          * state and invalidate the renderer along with the emptied entries. */
@@ -252,8 +254,15 @@ int panel_enter(Panel *p, const char *name)
     p->cursor = p->top = 0;
     if (parent && child[0]) {
         int i;
-        for (i = 0; i < p->count; ++i)
-            if (!strcmp(p->files[i].name, child)) { p->cursor = i; break; }
+        unsigned long seen;
+        for (;;) {
+            for (i = 0; i < p->count; ++i)
+                if (!strcmp(p->files[i].name, child)) { p->cursor = i; return 1; }
+            seen = p->offset;
+            if (!p->truncated || !panel_page(p, 1) || p->offset <= seen) break;
+        }
+        /* Not listed (e.g. removed meanwhile): fall back to the first page. */
+        if (p->offset) { p->offset = 0; panel_load(p); p->cursor = p->top = 0; }
     }
     return 1;
 }

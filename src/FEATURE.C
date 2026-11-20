@@ -73,6 +73,8 @@ void input_history_reset(unsigned channel, const char *draft)
 #else
         history_memory=malloc(2*sizeof(History)); history=history_memory;
 #endif
+        /* Either channel may fetch its draft slot before it was ever reset. */
+        if (history) { history[0][4][0]=0; history[1][4][0]=0; }
     }
     if (!history) return;
     positions[channel]=0; store(history[channel][4],draft);
