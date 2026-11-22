@@ -70,7 +70,7 @@ jobs:
     name: DOS tests (${{ matrix.suite }})
     needs: dos-build
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -105,9 +105,24 @@ jobs:
       - name: Test Help in every display mode
         if: matrix.suite == 'features'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/help.py
+      - name: Test keyboard-only Minefield in graphics modes
+        if: matrix.suite == 'features'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/mine.py
+      - name: Test shared modal title bars and icons
+        if: matrix.suite == 'features'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/modals.py
       - name: Test navigator features and saved settings
         if: matrix.suite == 'features'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/features.py
+      - name: Test drive detection and F9 picker in every display mode
+        if: matrix.suite == 'features'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" --env NW_UI_PREBUILT=1 nightwatch-build python3 tests/drive_dos.py
+      - name: Test persistent demo floppies and SD drive
+        if: matrix.suite == 'features'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/demo_dos.py
+      - name: Test file-manager usability workflows on FAT and 8086
+        if: matrix.suite == 'features'
+        run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/workflows_dos.py
       - name: Test storage dialogs and recursive folder creation
         if: matrix.suite == 'storage'
         run: docker run --rm --user "$(id -u):$(id -g)" --volume "$PWD:/workspace" nightwatch-build python3 tests/storage_ui.py
@@ -127,6 +142,7 @@ jobs:
             build/**/*.log
             build/**/*.MAP
             build/**/*.POS
+            build/workflows/**/*.png
           if-no-files-found: ignore
           retention-days: 7
 

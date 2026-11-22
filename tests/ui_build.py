@@ -37,6 +37,9 @@ def build_ui():
         if src.suffix in {'.C', '.H', '.ASM'}:
             text = src.read_text()
             if src.name == 'MAIN.C':
+                # Reproducible hidden-game boards, confined to staged tests.
+                text = text.replace('unsigned seed = (unsigned)biostime(0, 0L);',
+                                    'unsigned seed = 123;')
                 begin = text.index('static int key_read(void)')
                 end = text.index('static int pane_rows', begin)
                 text = text[:begin] + ('#include "UITEST.H"\n'
@@ -44,8 +47,15 @@ def build_ui():
                                       'static int modal_key_read(void) { return test_key_read(); }\n') + text[end:]
                 # Capture copy dialogs separately so ordinary scripted-key frame
                 # numbers remain stable. Production source has no capture calls.
+                text = text.replace('        bioskey(0);', '        key_read();')
                 text = text.replace('        paint_tick = now;',
                                     '        test_progress_capture(done, total); paint_tick = now;')
+            if src.name == 'FSDOS.C':
+                # Faults are armed only by reserved keys in the scripted runner.
+                text = text.replace('int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count)\n{',
+                    'extern unsigned test_fail_writes;\n'
+                    'int fs_copy_write(int fd, FsCopyBuffer *buffer, unsigned offset, unsigned count)\n{\n'
+                    '    if (test_fail_writes) { --test_fail_writes; errno=ENOSPC; return -1; }')
             if src.name == 'CORE.C':
                 # Test-only pacing makes BIOS-timed copy snapshots deterministic,
                 # even when the mounted host filesystem transfers a MB instantly.

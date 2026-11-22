@@ -146,7 +146,7 @@ def main():
     s=Script().find('LETTER.TXT').press(0x4000).frame('42-move-destination-dialog').press(ESC)
     s.press(0x4200).frame('43-delete-confirmation').press(ord('n'))
     s.press(0x4100).frame('44-new-folder-dialog').enter('NEWFILES').frame('45-new-folder-created')
-    s.press(0x4300).enter('D:\\MISSING').frame('46-invalid-path-notice').press(ENTER)
+    s.press(0x4300,ord('.')).enter('D:\\MISSING').frame('46-invalid-path-notice').press(ENTER)
     run('file-dialogs',s,left='D:\\DOCS')
 
     s=Script().find('PACK.ZIP').press(21).frame('47-zip-destination-dialog').press(ENTER)

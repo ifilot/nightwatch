@@ -4,6 +4,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build
 python3 tools/version.py --check
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -Isrc \
+    -fsanitize=address,undefined -fno-omit-frame-pointer -g \
+    src/MINE.C tests/test_mine.c -o build/test_mine
+ASAN_OPTIONS=detect_leaks=0 build/test_mine
 # Host builds enforce the DOS language subset and exercise memory/error paths
 # under sanitizers. Hardware-specific VIDEO.C/MAIN.C compile in the DOS suite.
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -Isrc -fsyntax-only src/GRAPH.C
@@ -42,12 +46,22 @@ ASAN_OPTIONS=detect_leaks=0 build/test_navigation
 python3 tests/test_dosbuild.py
 python3 tests/test_object_cache.py
 python3 tests/test_ui_build.py
+python3 tests/test_prepare_demo.py
 python3 tests/test_memory.py
 python3 tests/test_package.py
 python3 tests/test_version.py
 python3 tests/test_build_metadata.py
 python3 tests/test_assets.py
+python3 tests/test_drive_icons.py
 python3 tests/test_site.py
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc \
+    -fsanitize=address,undefined -fno-omit-frame-pointer -g \
+    src/DRIVE.C tests/test_drive.c -o build/test_drive
+ASAN_OPTIONS=detect_leaks=0 build/test_drive
+cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -Itests \
+    -fsanitize=address,undefined -fno-omit-frame-pointer -g \
+    src/CORE.C src/FEATURE.C tests/fs_host.c tests/test_features.c -o build/test_features
+ASAN_OPTIONS=detect_leaks=0 build/test_features
 python3 tests/zip.py
 python3 tests/arj.py
 python3 tests/browse.py
@@ -55,6 +69,6 @@ python3 tests/browse.py
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc -fsyntax-only src/STORUI.C
 cc -x c -std=c89 -Wall -Wextra -Werror -pedantic -DNW_HOST -Isrc \
     -ffunction-sections -fdata-sections -Wl,--gc-sections \
-    src/STORUI.C src/STORTEST.C tests/test_storage_ui.c -o build/test_storage_ui
+    src/STORUI.C src/STORTEST.C src/GRAPH.C tests/test_storage_ui.c -o build/test_storage_ui
 build/test_storage_ui
 python3 tests/storage.py

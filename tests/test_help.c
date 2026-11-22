@@ -18,6 +18,7 @@ const char *asset_help(unsigned index)
     return text;
 }
 void video_overlay_begin(int clear) { (void)clear; }
+void video_native_overlay(void) {}
 void video_rect(int x, int y, int width, int height, unsigned color)
 {
     (void)color;

@@ -110,7 +110,7 @@ int archive_directories(Archive *a, const Member *m, int create)
     if (archive_equal_path(path, a->source)) return archive_message(ARC_ARCHIVE_CANNOT_REPLACE_ITS_SOURCE_ARCHIVE);
     return 1;
 }
-int archive_extract_member(Archive *a, Member *m, int (*unpack)(Archive *, Member *, int))
+static int extract_attempt(Archive *a, Member *m, int (*unpack)(Archive *, Member *, int))
 {
     char dst[NW_PATH], tmp[NW_PATH];
     Entry old;
@@ -122,7 +122,9 @@ int archive_extract_member(Archive *a, Member *m, int (*unpack)(Archive *, Membe
     exists = fs_info(dst, &old);
     if (exists) {
         if (!operation_conflict) return archive_message(ARC_ARCHIVE_DESTINATION_EXISTS_CTRL_U_OFFERS_OVERWRITE_SKIP);
+        operation_source_info=&m->info;
         answer = operation_conflict ? operation_conflict(m->name, dst) : 0;
+        operation_source_info=NULL;
         if (answer == 2) { ++operation_skipped; operation_bytes += m->size; return 1; }
         if (answer != 1) return archive_message(ARC_OPERATION_CANCELLED);
     }
@@ -137,4 +139,20 @@ int archive_extract_member(Archive *a, Member *m, int (*unpack)(Archive *, Membe
     if (!operation_commit(tmp, dst, exists ? &old : NULL)) return 0;
     ++operation_files; operation_bytes += m->size; operation_current_bytes = 0;
     return 1;
+}
+
+int archive_extract_member(Archive *a, Member *m, int (*unpack)(Archive *, Member *, int))
+{
+    char dst[NW_PATH];
+    int choice;
+    for (;;) {
+        if (extract_attempt(a,m,unpack)) return 1;
+        if (!operation_error || !path_join(dst,a->target,m->name)) return 0;
+        choice=operation_error(m->name,dst,nw_error);
+        if (choice==1) continue;
+        if (choice==2) {
+            ++operation_skipped; operation_bytes+=m->size; operation_current_bytes=0; return 1;
+        }
+        return 0;
+    }
 }

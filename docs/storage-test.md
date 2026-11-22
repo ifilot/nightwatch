@@ -1,4 +1,4 @@
-# Storage integrity tests (v1.2.0)
+# Storage integrity tests
 
 Press **Ctrl-T**, then **Q** for quick, **L** for long, **V** to verify an
 existing test, or **C** to clean up a recorded test. This feature is intended

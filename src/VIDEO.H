@@ -26,6 +26,18 @@
 #define ICON_ARCHIVE 5
 #define ICON_IMAGE 6
 #define ICON_DRIVE 7
+#define ICON_HELP 8
+#define ICON_ABOUT 9
+#define ICON_SEARCH 10
+#define ICON_PROPERTIES 11
+#define ICON_COPY 12
+#define ICON_MOVE 13
+#define ICON_DELETE 14
+#define ICON_WARNING 15
+#define ICON_STORAGE 16
+#define ICON_DISPLAY 17
+/* New modal artwork targets VGA; other adapters keep their existing icons. */
+#define MODAL_ICON(vga, fallback) (video_mode == VIDEO_VGA ? (vga) : (fallback))
 extern int video_rows, video_mode;
 extern int video_height, video_font_height, video_font_width;
 extern unsigned long video_bytes;
@@ -44,6 +56,11 @@ extern unsigned long video_cells;
 void video_rect(int x, int y, int width, int height, unsigned color);
 void video_label(int x, int y, const char *s, unsigned fg, unsigned bg, int bold);
 void video_icon(int x, int y, int icon, unsigned body, unsigned outline, unsigned highlight);
+/* Native VGA drive-picker sprite. Other modes use textual drive types. */
+void video_drive_icon(int x, int y, unsigned kind);
+/* Opaque 144x176 EGA-palette About artwork. Origin must be byte aligned;
+ * only EGA/VGA accept this primitive. Asset data remains outside DGROUP. */
+void video_about_image(int x, int y);
 /* Scroll moves the overlapping interior by signed pixel dy. It rounds x
  * outward to byte boundaries: callers must keep those edge gutters uniform,
  * repaint exposed rows and any scrollbar. Returns zero when unsupported. */
@@ -55,6 +72,7 @@ void video_mask(int x, int y, const unsigned char *mask, int bytes, int height, 
  * a full background clear at the next flush. */
 void video_desktop_begin(void);
 void video_overlay_begin(int clear);
+void video_native_overlay(void);
 unsigned video_generation(void);
 /* init captures BIOS mode/page/cursor and probes the adapter. set returns
  * zero without changing mode when unsupported; success discards old content.

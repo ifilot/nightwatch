@@ -1,5 +1,14 @@
 # Rendering measurements
 
+This page records historical benchmark runs from successive renderer revisions.
+Their executable sizes, memory models and timings describe those revisions,
+not the latest build. The [manual](manual.md#display-design-rendering-and-memory)
+describes the current layout and memory checks; run `make benchmark` for fresh
+timings. Preserved baseline sources and logs are local build artifacts and are
+not supplied in a clean checkout.
+
+## Original graphics redesign (2026-10-05)
+
 Measured on 2026-10-05 with DOSBox-X 2024.03.01, its normal 8086 core,
 3,000 fixed cycles, a 640-pixel display, and Turbo C 2.0 (`-1- -ms -O -Z`).
 The same fixture contains a parent entry, one directory and twelve files in
@@ -33,9 +42,10 @@ Its source hashes are:
 - `MAIN.C`: `d5dfe45d0e2a37f30763675b1702118b2f6060c3ca6a5808f341de3f39e094e0`
 - `VIDEO.C`: `10adc2e7664131885d19c4864174950dda447559e9ecae0d3b7e4cf67e359b4a`
 
-The original before-change source snapshot and DOS logs remain in
-`build/bench-old/` for this workspace. They are generated artifacts and are not
-part of the source tree. Current results are in `build/bench-new/TIME*.LOG`.
+The original before-change source snapshot and DOS logs used
+`build/bench-old/`. These artifacts are not part of the source tree and may
+have been removed by `make clean`. A new run writes results to
+`build/bench-new/TIME*.LOG`.
 
 Graphics captures in `build/video/` come from the emulator's actual bitplanes,
 not a host-rendered mockup. The text captures retain CP437 character and attribute
@@ -80,7 +90,7 @@ Summary text updates only changed character spans. Viewport scrolling copies
 existing pixels, with a forced-redraw diagnostic alternative for comparison.
 Production builds omit diagnostic store and cell counters.
 
-The original fourteen-entry fixture now measures:
+The fourteen-entry fixture at the speed-audit revision measured:
 
 | Operation | CGA before/after | EGA before/after | VGA before/after |
 | --- | ---: | ---: | ---: |
@@ -117,17 +127,15 @@ baseline in `build/speed-before/src/`. Result logs live in
 `build/speed-before-bench/`, `build/speed-after-bench/` and
 `build/speed-no-scroll-bench/`. One-tick differences remain clock-phase noise.
 
-The build's memory guard checks static data and the real 8192-byte runtime stack
-against the 64 KB small-model segment. The guard reserves at least 2048 bytes for
-the near heap; fonts still live in their separate segment. Recursive operations
-use small traversal frames with a 32-level bound; the transfer buffer is now
-2048 bytes to accommodate the larger stack and additional commands. The hex
-viewer keeps its 432-byte page buffer on the stack; viewing and recursive
-transfers never nest. This leaves near-heap room for the v1.1.0 copy progress
-state and text.
+At this pre-ZIP revision, the memory guard checked static data and an 8192-byte
+runtime stack against the small model's 64 KB data segment, reserving at least
+2048 bytes for the near heap. Recursive operations used a 32-level bound, and
+the copy buffer was reduced to 2048 bytes. The hex viewer kept its 432-byte
+page buffer on the stack. Current builds use the medium model and a 16 KiB
+far copy buffer with a 2 KiB fallback outside DGROUP; see the manual.
 
-VGA/EGA icons now store one 32-byte ink mask rather than three 32-byte layers;
-CGA retains its native layered artwork. This removes 512 bytes of initialized
+At that stage VGA/EGA icons stored one 32-byte ink mask rather than three
+32-byte layers; CGA retained its native layered artwork. This removed 512 bytes of initialized
 near data and two empty mask traversals per VGA/EGA icon. Removing the unused
 foreground-only string renderer also drops its 81-byte scratch buffer, and
 the painted-row cache now reserves 22 rows rather than 24 (108 bytes saved).
@@ -171,7 +179,7 @@ and ten cursor moves at 3/4/5 ticks, matching the preceding implementation.
 Unchanged draws still perform zero video-memory writes. BIOS-clock phase limits
 precision; this is an emulator measurement, not a physical-hardware claim.
 
-The ZIP-enabled executable is 104,008 bytes. Its rounded static near data is
+The ZIP-enabled executable at that revision was 104,008 bytes. Its rounded static near data was
 53,472 bytes, with an 8,192-byte stack and 3,872 bytes remaining for near heap.
 The 512-entry pane caches and 2 KiB copy fallback remain intact. ZIP inflation
 adds approximately 40 KiB of far allocations while active; allow 256 KiB free

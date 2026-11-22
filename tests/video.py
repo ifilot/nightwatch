@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess as sp
 import hashlib
+import re
 import sys
 from PIL import Image
 from dosbuild import compile_dos
@@ -29,6 +30,21 @@ def baseline_compare(work):
     for frame in frames:
         assert (work/frame.name).read_bytes() == frame.read_bytes(), (work.name,frame.name,'baseline VRAM differs')
     print('PASS:',work.name,len(frames),'byte-exact before/after VRAM comparisons',flush=True)
+
+def native_label(image, mode, x, y, text, color=0):
+    size, advance = {'cga': ('5x8', 6), 'ega': ('6x12', 7), 'vga': ('8x16', 8)}[mode]
+    source = (root/'assets/fonts'/('spleen-'+size+'.bdf')).read_text()
+    glyphs = {}
+    for block in re.findall(r'STARTCHAR .*?\n(.*?)ENDCHAR', source, re.S):
+        code = int(re.search(r'^ENCODING (\d+)', block, re.M)[1])
+        glyphs[code] = [int(value,16) for value in block.split('BITMAP\n')[1].strip().splitlines()]
+    expected = Image.new('RGB', (len(text)*advance, int(size.split('x')[1])), palette[15])
+    for col, char in enumerate(text):
+        for row, bits in enumerate(glyphs[ord(char)]):
+            for dx in range(advance):
+                if bits & (128 >> dx): expected.putpixel((col*advance+dx,row),palette[color])
+    actual = image.crop((x,y,x+expected.width,y+expected.height))
+    assert actual.tobytes() == expected.tobytes(), (mode,'native document text',text)
 
 for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','vga'), ('hercules','text')]:
     work = base / (machine + '-' + mode)
@@ -77,6 +93,7 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     assert (work / 'LEFT/NEW').is_dir(), (machine, 'mkdir failed')
     assert not (work / 'RIGHT/ALPHA.TXT').exists(), (machine, 'delete failed')
     frames = sorted(work.glob('F*.BIN'))
+    assert all(int(f.read_text().split()[12])==1 for f in work.glob('F*.POS')), (mode,'capacity must be sampled once per drive')
     assert len(frames) >= 20, (machine, 'script stopped early', len(frames))
     images = [decode(f) for f in frames]
     if mode == 'vga': images[checks['binary_start']].save(base/'hex.png')
@@ -91,8 +108,11 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
     else:
         # Folder glyphs must remain recognizable outlines in every mode.
         image = images[0]
+        # Both panel borders meet the screen edge; no desktop strips remain.
+        for x in (0, 639):
+            assert image.getpixel((x, 50)) == palette[0], (mode, 'outer panel border', x)
         y = {'cga': 29, 'ega': 50, 'vga': 54}[mode]
-        icon = image.crop((22,y,38,y+{'cga': 8, 'ega': 16, 'vga': 16}[mode]))
+        icon = image.crop((16,y,32,y+{'cga': 8, 'ega': 16, 'vga': 16}[mode]))
         colors = icon.getcolors(256)
         assert len(colors) >= 2, (mode, 'icon layers')
         if mode == 'cga':
@@ -104,7 +124,7 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
                 sprite=Image.open(root/'assets/icons-v130'/('quickmenu-'+name+'.png')).convert('RGBA')
                 expected=Image.new('RGBA',(16,16),(*palette[1 if row==0 else 15],255))
                 expected.alpha_composite(sprite)
-                actual=image.crop((22,37+row*17,38,53+row*17))
+                actual=image.crop((16,37+row*17,32,53+row*17))
                 assert actual.tobytes()==expected.convert('RGB').tobytes(),('VGA icon pixels',name)
 
     for index in [0, 1, 8]:
@@ -121,7 +141,11 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
         # Native Help contains a document viewport and fixed modal chrome.
         assert images[1].tobytes() != images[0].tobytes()
     # Full/partial binary rows and empty files, using actual text VRAM.
-    page_bytes = (27 if mode == 'vga' else 22) * 16
+    if mode == 'text': page_rows = 22
+    else:
+        font_h = {'cga':8,'ega':12,'vga':16}[mode]
+        page_rows = (images[0].height - 20 - 4*font_h - 62)//(font_h+2)-1
+    page_bytes = page_rows * 16
     last_offset = (76803 - 1) // page_bytes * page_bytes
     for name in checks:
         assert sum(n for n,c in images[checks[name]].getcolors(640*480) if max(c)>140) > 1000
@@ -146,6 +170,23 @@ for machine, mode in [('cga','text'), ('cga','cga'), ('ega','ega'), ('vgaonly','
         assert row_at('binary_text', 0).startswith(' View:')
         assert row_at('empty', 2).strip() == ''
         assert '00000000/00000000' in row_at('empty', 24) and 'EOF' in row_at('empty', 24)
+    else:
+        f = {'cga':8,'ega':12,'vga':16}[mode]
+        w = {'cga':6,'ega':7,'vga':8}[mode]
+        data_y = 10 + 2*f + 28 + f+2
+        accent = 0 if mode=='cga' else 1
+        native_label(images[checks['binary_start']],mode,40,data_y,'00000000',accent)
+        native_label(images[checks['binary_start']],mode,40+10*w,data_y,
+                     '0001 0203 0405 0607 0809 0A0B 0C0D 0E0F')
+        native_label(images[checks['binary_start']],mode,40+51*w,data_y,'|................|',accent)
+        native_label(images[checks['binary_next']],mode,40,data_y,f'{page_bytes:08X}',accent)
+        native_label(images[checks['binary_end']],mode,40,data_y,f'{last_offset:08X}',accent)
+        tail_row = (76800-last_offset)//16
+        native_label(images[checks['binary_end']],mode,40+51*w,data_y+tail_row*(f+2),'|ABC             |',accent)
+        # Fixed title/path chrome survives paging and the inset paper stays white.
+        for name in ('binary_next','binary_end'):
+            assert images[checks[name]].crop((18,10,622,10+2*f+24)).tobytes() == images[checks['binary_start']].crop((18,10,622,10+2*f+24)).tobytes()
+        assert images[checks['empty']].getpixel((606,10+2*f+30)) == palette[15]
     # Selection motion must change the actual rendered pixels.
     assert images[5].tobytes() != images[6].tobytes()
     assert (work / 'F000.BIN').read_bytes()[0] == ['text','cga','ega','vga'].index(mode)
@@ -192,21 +233,26 @@ for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega
         y = start+(capacity-1)*pitch+(pitch-font_h)//2
         selected = boundary.crop((40,y,150,y+font_h))
         bg = (0,0,0) if mode=='cga' else palette[1]
+        # Highlight reaches each inner border, including the scrollbar lane.
+        for x in (1, 310, 314):
+            assert boundary.getpixel((x,y)) == bg, (mode,'selection edge',x)
+        for x in (0, 315):
+            assert boundary.getpixel((x,y)) == palette[0], (mode,'panel border',x)
         assert sum(pixel==bg for pixel in selected.getdata()) > 200, (mode,'last row clipped')
         mark_y = start+(capacity-2)*pitch+pitch//2
-        assert boundary.getpixel((12,mark_y)) == ((0,0,0) if mode=='cga' else palette[14]), (mode,'mark disappeared')
+        assert boundary.getpixel((6,mark_y)) == ((0,0,0) if mode=='cga' else palette[14]), (mode,'mark disappeared')
         if mode != 'cga':
             for image in (first, boundary, last):
                 for row in range(capacity):
-                    separator = image.crop((8,start+row*pitch+16,310,start+row*pitch+17))
-                    assert separator.getcolors() == [(302,palette[15])], (mode,'file separator',row)
+                    separator = image.crop((1,start+row*pitch+16,310,start+row*pitch+17))
+                    assert separator.getcolors() == [(309,palette[15])], (mode,'file separator',row)
         # A real proportional scrollbar reaches the bottom with End.
         track = capacity*pitch
         thumb = max(8,capacity*track//41)
-        x = 6+310-6
+        x = 316-6
         thumb_color = (0,0,0) if mode=='cga' else palette[8]
-        assert first.getpixel((x,start)) == thumb_color
-        assert last.getpixel((x,start+track-1)) == thumb_color
+        assert first.getpixel((x,start+pitch)) == thumb_color
+        assert last.getpixel((x,start+track-pitch-1)) == thumb_color
         assert first.getpixel((x,start+track-1)) != thumb_color
         # Every footer label is a single line at the bottom, including the tenth key.
         footer_y = {'cga':190,'ega':336,'vga':462}[mode]
@@ -218,6 +264,10 @@ for machine, mode, capacity in [('cga','text',17), ('cga','cga',18), ('ega','ega
     print('PASS:',mode,capacity,'visible rows; scrolling, marking, pane focus, Home/End, scrollbar and command clipping',flush=True)
 
 # Compare viewport copies with an independent forced-redraw executable, both panes.
+# A prebuilt rerun can retain the standalone BIOS test entry points from a
+# previous run. They must not join the navigator's wildcard object link.
+for name in ('KEYTEST.OBJ', 'KEYCAN.OBJ', 'CANCEL.OBJ'):
+    (base/name).unlink(missing_ok=True)
 compile_dos(base, dos, 'REFBUILD',
     [r'set PATH=C:\TC;C:\TASM',
      r'tcc -DNW_DIAGNOSTICS -DNW_NO_SCROLL -1- -mm -IC:\TC\INCLUDE -c VIDEO.C > REFCOMP.LOG',
@@ -268,6 +318,23 @@ for machine, mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga
         assert 'Line 0 / 0' in header, header
     print('PASS:',mode,'viewer no-op keys, EOF, empty file, tabs/wrapping, text/hex toggles: zero rereads and VRAM writes',flush=True)
 
+# Native documents must restore their frame and re-open identical cell prompts.
+for machine,mode in [('cga','cga'),('ega','ega'),('vgaonly','vga')]:
+    work=base/('document-prompts-'+mode)
+    if work.exists(): shutil.rmtree(work)
+    work.mkdir(); (work/'LEFT').mkdir(); (work/'RIGHT').mkdir()
+    shutil.copy2(base/'UITEST.EXE',work/'UITEST.EXE')
+    (work/'LEFT/README.TXT').write_bytes(b'Native document prompts\r\n'*60)
+    keys=[0x5000,0x3d00,0x4100,27,0x4100,27,7,27,7,27,27,0x4400]
+    (work/'KEYS.TXT').write_text('\n'.join(f'{k:x}' for k in keys))
+    dos(work,[r'UITEST /'+mode+r' D:\LEFT D:\RIGHT'],machine)
+    frames=[(work/f'F{i:03d}.BIN').read_bytes() for i in range(len(keys))]
+    assert frames[2]==frames[4]==frames[6]==frames[8]==frames[10],(mode,'native viewer restoration')
+    assert frames[3]==frames[5] and frames[3]!=frames[2],(mode,'repeated Find prompt')
+    assert frames[7]==frames[9] and frames[7]!=frames[2],(mode,'repeated Go prompt')
+    assert frames[1]==frames[11],(mode,'document desktop restoration')
+    print('PASS:',mode,'native document frame, repeated Find/Go prompts and desktop restoration',flush=True)
+
 # Matching paths share enumeration, and mkdir/delete reload affected panes only.
 for same in (False,True):
     work = base/('refresh-same' if same else 'refresh-distinct')
@@ -285,6 +352,8 @@ for same in (False,True):
     states=[list(map(int,f.read_text().split())) for f in sorted(work.glob('F*.POS'))]
     initial = 1 if same else 2
     assert states[0][9] == initial
+    assert all(state[12]==1 for state in states[:-1]), ('drive sample reused across panes and operations',same)
+    assert states[-1][12]==2, ('Ctrl-R resamples the shared drive once',same)
     assert states[3][10:12] == [2,0] and states[4][10:12] == [0,0]
     assert states[9][10:12] == [1,1],('independent pane marks',same)
     assert states[12][9] == initial+1 and states[12][10:12] == [0,0]
@@ -310,6 +379,35 @@ for machine, mode in [('cga','text'),('cga','cga'),('ega','ega'),('vgaonly','vga
     else:
         image=decode(work/'F001.BIN')
         assert image.getbbox(),mode
+        if mode in ('ega', 'vga'):
+            portrait=Image.open(root/'assets/about/gentlemen.png').convert('RGB')
+            # Find a distinctive middle scanline, then compare every pixel
+            # in actual four-plane VRAM to the authored 16-color artwork.
+            at=image.tobytes().find(portrait.crop((0,88,144,89)).tobytes())
+            assert at >= 0 and at % 3 == 0, (mode,'missing About artwork')
+            px,py=(at//3)%640,(at//3)//640-88
+            assert image.crop((px,py,px+144,py+176)).tobytes()==portrait.tobytes(), (mode,'About artwork planes')
+            assert set(portrait.getdata()) <= set(palette)
+            # Both border rings are exactly one pixel thick and touch the
+            # unscaled image. Gray separates this inlay from the paper.
+            for inset,color in ((1,8),(2,15)):
+                for left,top,right,bottom in (
+                        (px-inset,py-inset,px+144+inset,py-inset+1),
+                        (px-inset,py+175+inset,px+144+inset,py+176+inset),
+                        (px-inset,py-inset,px-inset+1,py+176+inset),
+                        (px+143+inset,py-inset,px+144+inset,py+176+inset)):
+                    assert image.crop((left,top,right,bottom)).getcolors()==[
+                        ((right-left)*(bottom-top),palette[color])], (mode,'About inlay border')
+            assert image.getpixel((px+146,py+88))==palette[7], (mode,'About inlay gutter')
+            f={'ega':12,'vga':16}[mode]
+            advance={'ega':7,'vga':8}[mode]
+            width=max((len('Nightwatch v'+version)+5)*advance+52,
+                      len('github.com/ifilot/nightwatch')*advance+28,
+                      len('GPLv3 - no warranty. See LICENSE.TXT')*advance+44)+160
+            # Credits must fit to the right of the portrait without overlap.
+            native_label(image,mode,(640-width)//2+182,
+                         py-4+(184-6*(f+2))//2,
+                         'Two-pane file navigator for MS-DOS',1)
     print('PASS:',machine,mode,'About via Alt-F1 and Help/A; version/licenses and exact desktop restoration',flush=True)
 
 # Query version from the actual executable without opening the UI.

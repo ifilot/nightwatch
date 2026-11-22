@@ -1,3 +1,4 @@
+/* Nightwatch: Turbo C 2.0 compatibility adaptation; see docs/zip-support.md. */
 /* zlib.h -- interface of the 'zlib' general purpose compression library
   version 1.3.2, February 17th, 2026
 
@@ -85,7 +86,14 @@ extern "C" {
 typedef voidpf (*alloc_func)(voidpf opaque, uInt items, uInt size);
 typedef void   (*free_func)(voidpf opaque, voidpf address);
 
+#ifdef __TURBOC__
+/* Turbo C diagnoses incomplete tags at translation-unit end. This opaque
+   compatibility tag is never allocated or dereferenced; inflate_state holds
+   the real decoder state and the public FAR pointer keeps the same ABI. */
+struct internal_state { int unused; };
+#else
 struct internal_state;
+#endif
 
 typedef struct z_stream_s {
     z_const Bytef *next_in;     /* next input byte */

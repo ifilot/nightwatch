@@ -6,6 +6,12 @@ VGA uses original 16×16 Quick Menu inspired color artwork, authored in
 `make assets` compiles an opacity mask and four color planes for each sprite
 into `src/ASSETS.H`. The VGA artwork is GPL-3.0-only.
 
+The VGA F9 picker and pane headers use four original 16x16 drive icons from
+`tools/drive_icons.py`: 3.5-inch floppy, 5.25-inch floppy, hard disk and SD card.
+Their PNGs and [comparison preview](drive-icons/preview.png) are in
+`drive-icons/`. `make assets` packs them into far FONTDATA in `src/FONT.ASM`,
+preserving near-heap space. These icons are GPL-3.0-only.
+
 EGA uses monochrome 16x16 icons from [16pxls](https://16pxls.com/)
 v1.0.1 by Paul Mackenzie, licensed CC-BY-SA-4.0. Selected original PNGs and
 provenance are in [16pxls/](16pxls/README.md); attribution and the full license
@@ -56,9 +62,24 @@ Nightwatch code and the original CGA icons are GPL-3.0-only (see ../LICENSE).
 The 16pxls artwork and bitmap adaptations retain CC-BY-SA-4.0. Spleen fonts
 and derived glyph data retain BSD-2-Clause.
 
+## VGA modal icons
+
+Ten approved 16×16 [modal icons](modal-icon-studies/README.md) distinguish
+Help, About, Search, Properties, Copy, Move, Delete, Warning, Storage test and
+Display settings. `tools/modal_icon_studies.py` authors the pixels; `make assets`
+compiles the sprites into far FONTDATA. EGA and CGA keep their existing icons.
+The [modal inventory](../docs/modals.md) records their assignments.
+
 ## Quick Menu launcher icon
 
 [quickmenu/NIGHT.ICC](quickmenu/NIGHT.ICC) is an original 32x32, 16-color EGA
 launcher icon with a binary transparency mask. A 4-bit PNG and preview are
 included beside it. See [the format and import notes](quickmenu/README.md).
 Regenerate with `python3 tools/quickmenu_icon.py`. This icon is GPL-3.0-only.
+
+## About artwork
+
+EGA and VGA display a shared 144x176 image of the two foreground gentlemen
+from *The Night Watch*, using the standard 16-color EGA palette. See
+[the artwork and generation notes](about/README.md). `make assets` embeds
+its four color planes in `src/FONT.ASM`, outside DGROUP.

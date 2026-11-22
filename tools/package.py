@@ -13,7 +13,18 @@ Run NW /text, /cga, /ega or /vga.
 Optional pane paths: NW /vga C:\\FILES D:\\BACKUP
 F1: help (A: About). Alt-F1: About. NW /version prints the version.
 F2: display mode. F3: text viewer. Shift-F3: hex viewer.
+Enter runs selected EXE/COM/BAT programs. F3 views them without running.
+Alt-F7: recursive filename search. Enter opens a match; N continues.
+Ctrl-A: edit DOS attributes. Ctrl-L: total selected bytes including folders.
+Ctrl-PgDn / Ctrl-PgUp: next / previous directory page (512 entries/page).
+Sorting and marks apply to the page. [MORE] means another page exists.
+Input: arrows, Home/End, Delete, Backspace; Tab completes local names.
+Dialogs: Up/Down input history. Commands: Ctrl-E/Ctrl-X history.
+Conflicts: O overwrite, A overwrite all, S skip, K skip all, Esc cancel.
+Transfer errors: R retry file, S skip file, Esc cancel remaining work.
 F5: copy. F6: move. F7: mkdir. F8: delete. F10: quit.
+F9: choose a drive with arrows or a letter, then Enter to open its root.
+Inside the picker, choose Enter a path... or press . to type a folder path.
 Enter on ZIP/ARJ opens a read-only folder view. F3 views a member; F5 extracts.
 Backspace leaves the archive. Extract nested archives before opening them.
 Ctrl-U unpacks ZIP (store/DEFLATE) or ARJ (methods 0-4) into the other panel.

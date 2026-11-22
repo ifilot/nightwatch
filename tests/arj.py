@@ -101,6 +101,17 @@ class ArjTests(unittest.TestCase):
     def test_long_distance_history(self):
         self.run_arj(FIX/'WINDOW.ARJ')
         self.assertEqual((self.out/'HELLO.TXT').read_bytes(),random.Random(26624).randbytes(26000)*3)
+    def test_retry_and_skip_failed_member(self):
+        data=bytes(range(256))*160
+        blob=archive(header(data=data))
+        self.run_arj(blob,'retry-write')
+        self.assertEqual((self.out/'HELLO.TXT').read_bytes(),data)
+        self.assert_clean(); self.clean()
+        (self.out/'HELLO.TXT').write_bytes(b'original')
+        result=self.run_arj(blob,'skip-write')
+        self.assertEqual((self.out/'HELLO.TXT').read_bytes(),b'original')
+        self.assertIn('completed=0 skipped=1',result)
+        self.assert_clean()
     def test_empty_and_stored(self):
         self.run_arj(archive())
         self.run_arj(archive(header(data=bytes(range(256))*300)))

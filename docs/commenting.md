@@ -22,12 +22,16 @@ Distinguish a pane's bounded directory cache from recursive enumeration. Mention
 8088 performance tradeoffs where they determine an algorithm or buffering choice.
 Avoid decorative banners, personal history and speculative assurances.
 
-Generated `ASSETS.H`, `FONT.ASM` and `VERSION.H` take their comments from
-`tools/assets.py` and `tools/version.py`. Edit those generators and regenerate;
-never rely on comments added only to the generated files. Leave the vendored
-font data and upstream license texts unchanged.
+Generated files take their comments from their generators. For example,
+`ASSETS.H`, `FONT.ASM` and the message headers come from `tools/assets.py`;
+`VERSION.H` comes from `tools/version.py`. `NW.RSP` is generated from the DOS
+Makefile's object list by `tools/dos_link.py`. Edit the inputs and regenerate;
+do not rely on edits made only to generated files. Leave vendored font data
+and upstream license texts unchanged.
 
-For documentation-only changes, verify C/assembly tokens and Python syntax trees
-against the starting source, then build with Turbo C/TASM and run the host and
-DOS integration tests. Comments can still break an old compiler, a source-staging
-script or the test harness's source transformations.
+For changes to C/assembly comments or Python docstrings, verify that code tokens
+or syntax trees are unchanged, then build with Turbo C/TASM and run the host
+and affected DOS integration tests. Comments can still break an old compiler,
+staging script or source transformation. For Markdown-only edits, check local
+links, examples and claims against the current code; a DOS rebuild is needed
+only when build inputs or runtime assets also change.

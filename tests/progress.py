@@ -136,11 +136,12 @@ for machine, mode in [('cga', 0), ('cga', 1), ('ega', 2), ('vgaonly', 3)]:
         assert 'D:\\SMALL.D' in snapshot and '50%' in snapshot and 'Files: 3 / 5' in snapshot
     if mode:
         image = decode(work/'F000.BIN')
-        pitch = {1:8, 2:14, 3:16}[mode]
-        top = (25 // 2 - 5) * pitch if mode != 3 else (30 // 2 - 5) * pitch
-        left, right, bottom = 24, 616, top + 11*pitch
+        font = {1:8, 2:12, 3:16}[mode]
+        height = 9*font+58
+        top = (image.height-height)//2
+        left, right, bottom = 18, 622, top+height
         # Every outermost pixel of the filled dialog must be its black frame:
-        # a centered text-cell stroke leaves a grey/white rim outside it.
+        # The common native window has a black outline around its gray frame.
         for box in ((left,top,right,top+1), (left,bottom-1,right,bottom),
                     (left,top,left+1,bottom), (right-1,top,right,bottom)):
             edge = image.crop(box)

@@ -1,3 +1,4 @@
+/* Nightwatch: Turbo C 2.0 compatibility adaptation; see docs/zip-support.md. */
 /* inflate.c -- zlib decompression
  * Copyright (C) 1995-2026 Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
@@ -229,8 +230,9 @@ int ZEXPORT inflatePrime(z_streamp strm, int bits, int value) {
         return Z_OK;
     }
     if (bits > 16 || state->bits + (uInt)bits > 32) return Z_STREAM_ERROR;
-    value &= (1L << bits) - 1;
-    state->hold += (unsigned long)value << state->bits;
+    /* Mask before shifting, including a negative 16-bit int on Turbo C. */
+    state->hold += ((unsigned long)(unsigned)value & ((1UL << bits) - 1))
+                   << state->bits;
     state->bits += (uInt)bits;
     return Z_OK;
 }
@@ -1356,10 +1358,10 @@ int ZEXPORT inflateCopy(z_streamp dest, z_streamp source) {
     copy->strm = dest;
     if (state->lencode >= state->codes &&
         state->lencode <= state->codes + ENOUGH - 1) {
-        copy->lencode = copy->codes + (state->lencode - state->codes);
-        copy->distcode = copy->codes + (state->distcode - state->codes);
+        copy->lencode = copy->codes + (unsigned)(state->lencode - state->codes);
+        copy->distcode = copy->codes + (unsigned)(state->distcode - state->codes);
     }
-    copy->next = copy->codes + (state->next - state->codes);
+    copy->next = copy->codes + (unsigned)(state->next - state->codes);
     if (window != Z_NULL)
         zmemcpy(window, state->window, state->whave);
     copy->window = window;
@@ -1409,5 +1411,5 @@ unsigned long ZEXPORT inflateCodesUsed(z_streamp strm) {
     struct inflate_state FAR *state;
     if (inflateStateCheck(strm)) return (unsigned long)-1;
     state = (struct inflate_state FAR *)strm->state;
-    return (unsigned long)(state->next - state->codes);
+    return (unsigned long)(unsigned)(state->next - state->codes);
 }

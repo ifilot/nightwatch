@@ -1,4 +1,4 @@
-# ZIP extraction in v1.2.0
+# Built-in ZIP extraction
 
 Select an archive and press **Ctrl-U** to unpack into the inactive pane. Choose
 an existing destination directory. Overwrite, skip and Escape cancellation use
@@ -83,7 +83,12 @@ Only inflate/inffast/inftrees/zutil/adler32/crc32 are built, with `Z_SOLO` and
 `NO_GZIP`; compression and gzip APIs are excluded. Turbo C 2.0 adaptations are
 marked in source and documented in `vendor/zlib/README.md`. They address
 unsupported far scalar typedefs/#warning, far decoder and zmemcmp pointers,
-and CRC table declarations. The fixed Huffman tables are generated into
+and CRC table declarations. Explicit unsigned-long CRC constants and bounded
+unsigned table indices avoid implicit 32-to-16-bit pointer arithmetic. Turbo C's
+opaque-state compatibility tag preserves the public FAR pointer ABI. Bit priming
+masks its input before shifting, including negative 16-bit values; host and 8086
+regressions cover priming and relocation of copied decode tables.
+The fixed Huffman tables are generated into
 `FIXED.ASM`, outside DGROUP. The zlib license accompanies the source and DOS
 package as `ZLIBLIC.TXT`.
 
@@ -92,16 +97,17 @@ left too little code space for archive handling. The program now uses medium
 model: code calls are far, ordinary data stays near. Font/help assembly uses the
 matching far-call ABI. The redundant 4 KiB font cache is removed; glyphs are read
 from their existing immutable far segment. The two 512-entry pane caches and
-16 KiB copy buffer with 2 KiB fallback remain intact.
+16 KiB far copy buffer with a 2 KiB fallback outside DGROUP remain intact.
 
 Inflater allocations use normalized far pointers and retain the original pointer
 for freeing. The measured payload peak from the original 8086 probe was 39,842
 bytes (7,074 bytes state plus 32,768 bytes history), excluding allocator overhead
 and the input/output buffers. Input and output are separate 1 KiB buffers; no
 archive-controlled large allocation occurs. Allow **256 KiB free conventional
-RAM**. The measured executable is 104,008 bytes. Static near data is 53,472 bytes;
-with the 8,192-byte stack this leaves 3,872 bytes of near heap. The build
-enforces at least 2 KiB of near heap after that stack.
+RAM as a baseline**, with additional memory for archive browsing and other
+active features. Executable and static-data sizes vary by build; see
+[the manual's memory notes](manual.md#display-design-rendering-and-memory).
+The build enforces at least 2 KiB of near heap after the 8 KiB runtime stack.
 
 ## Tests and reproducibility
 
